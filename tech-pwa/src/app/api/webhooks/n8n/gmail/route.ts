@@ -1,0 +1,167 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { jobs, properties } from '@/lib/schema';
+import { eq, and } from 'drizzle-orm';
+import { generateObject } from 'ai';
+import { google } from '@ai-sdk/google';
+import { z } from 'zod';
+
+const jobSchema = z.object({
+  address: z.string().describe('The street address of the property.'),
+  unit: z.string().optional().describe('The unit or apartment number, if any.'),
+  city: z.string().optional().describe('The city name. Default to Oakland if unknown.'),
+  description: z.string().describe('The detailed description of the maintenance issue or work requested.'),
+  category: z.string().describe('The category of the work. Examples: General Repair, Inspection Repair, Plumbing, Electrical, Turnover.'),
+  priority: z.string().describe('The priority level. MUST be exactly one of: 1-URGENT, 2-TURNOVER, 3-PTE, 4-STANDARD.'),
+  timing: z.string().optional().describe('Any timing constraints or scheduling notes.'),
+  tenantName: z.string().optional(),
+  tenantPhone: z.string().optional(),
+  tenantEmail: z.string().optional(),
+  emailType: z.string().optional().describe('Type of email. E.g., inspection, adhoc_workorder, turnover.'),
+  notes: z.string().optional().describe('Any additional notes to append, such as extracted Google Drive links.'),
+});
+
+export async function POST(request: NextRequest) {
+  let payload: any = {};
+  try {
+    payload = await request.json();
+    
+    // Auth Check
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.DASHBOARD_API_KEY}`) {
+      console.warn('Unauthorized webhook attempt');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY && !process.env.GOOGLE_API_KEY && !process.env.GEMINI_API_KEY) {
+      console.error('Missing Google AI API Key');
+      return NextResponse.json({ error: 'Missing GOOGLE_GENERATIVE_AI_API_KEY environment variable. Please add it to your Vercel or local environment to enable AI parsing.' }, { status: 500 });
+    }
+
+    // We now expect raw email components from n8n instead of pre-parsed data
+    const { subject, bodyText, gmailMsgId } = payload;
+
+    if (!subject && !bodyText) {
+      // Fallback for old payloads (while migrating)
+      if (payload.address) {
+         // handle old pre-parsed payload...
+         // skipping for brevity, we assume n8n is updated to send raw.
+      } else {
+        return NextResponse.json({ error: 'Missing raw email data (subject, bodyText)' }, { status: 400 });
+      }
+    }
+
+    console.log('[Webhook] Running Gemini 1.5 Flash parsing on email...');
+
+    // Call Gemini 1.5 Flash to parse the raw email
+    const { object } = await generateObject({
+      model: google('gemini-1.5-flash'),
+      schema: jobSchema,
+      prompt: `You are an expert maintenance dispatcher.
+        Analyze the following email and extract the structured data for a Work Order.
+        
+        CRITICAL INSTRUCTIONS FOR INSPECTION EMAILS:
+        If the email is from Sam Cooney, SSC Inspections, or mentions an "Inspection Summary" / "Annual Inspections":
+        1. Set the category strictly to "Inspection Repair".
+        2. Set the emailType strictly to "inspection".
+        3. If there is a Google Drive link (https://drive.google.com/...) in the body, extract that link and place it in the "notes" field exactly as: "Inspection Report Link: [link]".
+        
+        Email Subject: ${subject || 'No Subject'}
+        
+        Email Body:
+        ${bodyText || 'No Body'}
+      `,
+    });
+
+    const { 
+      address, 
+      unit, 
+      city, 
+      description, 
+      category, 
+      priority, 
+      timing, 
+      tenantName, 
+      tenantPhone, 
+      tenantEmail,
+      emailType,
+      notes,
+    } = object;
+
+    // Attempt to match property
+    let propId = null;
+    let rmName = '';
+    let rmEmail = '';
+    let accessInfo = '';
+    
+    if (address) {
+      const addressKey = `${address.toLowerCase()}-${(unit || '').toLowerCase()}-${(city || 'Oakland').toLowerCase()}`;
+      const matchedProp = await db.select().from(properties).where(and(
+        eq(properties.orgId, 'APT-CA'),
+        eq(properties.addressKey, addressKey)
+      )).limit(1);
+
+      if (matchedProp.length > 0) {
+        propId = matchedProp[0].id;
+        rmName = matchedProp[0].rmName || '';
+        rmEmail = matchedProp[0].rmEmail || '';
+        accessInfo = matchedProp[0].accessInfo || '';
+      }
+    }
+
+    const newJobId = `APT-${Math.floor(Math.random() * 90000) + 10000}`;
+
+    const [newJob] = await db.insert(jobs).values({
+      orgId: 'APT-CA',
+      propertyId: propId,
+      jobId: newJobId,
+      address: address || 'Unknown Address',
+      unit: unit || '',
+      category: category || 'General Repair',
+      priority: priority || '4-STANDARD',
+      description: description || '',
+      timing: timing || '',
+      tenantName: tenantName || '',
+      tenantPhone: tenantPhone || '',
+      tenantEmail: tenantEmail || '',
+      rmName,
+      rmEmail,
+      accessInfo,
+      emailType: emailType || 'adhoc_workorder',
+      notes: notes || '',
+      gmailMsgId: gmailMsgId || '',
+      status: 'Needs Review',
+      timestamp: new Date(),
+    }).returning();
+
+    console.log('[Webhook] Successfully processed and inserted WO:', newJobId);
+
+    return NextResponse.json({ success: true, job: newJob });
+  } catch (error: any) {
+    console.error('[Webhook] Failed to process n8n payload via Gemini:', error);
+    
+    // FALLBACK: If AI parsing fails, insert the raw email as a Work Order so it's not lost
+    try {
+      const newJobId = `APT-${Math.floor(Math.random() * 90000) + 10000}`;
+      const [fallbackJob] = await db.insert(jobs).values({
+        orgId: 'APT-CA',
+        propertyId: null,
+        jobId: newJobId,
+        address: 'Needs Manual Triage',
+        unit: '',
+        category: 'Unknown',
+        priority: '4-STANDARD',
+        description: `[AI PARSING FAILED] Subject: ${payload.subject}\n\nBody: ${payload.bodyText}`,
+        status: 'Needs Review',
+        emailType: 'adhoc_workorder',
+        gmailMsgId: payload.gmailMsgId || '',
+        timestamp: new Date(),
+      }).returning();
+      console.log('[Webhook] Inserted FALLBACK WO:', newJobId);
+      return NextResponse.json({ success: true, job: fallbackJob, note: 'Fallback used due to AI error' });
+    } catch (fallbackErr) {
+      console.error('[Webhook] Fallback insertion also failed:', fallbackErr);
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+  }
+}

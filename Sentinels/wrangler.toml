@@ -1,0 +1,16 @@
+name = "apt-dashboard-proxy"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# KV namespace binding — add when rate limiting is needed
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT_KV"
+# id = "YOUR_KV_NAMESPACE_ID"
+
+# Custom domain binding
+[[routes]]
+pattern = "api.aptmaintenanceinc.com"
+custom_domain = true
+
+# Deploy: wrangler deploy
+# From this directory: cd Sentinels && wrangler deploy

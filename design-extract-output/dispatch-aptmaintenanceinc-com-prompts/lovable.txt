@@ -1,0 +1,13 @@
+Clone the design language of this landing page and build a fresh equivalent.
+Visual feel: flat. Tone: neutral · Headings: unknown · CTA verbs: [object Object]
+Primary palette: #1e293b, #ffffff, #0d0f14, #64748b.
+Typography: system-ui.
+Corner radius vocabulary: 12, 16.
+Shadow vocabulary: (none).
+Use: Use plain Tailwind CSS without a component library.
+Page structure:
+- hero
+- features
+- social proof
+- cta
+- footer

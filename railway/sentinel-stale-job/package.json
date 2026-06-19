@@ -1,0 +1,12 @@
+{
+  "name": "sentinel-stale-job",
+  "version": "1.0.0",
+  "description": "APT Central Command — Stale Job / Aging Queue Monitor",
+  "main": "index.js",
+  "type": "module",
+  "scripts": { "start": "node index.js" },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "engines": { "node": ">=20" }
+}

@@ -1,0 +1,20 @@
+{
+  "mode": "yolo",
+  "parallelization": true,
+  "workflow": {
+    "research": true,
+    "plan_checker": true,
+    "verifier": true,
+    "auto_advance": true,
+    "skip_discuss": false,
+    "_auto_chain_active": false
+  },
+  "hooks": {
+    "post_ship": "python a:\\PTOW\\4_Double_Great_Project_35\\scripts\\gsd_notion_bridge.py",
+    "post_milestone": "python a:\\PTOW\\4_Double_Great_Project_35\\scripts\\gsd_notion_bridge.py"
+  },
+  "granularity": "coarse",
+  "graphify": {
+    "enabled": true
+  }
+}

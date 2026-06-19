@@ -1,0 +1,22 @@
+Phase 17 Runtime Tests
+
+1. change-pin happy path
+CMD: POST /api/field/auth/change-pin with Bearer token & {oldPin:'1234', newPin:'5678'}
+Status: 200
+Body: {"success":true,"message":"PIN updated successfully"}
+
+2. change-pin bad old PIN
+CMD: POST /api/field/auth/change-pin with Bearer token & {oldPin:'wrong', newPin:'9999'}
+Status: 401
+Body: {"success":false,"message":"Invalid current PIN"}
+
+3. change-pin no session
+CMD: POST /api/field/auth/change-pin with NO header & {oldPin:'1234', newPin:'9999'}
+Status: 401
+Body: {"success":false,"message":"Unauthorized"}
+
+4. validate-token happy path
+CMD: POST /api/gas/validate-token with X-GAS-Internal-Key & {token: '<valid-token>'}
+Status: 200
+Body: {"success":true,"tech":{"badge":"1","name":"Test Tech","role":"tech","hourlyRate":null,"employeeId":378}}
+

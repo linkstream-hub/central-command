@@ -1,0 +1,13 @@
+{
+  "name": "sentinel-spec-architect",
+  "version": "1.0.0",
+  "description": "APT Central Command — Autonomous Spec Generator",
+  "main": "index.js",
+  "type": "module",
+  "scripts": { "start": "node index.js" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": { "node": ">=20" }
+}

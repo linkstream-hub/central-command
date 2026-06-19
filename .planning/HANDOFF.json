@@ -1,0 +1,40 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-06-14T22:03:40.824Z",
+  "phase": "28",
+  "phase_name": "sentinel-diet",
+  "phase_dir": ".planning/phases/28-sentinel-diet",
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": 1, "name": "Commit 8 GSD docs (7a9c352)", "status": "done", "commit": "7a9c352"},
+    {"id": 2, "name": "Run --verify-only on 13 ADR + domain docs — 25 failures found", "status": "done"},
+    {"id": 3, "name": "Confirmed Phase 28 plans already exist (3 plans, status=Planned, ready to execute)", "status": "done"}
+  ],
+  "remaining_tasks": [
+    {"id": 4, "name": "Execute Phase 28 — Wave 0: railway_read_sentinels.cjs discovery script (28-01)", "status": "not_started"},
+    {"id": 5, "name": "Execute Phase 28 — Wave 1: consolidated n8n sentinel-checks workflow (28-02)", "status": "not_started"},
+    {"id": 6, "name": "Execute Phase 28 — Wave 2: delete Railway sentinels + SENT-03 proof (28-03)", "status": "not_started"},
+    {"id": 7, "name": "Docs fix sprint: 25 failures across 7 docs (GAS_MIGRATION_SCOPE x10, DOMAIN_ARCHITECTURE x5, ADR-005 x4, ADR-006 x2, ADR-001/003/007 x1 each, SPRINT_STANDARDS x1)", "status": "not_started"},
+    {"id": 8, "name": "Phase 25-04 close: write SUMMARY.md after Brandon E2E results", "status": "blocked"}
+  ],
+  "blockers": [
+    {"description": "Neon compute allowance exhausted for June — zero CU-hrs remain until July 1", "type": "external", "workaround": "Sentinels already paused (Brandon, 2026-06-11). Phase 28 execution not blocked — no Neon writes needed in Wave 0."},
+    {"description": "Phase 25-04 Task 3 waiting on Brandon E2E results", "type": "human_action", "workaround": "Execute Phase 28 independently"}
+  ],
+  "human_actions_pending": [
+    {"action": "Brandon runs Phase 25 E2E checklist (6 items) — send test email to workorder@aptmaintenanceinc.com", "context": "25-04 SUMMARY.md blocked until results received", "blocking": false},
+    {"action": "Brandon runs railway_read_sentinels.cjs after 28-01 ships to produce SENTINEL_INVENTORY.md", "context": "Wave 1 (28-02) cannot build n8n workflow without sentinel SQL/cadence data", "blocking": true},
+    {"action": "Brandon imports n8n workflow + activates it + deletes Railway sentinel services after Wave 1 parity confirmed", "context": "Wave 2 gate: parity must be verified before deletion", "blocking": true}
+  ],
+  "decisions": [
+    {"decision": "Phase 28 plans complete — execute immediately, no replanning", "rationale": "3 plans with wave structure exist, RESEARCH.md and CONTEXT.md present, status=Planned", "phase": "28"},
+    {"decision": "Phase 28 execution is highest priority", "rationale": "Neon monitoring is dark until this ships; compute budget over monitoring continuity (locked decision from CONTEXT.md)", "phase": "28"},
+    {"decision": "Docs fix sprint is secondary", "rationale": "Docs failures are informational accuracy issues only, not blocking any execution", "phase": "docs"}
+  ],
+  "uncommitted_files": [".planning/STATE.md", "AG.md", "CLAUDE.md"],
+  "next_action": "Run /gsd:execute-phase 28. Wave 0 first (28-01): AG builds railway_read_sentinels.cjs using Railway GraphQL v2 API + RAILWAY_TOKEN from .env.local. Brandon runs the script to produce SENTINEL_INVENTORY.md. Then Wave 1.",
+  "context_notes": "Neon compute exhausted by June 14 (day 14). Root cause: 4 Railway sentinels kept Neon awake 24/7, ~7.3 CU-hr/day vs 100 CU-hr/month free tier. Brandon paused all 4 on 2026-06-11. Phase 28 replaces them with n8n scheduled jobs (work-hours only, connect-query-disconnect) = ~1 CU-hr/day. Verify JSONs for docs failures at .planning/tmp/verify-*.json — structured data available. ADR-005 needs full rewrite (table=orgs not organizations, cols=org_id/parent_org_id not slug/parent_id)."
+}

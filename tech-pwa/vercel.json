@@ -1,0 +1,12 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "ignoreCommand": "[ \"$VERCEL_ENV\" = \"preview\" ] && [ -z \"$VERCEL_GIT_PULL_REQUEST_ID\" ] && exit 1; exit 0",
+  "crons": [
+    {
+      "path": "/api/cron/sync-gmail-history",
+      "schedule": "* * * * *"
+    }
+  ]
+}

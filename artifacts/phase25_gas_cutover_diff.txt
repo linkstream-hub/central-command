@@ -1,0 +1,12 @@
+diff --git a/Code.js b/Code.js
+index 3f629df..1b0e532 100644
+--- a/Code.js
++++ b/Code.js
+@@ -44,6 +44,7 @@ Still classify emailType by work content — turnover, inspection, or adhoc_work
+ // MAIN LIVE POLLING LOOP
+ // ============================================================
+ function checkNewLeadEmails() {
++  return; // Migrated to n8n (Phase 25 cutover) — polling owned by phase-19-email-polling workflow
+   try {
+     var apiKey = getApiKey();
+   if (!apiKey) return;

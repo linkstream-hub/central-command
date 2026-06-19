@@ -1,0 +1,7 @@
+name = "tech-pwa-proxy"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+routes = [
+  { pattern = "pwa-api.aptmaintenanceinc.com/*", zone_name = "aptmaintenanceinc.com" }
+]

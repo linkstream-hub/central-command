@@ -1,0 +1,1823 @@
+{
+  "updatedAt": "2026-06-16T20:11:18.103Z",
+  "createdAt": "2026-06-11T02:35:59.838Z",
+  "id": "wif9XlVbK3M6a1C8",
+  "name": "Phase 19 — Email Polling & WO Intake",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "id": "node-01-gmail-trigger",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [
+        256,
+        304
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "WGsytfpio59DiIFw",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// shouldSkipEmail — ported verbatim from Code.js\n// Conservative: skip only when BOTH subject AND body lack any work-order signal.\n// False negatives (missing a lead) are worse than false positives.\nconst email = $input.item.json;\nconst sender  = String(email.from    || '').toLowerCase();\nconst subject = String(email.subject || '').toLowerCase();\nconst body    = String(email.text    || '').substring(0, 500).toLowerCase();\n\n// Auto-reply / bounce patterns\nif (subject.indexOf('auto-reply')      !== -1) return [{ json: { skip: true, reason: 'auto-reply subject' } }];\nif (subject.indexOf('out of office')   !== -1) return [{ json: { skip: true, reason: 'out of office' } }];\nif (subject.indexOf('delivery failed') !== -1) return [{ json: { skip: true, reason: 'delivery failed' } }];\nif (subject.indexOf('mailer-daemon')   !== -1) return [{ json: { skip: true, reason: 'mailer-daemon subject' } }];\nif (subject.indexOf('undeliverable')   !== -1) return [{ json: { skip: true, reason: 'undeliverable' } }];\nif (sender.indexOf('mailer-daemon')    !== -1) return [{ json: { skip: true, reason: 'mailer-daemon sender' } }];\n// no-reply except from Lapham (Lapham website@ is a web form sender)\nif (sender.indexOf('no-reply') !== -1 && sender.indexOf('lapham') === -1) return [{ json: { skip: true, reason: 'no-reply sender' } }];\n\n// Exact-match admin subjects (not substrings — avoids skipping \"thank you for the repair\")\nconst adminSubjects = [\n  'thank you', 'thanks!', 'received', 'confirmed', 'invoice',\n  'payment', 'receipt', 'statement', 'for rent', 'vacancy',\n  'rent ready', 're: re: re:'\n];\nfor (let i = 0; i < adminSubjects.length; i++) {\n  if (subject === adminSubjects[i]) return [{ json: { skip: true, reason: 'admin subject: ' + adminSubjects[i] } }];\n}\n\n// Work-order signal check — skip ONLY if BOTH subject AND body have no signals\nconst workOrderSignals = [\n  'repair','fix','broken','leak','plumb','electric','hvac',\n  'heat','water','window','door','paint','unit','tenant',\n  'maintenance','turnover','inspection','work order','schedule',\n  'access','lockbox','entry','pest','mold','damage','replace',\n  'install','appliance','stove','fridge','toilet','sink','fan',\n  'light','outlet','circuit','roof','floor','wall','ceiling'\n];\n\nlet hasSignal = false;\nfor (let j = 0; j < workOrderSignals.length; j++) {\n  if (subject.indexOf(workOrderSignals[j]) !== -1 || body.indexOf(workOrderSignals[j]) !== -1) {\n    hasSignal = true;\n    break;\n  }\n}\n\nif (!hasSignal) return [{ json: { skip: true, reason: 'no work-order signal in subject or body preview' } }];\n\n// Pass through with skip:false — includes original email fields\nreturn [{ json: { skip: false, email: $input.item.json } }];"
+      },
+      "id": "node-02-skip-filter",
+      "name": "Code: Skip Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        512,
+        304
+      ],
+      "notesInFlow": true,
+      "notes": "shouldSkipEmail from Code.js — conservative. Only skips when BOTH subject AND body lack any work-order signal."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.skip }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-03-if-skip",
+      "name": "IF: Skip?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        752,
+        304
+      ],
+      "notesInFlow": true,
+      "notes": "true output → Stop (no-op). false output → continue to Lapham detection."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Gmail Trigger').item.json.from }}",
+              "operation": "contains",
+              "value2": "website@laphamcompany.com"
+            }
+          ],
+          "boolean": []
+        },
+        "combineOperation": "any"
+      },
+      "id": "node-04-if-lapham",
+      "name": "IF: Lapham Form?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        304
+      ],
+      "notesInFlow": true,
+      "notes": "Detects Lapham webform: sender is website@laphamcompany.com OR body contains 'Submitted values are:' OR 'Webform submission from: Maintenance Request'. True → Lapham branch. False → Gemini branch."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code: Lapham Extraction\n// Ports detectLaphamForm() from Code.js verbatim.\n// CRITICAL: Lapham forms arrive as FORWARDS from RM/Lapham employees.\n// Detection is content-based (the form text).\n// requester = the FORWARDING sender's email, never website@laphamcompany.com.\n\nconst email   = $('Gmail Trigger').item.json;\nconst body    = String(email.text    || '');\nconst subject = String(email.subject || '');\nconst rawFrom = String(email.from    || '');\n\n// Extract forwarding sender email — this is the requester (the RM/employee who forwarded)\nfunction extractEmail(raw) {\n  const m = String(raw).match(/<([^>]+)>/);\n  return m ? m[1].toLowerCase() : String(raw).replace(/.*<|>.*/g, '').toLowerCase().trim();\n}\n\nconst forwardingSenderEmail = extractEmail(rawFrom);\n// requesterEmail is the forwarding sender, NOT website@laphamcompany.com\nconst requesterEmail = forwardingSenderEmail !== 'website@laphamcompany.com'\n  ? forwardingSenderEmail\n  : '';\n\n// Two-format field extractor — same-line AND two-line (Apple Mail forwarded format)\nfunction field(names) {\n  for (let i = 0; i < names.length; i++) {\n    // Same-line: \"Label: Value\" or \"Label Value\"\n    const re = new RegExp('(?:^|\\\\n)' + names[i] + '\\\\s*:?\\\\s*([^\\\\n]+)', 'i');\n    const m  = body.match(re);\n    if (m && m[1].trim()) return m[1].trim();\n    // Two-line: \"Label\\nValue\" (Apple Mail forward rendering)\n    const re2 = new RegExp('(?:^|\\\\n)' + names[i] + '[^\\\\n]*\\\\n\\\\s*([^\\\\n]+)', 'i');\n    const m2  = body.match(re2);\n    if (m2 && m2[1].trim()) return m2[1].trim();\n  }\n  return '';\n}\n\nfunction fieldFromBody(names, targetBody) {\n  for (let i = 0; i < names.length; i++) {\n    const re  = new RegExp('(?:^|\\\\n)' + names[i] + '\\\\s*:?\\\\s*([^\\\\n]+)', 'i');\n    const m   = targetBody.match(re);\n    if (m && m[1].trim()) return m[1].trim();\n    const re2 = new RegExp('(?:^|\\\\n)' + names[i] + '[^\\\\n]*\\\\n\\\\s*([^\\\\n]+)', 'i');\n    const m2  = targetBody.match(re2);\n    if (m2 && m2[1].trim()) return m2[1].trim();\n  }\n  return '';\n}\n\n// Handle forwarded body — strip > quote prefixes\nlet forwardedBody = '';\nconst fwdIdx = body.indexOf('---------- Forwarded message ---------');\nif (fwdIdx !== -1) {\n  forwardedBody = body.substring(fwdIdx).replace(/^> ?/gm, '');\n}\n\nconst tenantName  = field(['Name','Full Name','Submitted By','Your Name','First and Last Name']) || (forwardedBody ? fieldFromBody(['Name','Full Name','Submitted By','Your Name','First and Last Name'], forwardedBody) : '');\nconst address     = field(['Address','Property Address','Property','Location','Street Address']) || (forwardedBody ? fieldFromBody(['Address','Property Address','Property','Location','Street Address'], forwardedBody) : '');\nconst unit        = field(['Unit','Unit #','Unit Number','Apt','Apartment','Suite']) || (forwardedBody ? fieldFromBody(['Unit','Unit #','Unit Number','Apt','Apartment','Suite'], forwardedBody) : '');\nconst phone       = field(['Phone','Phone Number','Mobile','Cell','Mobile Number']) || (forwardedBody ? fieldFromBody(['Phone','Phone Number','Mobile','Cell','Mobile Number'], forwardedBody) : '');\nlet tenantEmail   = field(['Email','Email Address','Your Email']) || (forwardedBody ? fieldFromBody(['Email','Email Address','Your Email'], forwardedBody) : '');\nconst prefContact = field(['Preferred Contact','Preferred Contact Method','Contact Method','Best Way to Reach']) || (forwardedBody ? fieldFromBody(['Preferred Contact','Preferred Contact Method','Contact Method','Best Way to Reach'], forwardedBody) : '');\nconst pets        = field(['Pets','Do you have pets','Pets in Unit','Have Pets']) || (forwardedBody ? fieldFromBody(['Pets','Do you have pets','Pets in Unit','Have Pets'], forwardedBody) : '');\nconst pteRaw      = field(['Permission to Enter','PTE','Entry Permission','permission to enter']) || (forwardedBody ? fieldFromBody(['Permission to Enter','PTE','Entry Permission','permission to enter'], forwardedBody) : '');\nlet description   = field(['Description','Issue','Problem','Repair Needed','Request','Details','Message','Please describe in detail the maintenance problem below','Please describe']) || (forwardedBody ? fieldFromBody(['Description','Issue','Problem','Repair Needed','Request','Details','Message','Please describe in detail the maintenance problem below','Please describe'], forwardedBody) : '');\n\nif (!description && forwardedBody) {\n  description = forwardedBody.replace(/^[-\\s]+Forwarded message[-\\s]+/i, '').replace(/^[A-Z][^:]+:.*$/gm, '').replace(/\\s+/g, ' ').trim();\n}\n\nif (tenantEmail) tenantEmail = tenantEmail.replace(/<mailto:[^>]+>/g, '').trim();\n\n// PTE mapping — exact Lapham radio phrases first\nconst pteLower = (pteRaw || '').toLowerCase();\nlet pteGranted = 'Not Applicable';\nif      (pteLower.indexOf('permission to enter my dwelling while i am not there') !== -1) pteGranted = 'Yes';\nelse if (pteLower.indexOf('do not give permission') !== -1 || pteLower.indexOf('without my presence') !== -1) pteGranted = 'No';\nelse if (pteLower === 'yes' || pteLower === 'y') pteGranted = 'Yes';\nelse if (pteLower === 'no'  || pteLower === 'n') pteGranted = 'No';\n\n// Pets\nconst petsLower = (pets || '').toLowerCase();\nlet tenantHasPets = 'Unknown';\nif      (petsLower === 'yes' || petsLower === 'y') tenantHasPets = 'Yes';\nelse if (petsLower === 'no'  || petsLower === 'n') tenantHasPets = 'No';\n\n// Preferred contact\nconst prefLower = (prefContact || '').toLowerCase();\nlet tenantPrefContact = 'Unknown';\nif      (prefLower.indexOf('phone') !== -1 || prefLower.indexOf('call') !== -1 || prefLower.indexOf('text') !== -1) tenantPrefContact = 'Phone';\nelse if (prefLower.indexOf('email') !== -1) tenantPrefContact = 'Email';\n\n// Email type from description + subject\nconst scanText = ((description || '') + ' ' + (subject || '')).toLowerCase();\nlet emailType = 'adhoc_workorder';\nif      (scanText.indexOf('turnover') !== -1 || scanText.indexOf('move out') !== -1 || scanText.indexOf('move-out') !== -1) emailType = 'turnover';\nelse if (scanText.indexOf('inspection') !== -1) emailType = 'inspection';\n\n// Service category\nlet serviceCategory = 'Unknown';\nif      (scanText.indexOf('plumbing') !== -1 || scanText.indexOf('leak') !== -1 || scanText.indexOf('drain') !== -1) serviceCategory = 'Plumbing';\nelse if (scanText.indexOf('electrical') !== -1 || scanText.indexOf('outlet') !== -1 || scanText.indexOf('breaker') !== -1) serviceCategory = 'Electrical';\nelse if (scanText.indexOf('hvac') !== -1 || scanText.indexOf('cooling') !== -1 || scanText.indexOf('heating') !== -1) serviceCategory = 'HVAC';\nelse if (scanText.indexOf('carpentry') !== -1 || scanText.indexOf('lock') !== -1) serviceCategory = 'Carpentry';\nelse if (scanText.indexOf('appliance') !== -1) serviceCategory = 'Appliance';\nelse if (scanText.indexOf('pest') !== -1 || scanText.indexOf('general') !== -1) serviceCategory = 'General Repair';\n\nreturn [{ json: {\n  emailType,\n  senderName:             'Lapham Webform',\n  senderEmail:            requesterEmail || 'website@laphamcompany.com',\n  senderType:             'PM Office Staff',\n  companyName:            'Lapham',\n  propertyAddress:        address || 'LOOKUP_BY_SENDER',\n  unitNumber:             unit,\n  city:                   '',\n  leadType:               emailType === 'turnover' ? 'Unit Turnover' : emailType === 'inspection' ? 'Inspection' : 'Unknown',\n  serviceCategory,\n  urgency:                'Standard',\n  description:            description || '(No description — see original email)',\n  preferredTiming:        '',\n  accessInfo:             '',\n  rmName:                 '',\n  rmEmail:                requesterEmail,\n  requesterEmail:         requesterEmail,\n  tenantName,\n  tenantPhone:            phone,\n  tenantEmail,\n  tenantPreferredContact: tenantPrefContact,\n  tenantHasPets,\n  pteGranted,\n  pteNotes:               pteRaw,\n  estimateNeeded:         'No',\n  isLaphamForm:           true,\n  multipleItems:          false,\n  itemList:               [],\n  subjectLineAddressUsed: false,\n  senderLookupNeeded:     !address,\n  newContactDetected:     false,\n  newContactNotes:        '',\n  confidence:             'High',\n  confidenceNotes:        'Structured Lapham webform — Gemini bypassed'\n}}];"
+      },
+      "id": "node-05-lapham-extraction",
+      "name": "Code: Lapham Extraction",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        160
+      ],
+      "notesInFlow": true,
+      "notes": "detectLaphamForm() ported verbatim from Code.js. Both same-line AND two-line regex per field (Pitfall 3). requester = forwarding sender, never website@laphamcompany.com. Returns High-confidence parsed result — no Gemini call."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code: Build Gemini Payload\n// Builds the full prompt + request body for the Gemini parsing API.\n// Ported from parseWithGemini() + buildSmartPropertyContext() in Code.js.\n\nconst email   = $('Gmail Trigger').item.json;\nconst from    = String(email.from    || '');\nconst subject = String(email.subject || '');\nconst body    = String(email.text    || '').substring(0, 2000);\n\nconst KNOWN_SENDERS = `KNOWN SENDERS:\nAPT Internal: brandon@,keith@,tsegab@,bemenet@ aptmaintenanceinc.com — classify normally\nLapham staff: maintenance@laphamcompany.com, website@laphamcompany.com\nturnovers.lapham@gmail.com → turnover\ncooneysam@gmail.com → inspection\nRMs may use @lapham-rm.com, @gmail.com, or address-based emails — match by property address\nLapham webform: website@laphamcompany.com OR \"Submitted values are:\" OR \"Webform submission from: Maintenance Request\" → structured form — extract all tenant fields, then classify emailType by content (turnover/inspection/adhoc_workorder) like any other email`;\n\nconst LAPHAM_FORM_FORMAT = `\nLAPHAM WEBFORM FIELDS (present when sender is website@laphamcompany.com or body contains \"Submitted values are:\" or \"Webform submission from: Maintenance Request\"):\nExtract: Name/Address/Unit/Phone/Email/PreferredContact/Pets/PTE-choice/Description\nPTE: Yes=\"permission to enter my dwelling while I am not there\", No=\"I do not give permission to enter without my presence\", N/A=turnover/inspection\nStill classify emailType by work content — turnover, inspection, or adhoc_workorder. Do NOT use \"lapham_form\" as emailType.`;\n\nconst JSON_SCHEMA = `{\"emailType\":\"adhoc_workorder|turnover|inspection|new_inquiry|internal_forward|unknown\",\"senderName\":\"\",\"senderEmail\":\"\",\"senderType\":\"Resident Manager|PM Office Staff|APT Internal|Unknown\",\"companyName\":\"\",\"propertyAddress\":\"\",\"unitNumber\":\"\",\"city\":\"\",\"leadType\":\"Urgent Repair|Unit Turnover|Recurring Maintenance|Quote Request|Inspection|New Client Inquiry|Unknown\",\"serviceCategory\":\"Plumbing|Electrical|Carpentry|Painting|HVAC|Appliance|Junk Removal|Windows|General Repair|Multi-trade|Renovation|Unknown\",\"urgency\":\"Urgent|Standard|Flexible\",\"description\":\"1-2 sentence plain trade language\",\"preferredTiming\":\"\",\"accessInfo\":\"\",\"rmName\":\"\",\"rmEmail\":\"\",\"tenantName\":\"\",\"tenantPhone\":\"\",\"tenantEmail\":\"\",\"tenantPreferredContact\":\"Phone|Email|Unknown\",\"tenantHasPets\":\"Yes|No|Unknown\",\"pteGranted\":\"Yes|No|Not Applicable\",\"pteNotes\":\"\",\"isLaphamForm\":false,\"multipleItems\":false,\"itemList\":[],\"estimateNeeded\":\"Yes|No|Unknown (Yes=quote request/renovation/multi-trade/scope unclear. No=standard repair with defined scope)\",\"subjectLineAddressUsed\":false,\"senderLookupNeeded\":false,\"newContactDetected\":false,\"newContactNotes\":\"\",\"confidence\":\"High|Medium|Low\",\"confidenceNotes\":\"\"}`;\n\nconst prompt = `You are a work order intake agent for APT Maintenance (Bay Area property maintenance).\nParse emails to workorder@aptmaintenanceinc.com. Extract structured data. Return ONLY raw JSON.\n\n${KNOWN_SENDERS}\n\n${LAPHAM_FORM_FORMAT}\n\nFROM: ${from}\nSUBJECT: ${subject}\n\nTHREAD:\n${body}\n\nRULES: Scan full thread. Extract address from subject if not in body. If no address found set propertyAddress=LOOKUP_BY_SENDER. Urgency: Urgent=active leak/sewage/no heat/no electricity/flooding/fire/word 'emergency' ONLY. Standard=most repairs. Flexible=quotes/turnovers/inspections. Never Urgent for frustration alone.\n\nReturn ONLY this JSON (no markdown, no backticks):\n${JSON_SCHEMA}`;\n\nreturn [{\n  json: {\n    geminiPayload: {\n      contents: [{ parts: [{ text: prompt }] }],\n      generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }\n    },\n    _originalFrom: from\n  }\n}];"
+      },
+      "id": "node-06-build-gemini-payload",
+      "name": "Code: Build Gemini Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        464
+      ],
+      "notesInFlow": true,
+      "notes": "Builds Gemini API request body. Ported from parseWithGemini() in Code.js. temperature:0.1 for consistent structured output."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.geminiPayload) }}",
+        "options": {}
+      },
+      "id": "node-07-gemini-api",
+      "name": "HTTP Request: Gemini API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1504,
+        464
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "sGEkMgwYYwpMY3qE",
+          "name": "Query Auth account"
+        }
+      },
+      "notes": "Calls Gemini REST API. Auth via 'Gemini API Key' Query Auth credential (param name: key). Free-plan compatible — no $env needed."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Gemini Response — 4-strategy extractJson chain from Code.js\nconst response = $input.item.json;\nconst rawText  = response.candidates &&\n                 response.candidates[0] &&\n                 response.candidates[0].content &&\n                 response.candidates[0].content.parts &&\n                 response.candidates[0].content.parts[0]\n                 ? response.candidates[0].content.parts[0].text : '';\n\nif (!rawText) {\n  return [{ json: { parsedForm: null, parseError: 'Gemini returned empty text' } }];\n}\n\n// 4-strategy extractJson chain — verbatim from Code.js\nfunction extractJson(text) {\n  // Strategy 1: direct parse\n  try { return JSON.parse(text.trim()); } catch(e) {}\n  // Strategy 2: strip markdown code fences\n  const m = text.match(/```(?:json)?\\s*([\\s\\S]*?)```/i);\n  if (m) { try { return JSON.parse(m[1].trim()); } catch(e) {} }\n  // Strategy 3: find first { to last }\n  const start = text.indexOf('{');\n  const end   = text.lastIndexOf('}');\n  if (start !== -1 && end !== -1 && end > start) {\n    try { return JSON.parse(text.substring(start, end + 1)); } catch(e) {}\n  }\n  // Strategy 4: clean up common LLM JSON issues\n  if (start !== -1 && end !== -1) {\n    const cleaned = text.substring(start, end + 1)\n      .replace(/,\\s*([}\\]])/g, '$1')\n      .replace(/'/g, '\"')\n      .replace(/:\\s*True/g,  ': true')\n      .replace(/:\\s*False/g, ': false')\n      .replace(/:\\s*None/g,  ': null');\n    try { return JSON.parse(cleaned); } catch(e) {}\n  }\n  return null;\n}\n\nconst parsed = extractJson(rawText);\nif (!parsed) {\n  return [{ json: { parsedForm: null, parseError: 'JSON extract failed', rawText: rawText.substring(0, 300) } }];\n}\n\n// Strip <mailto:...> wrappers from tenant email\nif (parsed.tenantEmail) {\n  parsed.tenantEmail = parsed.tenantEmail.replace(/^<mailto:|>$/g, '').trim();\n}\n\n// Address fallback — LOOKUP_BY_SENDER when Gemini returns nothing useful\nif (!parsed.propertyAddress || parsed.propertyAddress === 'Unknown' || parsed.propertyAddress === '') {\n  parsed.propertyAddress    = 'LOOKUP_BY_SENDER';\n  parsed.senderLookupNeeded = true;\n}\n\nreturn [{ json: { parsedForm: parsed } }];"
+      },
+      "id": "node-08-parse-gemini-response",
+      "name": "Code: Parse Gemini Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        464
+      ],
+      "notesInFlow": true,
+      "notes": "4-strategy extractJson chain from Code.js — handles raw JSON, markdown fences, substring extract, and cleaned fallback."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize address key for Neon property lookup.\n// Verbatim port of normalizeAddressKey() from Code.js (7-step algorithm).\n\nconst incoming = $input.item.json;\n\n// Accept both Lapham (direct parsedForm fields) and Gemini (wrapped in parsedForm)\nconst parsedForm = incoming.isLaphamForm\n  ? incoming\n  : (incoming.parsedForm || incoming);\n\nfunction normalizeAddressKey(address, unit) {\n  // Step 1: ## → #\n  let addr = String(address || '').replace(/##/g, '#');\n  // Step 2: extract embedded unit (#word) when unit param absent/empty\n  const embeddedUnit = addr.match(/#(\\w+)/);\n  if (embeddedUnit && !unit) unit = embeddedUnit[1];\n  // Step 3: strip #\\w+ from address\n  addr = addr.replace(/#\\w+/g, '').trim();\n  // Step 4: strip city/state suffix\n  addr = addr.split(',')[0].trim();\n  // Step 5: normalize street-type tokens (lowercase + strip trailing period)\n  addr = addr.replace(/\\b(avenue|ave|street|st|boulevard|blvd|drive|dr|road|rd|lane|ln|way|place|pl|court|ct|terrace|terr)\\b\\.?/gi, m => m.replace(/\\.$/, '').toLowerCase());\n  // Step 6: lowercase, strip non-alphanumeric, collapse spaces\n  addr = addr.toLowerCase().replace(/[^a-z0-9\\s]/g, '').replace(/\\s+/g, ' ').trim();\n  const unitNorm = String(unit || '').toLowerCase().replace(/[^a-z0-9]/g, '').trim();\n  // Step 7: composite key\n  return addr + '||' + unitNorm;\n}\n\nconst addressKey = normalizeAddressKey(\n  parsedForm.propertyAddress || '',\n  parsedForm.unitNumber || ''\n);\n\nreturn [{ json: { ...parsedForm, addressKey } }];"
+      },
+      "id": "node-09-normalize-address-key",
+      "name": "Code: Normalize Address Key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        304
+      ],
+      "notesInFlow": true,
+      "notes": "normalizeAddressKey() — verbatim 7-step port from Code.js. Adds addressKey field for Neon properties lookup."
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, address, address_key, rm_name, rm_email, access_info, org_id FROM properties WHERE org_id = 'APT-CA' AND (address_key = '{{ $json.addressKey }}' OR rm_email = lower('{{ $json.rmEmail || $json.senderEmail || '' }}')) LIMIT 1",
+        "options": {}
+      },
+      "id": "node-10-neon-property-lookup",
+      "name": "Neon: Property Lookup",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        2256,
+        304
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "CAHXuGzNrYsMeENI",
+          "name": "Neon Postgres"
+        }
+      },
+      "notes": "SELECT from Neon properties. Two-strategy lookup: address_key match first, then rm_email fallback (enrichFromLaphamDb pattern from Code.js). Credential name: 'Neon Postgres' — must exist in Railway n8n before activation."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge property data from Neon lookup into parsed form.\n// Mirrors enrichFromLaphamDb() from Code.js — two strategies: address-first, then sender-email fallback.\n// Access info: merge-not-replace (Neon DB is authoritative; inbound may add context).\n\nconst parsedForm   = $('Code: Normalize Address Key').item.json;\nconst neonRows     = $input.all().map(item => item.json);\nconst record       = neonRows.length > 0 ? neonRows[0] : null;\n\nfunction extractCodes(text) {\n  if (!text) return [];\n  const matches = String(text).match(/\\b\\d{3,6}\\b/g) || [];\n  return matches.filter((m, i, arr) => arr.indexOf(m) === i);\n}\n\nlet merged = { ...parsedForm };\n\nif (record && record.id) {\n  // Address-first match or email fallback — enrich the parsed form\n  merged.rmName        = merged.rmName  || record.rm_name  || '';\n  merged.rmEmail       = merged.rmEmail || record.rm_email || '';\n  merged.propertyKnown = true;\n\n  // If lookup used sender-email fallback and address was LOOKUP_BY_SENDER, fill in from DB\n  if (!merged.propertyAddress || merged.propertyAddress === 'LOOKUP_BY_SENDER') {\n    merged.propertyAddress    = record.address || merged.propertyAddress;\n    merged.senderLookupNeeded = false;\n  }\n\n  // Access info change detection (from enrichFromLaphamDb in Code.js)\n  const existingCodes = extractCodes(record.access_info || '');\n  const newCodes      = extractCodes(merged.accessInfo   || '');\n  const trulyNew      = newCodes.filter(c => !existingCodes.includes(c));\n\n  if (trulyNew.length > 0 && merged.accessInfo) {\n    merged.accessInfoChanged  = true;\n    merged.accessInfoNew      = merged.accessInfo;\n    merged.accessInfoExisting = record.access_info || '';\n  }\n\n  // Merge access info — DB first, email appended (never replace)\n  if (record.access_info && merged.accessInfo) {\n    merged.accessInfo = record.access_info + ' | ' + merged.accessInfo;\n  } else {\n    merged.accessInfo = record.access_info || merged.accessInfo || '';\n  }\n} else {\n  merged.propertyKnown = false;\n  if (merged.propertyAddress &&\n      merged.propertyAddress !== 'LOOKUP_BY_SENDER' &&\n      merged.propertyAddress !== 'Unknown') {\n    merged.newContactDetected = true;\n    merged.newContactNotes    = merged.newContactNotes || 'Property not in Neon properties table.';\n  }\n}\n\nmerged._neonPropertyId = record ? record.id : null;\n\n// ---------------------------------------------------------------------------\n// jobs/sync payload — explicit column mapping (raw merged blob is NOT a valid\n// jobs row and has no jobId; the route 400s without one).\n// jobId is DETERMINISTIC from the Gmail message id: the same email re-delivered\n// or re-processed produces the same jobId, and the jobs/sync upsert\n// (onConflictDoUpdate on jobId) absorbs it — this is the dedup mechanism,\n// equivalent to GAS processedIds-by-msgId. (GAS isDuplicateJob address+unit\n// heuristic intentionally not ported — msgId idempotency is stricter.)\n// ---------------------------------------------------------------------------\nconst gmailMsgId = String($('Gmail Trigger').item.json.id || merged.gmailMsgId || '');\nconst jobId = 'EMAIL-' + (gmailMsgId || Date.now());\n\nmerged.gmailMsgId = gmailMsgId;\nmerged.jobPayload = {\n  orgId:        'APT-CA',\n  jobId:        jobId,\n  timestamp:    new Date().toISOString(),\n  priority:     merged.urgency === 'Urgent' ? '1-URGENT' : '4-STANDARD',\n  emailType:    merged.emailType || 'adhoc_workorder',\n  category:     merged.serviceCategory || null,\n  address:      (merged.propertyAddress && merged.propertyAddress !== 'LOOKUP_BY_SENDER') ? merged.propertyAddress : null,\n  unit:         merged.unitNumber || null,\n  description:  merged.description || null,\n  accessInfo:   merged.accessInfo || null,\n  rmName:       merged.rmName || null,\n  rmEmail:      merged.rmEmail || null,\n  tenantName:   merged.tenantName || null,\n  tenantPhone:  merged.tenantPhone || null,\n  tenantEmail:  merged.tenantEmail || null,\n  tenantPref:   merged.tenantPreferredContact || null,\n  tenantPets:   merged.tenantHasPets || null,\n  pte:          merged.pteGranted || null,\n  status:       'Needs Review',\n  notes:        merged.newContactDetected ? (merged.newContactNotes || '') : null,\n  gmailMsgId:   gmailMsgId || null,\n};\n\nreturn [{ json: merged }];"
+      },
+      "id": "node-11-merge-property-data",
+      "name": "Code: Merge Property Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        2512,
+        304
+      ],
+      "notesInFlow": true,
+      "notes": "enrichFromLaphamDb() logic — merges Neon property record into parsed form. Access info: DB first, email appended (merge-not-replace). Sets accessInfoChanged flag when inbound has new codes."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.accessInfoChanged }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-12-if-access-changed",
+      "name": "IF: Access Info Changed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2752,
+        304
+      ],
+      "notesInFlow": true,
+      "notes": "true → POST to /api/intake/access-sync to write new codes to Neon. false → skip access sync, proceed to WO create."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dispatch.aptmaintenanceinc.com/api/intake/access-sync",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ JSON.stringify({ addressKey: $json.addressKey, inboundAccessInfo: $json.accessInfoNew, orgId: 'APT-CA' }) }}",
+        "options": {}
+      },
+      "id": "node-13-access-sync",
+      "name": "HTTP: POST access-sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        3008,
+        160
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4IQFvUn2BHCXQmK5",
+          "name": "Header Auth account"
+        }
+      },
+      "notes": "POST /api/intake/access-sync — auth via 'CC API Key' credential (x-api-key header). URL hardcoded — no $env needed."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dispatch.aptmaintenanceinc.com/api/jobs/sync",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.jobPayload }}",
+        "options": {}
+      },
+      "id": "node-14-sync-to-neon",
+      "name": "HTTP: POST jobs/sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        3008,
+        400
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4IQFvUn2BHCXQmK5",
+          "name": "Header Auth account"
+        }
+      },
+      "notes": "POST /api/jobs/sync — creates or upserts WO in Neon. Auth via 'CC API Key' credential. URL hardcoded."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-15-if-production",
+      "name": "IF: Comms Enabled?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        3232,
+        400
+      ],
+      "notesInFlow": true,
+      "notes": "Comms gate — hardcoded false until INTAKE_COMMS_ENABLED is explicitly turned on (edit value1 to true). $env blocked on free plan so gate is static."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Code: Merge Property Data').item.json.senderType }}",
+              "operation": "notEqual",
+              "value2": "APT Internal"
+            }
+          ],
+          "boolean": [
+            {
+              "value1": "={{ !!$('Code: Merge Property Data').item.json.requesterEmail || !!$('Code: Merge Property Data').item.json.rmEmail }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-16-if-auto-reply",
+      "name": "IF: Send Auto-Reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        3344,
+        112
+      ],
+      "notesInFlow": true,
+      "notes": "Gate: senderType !== 'APT Internal' AND requester email present. Prevents auto-replies to internal forwards (Pitfall 6)."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Code: Merge Property Data').item.json.senderEmail }}",
+              "operation": "contains",
+              "value2": "laphamcompany.com"
+            },
+            {
+              "value1": "={{ $('Code: Merge Property Data').item.json.senderEmail }}",
+              "operation": "equals",
+              "value2": "={{ $('Code: Merge Property Data').item.json.rmEmail }}"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "node-17-if-lapham-affiliated",
+      "name": "IF: Lapham-Affiliated Sender?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        3696,
+        96
+      ],
+      "notesInFlow": true,
+      "notes": "Three-way segmentation: Lapham-affiliated senders get a different copy than general requesters. Lapham affiliated = laphamcompany.com domain OR sender email matches a property's rm_email (checked via isLaphamForm flag as proxy)."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $('Code: Merge Property Data').item.json.isLaphamForm }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-18-if-lapham-form-sent",
+      "name": "IF: Lapham Form Used?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        4000,
+        80
+      ],
+      "notesInFlow": true,
+      "notes": "Sub-branch of Lapham-affiliated: did they use the form (isLaphamForm=true)? Yes → standard ack. No → ack + ask to use form in future."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('Code: Merge Property Data').item.json.requesterEmail || $('Code: Merge Property Data').item.json.rmEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Request Received — ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your property'), text: 'Your maintenance request for ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'the property') + ' has been received. Our dispatch team will be in touch shortly.\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
+        "options": {}
+      },
+      "id": "node-19-resend-lapham-ack",
+      "name": "Resend: Lapham Standard Ack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        4256,
+        0
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "aptL6JezMTMq6Trn",
+          "name": "Header Auth account 2"
+        }
+      },
+      "notes": "Segment 1: Lapham-affiliated sender who used the form correctly. Standard acknowledgement — no extra ask."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('Code: Merge Property Data').item.json.requesterEmail || $('Code: Merge Property Data').item.json.rmEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Request Received — ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your property'), text: 'Your maintenance request for ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'the property') + ' has been received. Our dispatch team will be in touch shortly.\\n\\nFor fastest scheduling on future requests, please include the Lapham Maintenance Request form with your submission. This helps us capture all required tenant contact and access details upfront.\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
+        "options": {}
+      },
+      "id": "node-20-resend-lapham-no-form",
+      "name": "Resend: Lapham No-Form Ack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        4256,
+        208
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "aptL6JezMTMq6Trn",
+          "name": "Header Auth account 2"
+        }
+      },
+      "notes": "Segment 2: Lapham-affiliated sender who did NOT use the form. Standard ack + request to include form in future."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('Code: Merge Property Data').item.json.requesterEmail || $('Code: Merge Property Data').item.json.rmEmail || $('Code: Merge Property Data').item.json.senderEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Request Received — ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your property'), text: 'Your maintenance request for ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'the property') + ' has been received. Our dispatch team will be in touch shortly.\\n\\n[TEMPLATE_TODO: Phase 26 — insert APT intake form link here for fastest scheduling]\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
+        "options": {}
+      },
+      "id": "node-21-resend-general-ack",
+      "name": "Resend: General Ack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        4256,
+        400
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "aptL6JezMTMq6Trn",
+          "name": "Header Auth account 2"
+        }
+      },
+      "notes": "Segment 3: General (non-Lapham) requesters. Standard ack with TEMPLATE_TODO marker for Phase 26 APT form link."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Code: Merge Property Data').item.json.emailType }}",
+              "operation": "notEqual",
+              "value2": "turnover"
+            },
+            {
+              "value1": "={{ $('Code: Merge Property Data').item.json.emailType }}",
+              "operation": "notEqual",
+              "value2": "inspection"
+            }
+          ],
+          "boolean": [
+            {
+              "value1": "={{ !!$('Code: Merge Property Data').item.json.tenantEmail }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-22-if-tenant-email",
+      "name": "IF: Send Tenant Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        3504,
+        560
+      ],
+      "notesInFlow": true,
+      "notes": "Gate: emailType != turnover AND emailType != inspection AND tenantEmail present. Turnover/inspection = no active tenant to coordinate (Pitfall 5)."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('Code: Merge Property Data').item.json.tenantEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Coordinating Your Maintenance Visit — ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your unit'), text: 'Hi ' + ($('Code: Merge Property Data').item.json.tenantName || 'Resident') + ',\\n\\nWe received a maintenance work order for ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your unit') + (($('Code: Merge Property Data').item.json.unitNumber) ? ' Unit ' + $('Code: Merge Property Data').item.json.unitNumber : '') + '.\\n\\nOur team will be in touch to coordinate a convenient time. Please reply to this email or contact us at workorder@aptmaintenanceinc.com with your available dates and times.\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
+        "options": {}
+      },
+      "id": "node-23-resend-tenant-coordination",
+      "name": "Resend: Tenant Coordination Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        3712,
+        416
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "aptL6JezMTMq6Trn",
+          "name": "Header Auth account 2"
+        }
+      },
+      "notes": "Tenant coordination email via Resend. Gated on non-turnover/inspection + tenantEmail present."
+    },
+    {
+      "parameters": {
+        "content": "Tenant SMS → Phase 23 (Unified Dispatch Comms)\nInsertion point: after 'Resend: Tenant Coordination Email'\nGate: emailType != turnover/inspection AND tenantPhone present AND A2P 10DLC registration complete\nDeferred: COO 2026-06-10",
+        "height": 140,
+        "width": 350
+      },
+      "id": "node-sticky-sms-deferred",
+      "name": "Sticky Note: Tenant SMS Deferred",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4064,
+        608
+      ],
+      "notesInFlow": false
+    }
+  ],
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code: Skip Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Skip Filter": {
+      "main": [
+        [
+          {
+            "node": "IF: Skip?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Skip?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "IF: Lapham Form?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Lapham Form?": {
+      "main": [
+        [
+          {
+            "node": "Code: Lapham Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Build Gemini Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Lapham Extraction": {
+      "main": [
+        [
+          {
+            "node": "Code: Normalize Address Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Build Gemini Payload": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request: Gemini API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request: Gemini API": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse Gemini Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse Gemini Response": {
+      "main": [
+        [
+          {
+            "node": "Code: Normalize Address Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Normalize Address Key": {
+      "main": [
+        [
+          {
+            "node": "Neon: Property Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Neon: Property Lookup": {
+      "main": [
+        [
+          {
+            "node": "Code: Merge Property Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Merge Property Data": {
+      "main": [
+        [
+          {
+            "node": "IF: Access Info Changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Access Info Changed?": {
+      "main": [
+        [
+          {
+            "node": "HTTP: POST access-sync",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP: POST jobs/sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: POST access-sync": {
+      "main": [
+        [
+          {
+            "node": "HTTP: POST jobs/sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: POST jobs/sync": {
+      "main": [
+        [
+          {
+            "node": "IF: Comms Enabled?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Send Auto-Reply?": {
+      "main": [
+        [
+          {
+            "node": "IF: Lapham-Affiliated Sender?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "IF: Lapham-Affiliated Sender?": {
+      "main": [
+        [
+          {
+            "node": "IF: Lapham Form Used?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resend: General Ack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Lapham Form Used?": {
+      "main": [
+        [
+          {
+            "node": "Resend: Lapham Standard Ack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resend: Lapham No-Form Ack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Send Tenant Email?": {
+      "main": [
+        [
+          {
+            "node": "Resend: Tenant Coordination Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "IF: Comms Enabled?": {
+      "main": [
+        [
+          {
+            "node": "IF: Send Auto-Reply?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF: Send Tenant Email?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "PTOW Error Handler",
+    "binaryMode": "separate"
+  },
+  "staticData": {
+    "node:Gmail Trigger": {
+      "lastTimeChecked": 1781634707,
+      "possibleDuplicates": [
+        "19ed1b45eab203f8",
+        "19ed1ac7c3c95181"
+      ]
+    }
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
+  "activeVersionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
+  "versionCounter": 17,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-06-11T02:35:59.838Z",
+      "createdAt": "2026-06-11T02:35:59.838Z",
+      "role": "workflow:owner",
+      "workflowId": "wif9XlVbK3M6a1C8",
+      "projectId": "wspLt3wn9d8AAbp9",
+      "project": {
+        "updatedAt": "2026-04-25T22:35:53.225Z",
+        "createdAt": "2026-04-25T22:31:00.607Z",
+        "id": "wspLt3wn9d8AAbp9",
+        "name": "Brandon Bittner <brandon@bgbcrbholdings.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "49b0b0b1-006b-4452-9ab5-0cf056607f23"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-06-16T20:11:18.106Z",
+    "createdAt": "2026-06-16T20:11:18.106Z",
+    "versionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
+    "workflowId": "wif9XlVbK3M6a1C8",
+    "nodes": [
+      {
+        "parameters": {
+          "pollTimes": {
+            "item": [
+              {
+                "mode": "everyX",
+                "value": 5,
+                "unit": "minutes"
+              }
+            ]
+          },
+          "simple": false,
+          "filters": {},
+          "options": {}
+        },
+        "id": "node-01-gmail-trigger",
+        "name": "Gmail Trigger",
+        "type": "n8n-nodes-base.gmailTrigger",
+        "typeVersion": 1,
+        "position": [
+          256,
+          304
+        ],
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "WGsytfpio59DiIFw",
+            "name": "Gmail account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// shouldSkipEmail — ported verbatim from Code.js\n// Conservative: skip only when BOTH subject AND body lack any work-order signal.\n// False negatives (missing a lead) are worse than false positives.\nconst email = $input.item.json;\nconst sender  = String(email.from    || '').toLowerCase();\nconst subject = String(email.subject || '').toLowerCase();\nconst body    = String(email.text    || '').substring(0, 500).toLowerCase();\n\n// Auto-reply / bounce patterns\nif (subject.indexOf('auto-reply')      !== -1) return [{ json: { skip: true, reason: 'auto-reply subject' } }];\nif (subject.indexOf('out of office')   !== -1) return [{ json: { skip: true, reason: 'out of office' } }];\nif (subject.indexOf('delivery failed') !== -1) return [{ json: { skip: true, reason: 'delivery failed' } }];\nif (subject.indexOf('mailer-daemon')   !== -1) return [{ json: { skip: true, reason: 'mailer-daemon subject' } }];\nif (subject.indexOf('undeliverable')   !== -1) return [{ json: { skip: true, reason: 'undeliverable' } }];\nif (sender.indexOf('mailer-daemon')    !== -1) return [{ json: { skip: true, reason: 'mailer-daemon sender' } }];\n// no-reply except from Lapham (Lapham website@ is a web form sender)\nif (sender.indexOf('no-reply') !== -1 && sender.indexOf('lapham') === -1) return [{ json: { skip: true, reason: 'no-reply sender' } }];\n\n// Exact-match admin subjects (not substrings — avoids skipping \"thank you for the repair\")\nconst adminSubjects = [\n  'thank you', 'thanks!', 'received', 'confirmed', 'invoice',\n  'payment', 'receipt', 'statement', 'for rent', 'vacancy',\n  'rent ready', 're: re: re:'\n];\nfor (let i = 0; i < adminSubjects.length; i++) {\n  if (subject === adminSubjects[i]) return [{ json: { skip: true, reason: 'admin subject: ' + adminSubjects[i] } }];\n}\n\n// Work-order signal check — skip ONLY if BOTH subject AND body have no signals\nconst workOrderSignals = [\n  'repair','fix','broken','leak','plumb','electric','hvac',\n  'heat','water','window','door','paint','unit','tenant',\n  'maintenance','turnover','inspection','work order','schedule',\n  'access','lockbox','entry','pest','mold','damage','replace',\n  'install','appliance','stove','fridge','toilet','sink','fan',\n  'light','outlet','circuit','roof','floor','wall','ceiling'\n];\n\nlet hasSignal = false;\nfor (let j = 0; j < workOrderSignals.length; j++) {\n  if (subject.indexOf(workOrderSignals[j]) !== -1 || body.indexOf(workOrderSignals[j]) !== -1) {\n    hasSignal = true;\n    break;\n  }\n}\n\nif (!hasSignal) return [{ json: { skip: true, reason: 'no work-order signal in subject or body preview' } }];\n\n// Pass through with skip:false — includes original email fields\nreturn [{ json: { skip: false, email: $input.item.json } }];"
+        },
+        "id": "node-02-skip-filter",
+        "name": "Code: Skip Filter",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 1,
+        "position": [
+          512,
+          304
+        ],
+        "notesInFlow": true,
+        "notes": "shouldSkipEmail from Code.js — conservative. Only skips when BOTH subject AND body lack any work-order signal."
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "boolean": [
+              {
+                "value1": "={{ $json.skip }}",
+                "value2": true
+              }
+            ]
+          }
+        },
+        "id": "node-03-if-skip",
+        "name": "IF: Skip?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          752,
+          304
+        ],
+        "notesInFlow": true,
+        "notes": "true output → Stop (no-op). false output → continue to Lapham detection."
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "string": [
+              {
+                "value1": "={{ $('Gmail Trigger').item.json.from }}",
+                "operation": "contains",
+                "value2": "website@laphamcompany.com"
+              }
+            ],
+            "boolean": []
+          },
+          "combineOperation": "any"
+        },
+        "id": "node-04-if-lapham",
+        "name": "IF: Lapham Form?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          1008,
+          304
+        ],
+        "notesInFlow": true,
+        "notes": "Detects Lapham webform: sender is website@laphamcompany.com OR body contains 'Submitted values are:' OR 'Webform submission from: Maintenance Request'. True → Lapham branch. False → Gemini branch."
+      },
+      {
+        "parameters": {
+          "jsCode": "// Code: Lapham Extraction\n// Ports detectLaphamForm() from Code.js verbatim.\n// CRITICAL: Lapham forms arrive as FORWARDS from RM/Lapham employees.\n// Detection is content-based (the form text).\n// requester = the FORWARDING sender's email, never website@laphamcompany.com.\n\nconst email   = $('Gmail Trigger').item.json;\nconst body    = String(email.text    || '');\nconst subject = String(email.subject || '');\nconst rawFrom = String(email.from    || '');\n\n// Extract forwarding sender email — this is the requester (the RM/employee who forwarded)\nfunction extractEmail(raw) {\n  const m = String(raw).match(/<([^>]+)>/);\n  return m ? m[1].toLowerCase() : String(raw).replace(/.*<|>.*/g, '').toLowerCase().trim();\n}\n\nconst forwardingSenderEmail = extractEmail(rawFrom);\n// requesterEmail is the forwarding sender, NOT website@laphamcompany.com\nconst requesterEmail = forwardingSenderEmail !== 'website@laphamcompany.com'\n  ? forwardingSenderEmail\n  : '';\n\n// Two-format field extractor — same-line AND two-line (Apple Mail forwarded format)\nfunction field(names) {\n  for (let i = 0; i < names.length; i++) {\n    // Same-line: \"Label: Value\" or \"Label Value\"\n    const re = new RegExp('(?:^|\\\\n)' + names[i] + '\\\\s*:?\\\\s*([^\\\\n]+)', 'i');\n    const m  = body.match(re);\n    if (m && m[1].trim()) return m[1].trim();\n    // Two-line: \"Label\\nValue\" (Apple Mail forward rendering)\n    const re2 = new RegExp('(?:^|\\\\n)' + names[i] + '[^\\\\n]*\\\\n\\\\s*([^\\\\n]+)', 'i');\n    const m2  = body.match(re2);\n    if (m2 && m2[1].trim()) return m2[1].trim();\n  }\n  return '';\n}\n\nfunction fieldFromBody(names, targetBody) {\n  for (let i = 0; i < names.length; i++) {\n    const re  = new RegExp('(?:^|\\\\n)' + names[i] + '\\\\s*:?\\\\s*([^\\\\n]+)', 'i');\n    const m   = targetBody.match(re);\n    if (m && m[1].trim()) return m[1].trim();\n    const re2 = new RegExp('(?:^|\\\\n)' + names[i] + '[^\\\\n]*\\\\n\\\\s*([^\\\\n]+)', 'i');\n    const m2  = targetBody.match(re2);\n    if (m2 && m2[1].trim()) return m2[1].trim();\n  }\n  return '';\n}\n\n// Handle forwarded body — strip > quote prefixes\nlet forwardedBody = '';\nconst fwdIdx = body.indexOf('---------- Forwarded message ---------');\nif (fwdIdx !== -1) {\n  forwardedBody = body.substring(fwdIdx).replace(/^> ?/gm, '');\n}\n\nconst tenantName  = field(['Name','Full Name','Submitted By','Your Name','First and Last Name']) || (forwardedBody ? fieldFromBody(['Name','Full Name','Submitted By','Your Name','First and Last Name'], forwardedBody) : '');\nconst address     = field(['Address','Property Address','Property','Location','Street Address']) || (forwardedBody ? fieldFromBody(['Address','Property Address','Property','Location','Street Address'], forwardedBody) : '');\nconst unit        = field(['Unit','Unit #','Unit Number','Apt','Apartment','Suite']) || (forwardedBody ? fieldFromBody(['Unit','Unit #','Unit Number','Apt','Apartment','Suite'], forwardedBody) : '');\nconst phone       = field(['Phone','Phone Number','Mobile','Cell','Mobile Number']) || (forwardedBody ? fieldFromBody(['Phone','Phone Number','Mobile','Cell','Mobile Number'], forwardedBody) : '');\nlet tenantEmail   = field(['Email','Email Address','Your Email']) || (forwardedBody ? fieldFromBody(['Email','Email Address','Your Email'], forwardedBody) : '');\nconst prefContact = field(['Preferred Contact','Preferred Contact Method','Contact Method','Best Way to Reach']) || (forwardedBody ? fieldFromBody(['Preferred Contact','Preferred Contact Method','Contact Method','Best Way to Reach'], forwardedBody) : '');\nconst pets        = field(['Pets','Do you have pets','Pets in Unit','Have Pets']) || (forwardedBody ? fieldFromBody(['Pets','Do you have pets','Pets in Unit','Have Pets'], forwardedBody) : '');\nconst pteRaw      = field(['Permission to Enter','PTE','Entry Permission','permission to enter']) || (forwardedBody ? fieldFromBody(['Permission to Enter','PTE','Entry Permission','permission to enter'], forwardedBody) : '');\nlet description   = field(['Description','Issue','Problem','Repair Needed','Request','Details','Message','Please describe in detail the maintenance problem below','Please describe']) || (forwardedBody ? fieldFromBody(['Description','Issue','Problem','Repair Needed','Request','Details','Message','Please describe in detail the maintenance problem below','Please describe'], forwardedBody) : '');\n\nif (!description && forwardedBody) {\n  description = forwardedBody.replace(/^[-\\s]+Forwarded message[-\\s]+/i, '').replace(/^[A-Z][^:]+:.*$/gm, '').replace(/\\s+/g, ' ').trim();\n}\n\nif (tenantEmail) tenantEmail = tenantEmail.replace(/<mailto:[^>]+>/g, '').trim();\n\n// PTE mapping — exact Lapham radio phrases first\nconst pteLower = (pteRaw || '').toLowerCase();\nlet pteGranted = 'Not Applicable';\nif      (pteLower.indexOf('permission to enter my dwelling while i am not there') !== -1) pteGranted = 'Yes';\nelse if (pteLower.indexOf('do not give permission') !== -1 || pteLower.indexOf('without my presence') !== -1) pteGranted = 'No';\nelse if (pteLower === 'yes' || pteLower === 'y') pteGranted = 'Yes';\nelse if (pteLower === 'no'  || pteLower === 'n') pteGranted = 'No';\n\n// Pets\nconst petsLower = (pets || '').toLowerCase();\nlet tenantHasPets = 'Unknown';\nif      (petsLower === 'yes' || petsLower === 'y') tenantHasPets = 'Yes';\nelse if (petsLower === 'no'  || petsLower === 'n') tenantHasPets = 'No';\n\n// Preferred contact\nconst prefLower = (prefContact || '').toLowerCase();\nlet tenantPrefContact = 'Unknown';\nif      (prefLower.indexOf('phone') !== -1 || prefLower.indexOf('call') !== -1 || prefLower.indexOf('text') !== -1) tenantPrefContact = 'Phone';\nelse if (prefLower.indexOf('email') !== -1) tenantPrefContact = 'Email';\n\n// Email type from description + subject\nconst scanText = ((description || '') + ' ' + (subject || '')).toLowerCase();\nlet emailType = 'adhoc_workorder';\nif      (scanText.indexOf('turnover') !== -1 || scanText.indexOf('move out') !== -1 || scanText.indexOf('move-out') !== -1) emailType = 'turnover';\nelse if (scanText.indexOf('inspection') !== -1) emailType = 'inspection';\n\n// Service category\nlet serviceCategory = 'Unknown';\nif      (scanText.indexOf('plumbing') !== -1 || scanText.indexOf('leak') !== -1 || scanText.indexOf('drain') !== -1) serviceCategory = 'Plumbing';\nelse if (scanText.indexOf('electrical') !== -1 || scanText.indexOf('outlet') !== -1 || scanText.indexOf('breaker') !== -1) serviceCategory = 'Electrical';\nelse if (scanText.indexOf('hvac') !== -1 || scanText.indexOf('cooling') !== -1 || scanText.indexOf('heating') !== -1) serviceCategory = 'HVAC';\nelse if (scanText.indexOf('carpentry') !== -1 || scanText.indexOf('lock') !== -1) serviceCategory = 'Carpentry';\nelse if (scanText.indexOf('appliance') !== -1) serviceCategory = 'Appliance';\nelse if (scanText.indexOf('pest') !== -1 || scanText.indexOf('general') !== -1) serviceCategory = 'General Repair';\n\nreturn [{ json: {\n  emailType,\n  senderName:             'Lapham Webform',\n  senderEmail:            requesterEmail || 'website@laphamcompany.com',\n  senderType:             'PM Office Staff',\n  companyName:            'Lapham',\n  propertyAddress:        address || 'LOOKUP_BY_SENDER',\n  unitNumber:             unit,\n  city:                   '',\n  leadType:               emailType === 'turnover' ? 'Unit Turnover' : emailType === 'inspection' ? 'Inspection' : 'Unknown',\n  serviceCategory,\n  urgency:                'Standard',\n  description:            description || '(No description — see original email)',\n  preferredTiming:        '',\n  accessInfo:             '',\n  rmName:                 '',\n  rmEmail:                requesterEmail,\n  requesterEmail:         requesterEmail,\n  tenantName,\n  tenantPhone:            phone,\n  tenantEmail,\n  tenantPreferredContact: tenantPrefContact,\n  tenantHasPets,\n  pteGranted,\n  pteNotes:               pteRaw,\n  estimateNeeded:         'No',\n  isLaphamForm:           true,\n  multipleItems:          false,\n  itemList:               [],\n  subjectLineAddressUsed: false,\n  senderLookupNeeded:     !address,\n  newContactDetected:     false,\n  newContactNotes:        '',\n  confidence:             'High',\n  confidenceNotes:        'Structured Lapham webform — Gemini bypassed'\n}}];"
+        },
+        "id": "node-05-lapham-extraction",
+        "name": "Code: Lapham Extraction",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 1,
+        "position": [
+          1264,
+          160
+        ],
+        "notesInFlow": true,
+        "notes": "detectLaphamForm() ported verbatim from Code.js. Both same-line AND two-line regex per field (Pitfall 3). requester = forwarding sender, never website@laphamcompany.com. Returns High-confidence parsed result — no Gemini call."
+      },
+      {
+        "parameters": {
+          "jsCode": "// Code: Build Gemini Payload\n// Builds the full prompt + request body for the Gemini parsing API.\n// Ported from parseWithGemini() + buildSmartPropertyContext() in Code.js.\n\nconst email   = $('Gmail Trigger').item.json;\nconst from    = String(email.from    || '');\nconst subject = String(email.subject || '');\nconst body    = String(email.text    || '').substring(0, 2000);\n\nconst KNOWN_SENDERS = `KNOWN SENDERS:\nAPT Internal: brandon@,keith@,tsegab@,bemenet@ aptmaintenanceinc.com — classify normally\nLapham staff: maintenance@laphamcompany.com, website@laphamcompany.com\nturnovers.lapham@gmail.com → turnover\ncooneysam@gmail.com → inspection\nRMs may use @lapham-rm.com, @gmail.com, or address-based emails — match by property address\nLapham webform: website@laphamcompany.com OR \"Submitted values are:\" OR \"Webform submission from: Maintenance Request\" → structured form — extract all tenant fields, then classify emailType by content (turnover/inspection/adhoc_workorder) like any other email`;\n\nconst LAPHAM_FORM_FORMAT = `\nLAPHAM WEBFORM FIELDS (present when sender is website@laphamcompany.com or body contains \"Submitted values are:\" or \"Webform submission from: Maintenance Request\"):\nExtract: Name/Address/Unit/Phone/Email/PreferredContact/Pets/PTE-choice/Description\nPTE: Yes=\"permission to enter my dwelling while I am not there\", No=\"I do not give permission to enter without my presence\", N/A=turnover/inspection\nStill classify emailType by work content — turnover, inspection, or adhoc_workorder. Do NOT use \"lapham_form\" as emailType.`;\n\nconst JSON_SCHEMA = `{\"emailType\":\"adhoc_workorder|turnover|inspection|new_inquiry|internal_forward|unknown\",\"senderName\":\"\",\"senderEmail\":\"\",\"senderType\":\"Resident Manager|PM Office Staff|APT Internal|Unknown\",\"companyName\":\"\",\"propertyAddress\":\"\",\"unitNumber\":\"\",\"city\":\"\",\"leadType\":\"Urgent Repair|Unit Turnover|Recurring Maintenance|Quote Request|Inspection|New Client Inquiry|Unknown\",\"serviceCategory\":\"Plumbing|Electrical|Carpentry|Painting|HVAC|Appliance|Junk Removal|Windows|General Repair|Multi-trade|Renovation|Unknown\",\"urgency\":\"Urgent|Standard|Flexible\",\"description\":\"1-2 sentence plain trade language\",\"preferredTiming\":\"\",\"accessInfo\":\"\",\"rmName\":\"\",\"rmEmail\":\"\",\"tenantName\":\"\",\"tenantPhone\":\"\",\"tenantEmail\":\"\",\"tenantPreferredContact\":\"Phone|Email|Unknown\",\"tenantHasPets\":\"Yes|No|Unknown\",\"pteGranted\":\"Yes|No|Not Applicable\",\"pteNotes\":\"\",\"isLaphamForm\":false,\"multipleItems\":false,\"itemList\":[],\"estimateNeeded\":\"Yes|No|Unknown (Yes=quote request/renovation/multi-trade/scope unclear. No=standard repair with defined scope)\",\"subjectLineAddressUsed\":false,\"senderLookupNeeded\":false,\"newContactDetected\":false,\"newContactNotes\":\"\",\"confidence\":\"High|Medium|Low\",\"confidenceNotes\":\"\"}`;\n\nconst prompt = `You are a work order intake agent for APT Maintenance (Bay Area property maintenance).\nParse emails to workorder@aptmaintenanceinc.com. Extract structured data. Return ONLY raw JSON.\n\n${KNOWN_SENDERS}\n\n${LAPHAM_FORM_FORMAT}\n\nFROM: ${from}\nSUBJECT: ${subject}\n\nTHREAD:\n${body}\n\nRULES: Scan full thread. Extract address from subject if not in body. If no address found set propertyAddress=LOOKUP_BY_SENDER. Urgency: Urgent=active leak/sewage/no heat/no electricity/flooding/fire/word 'emergency' ONLY. Standard=most repairs. Flexible=quotes/turnovers/inspections. Never Urgent for frustration alone.\n\nReturn ONLY this JSON (no markdown, no backticks):\n${JSON_SCHEMA}`;\n\nreturn [{\n  json: {\n    geminiPayload: {\n      contents: [{ parts: [{ text: prompt }] }],\n      generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }\n    },\n    _originalFrom: from\n  }\n}];"
+        },
+        "id": "node-06-build-gemini-payload",
+        "name": "Code: Build Gemini Payload",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 1,
+        "position": [
+          1264,
+          464
+        ],
+        "notesInFlow": true,
+        "notes": "Builds Gemini API request body. Ported from parseWithGemini() in Code.js. temperature:0.1 for consistent structured output."
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpQueryAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify($json.geminiPayload) }}",
+          "options": {}
+        },
+        "id": "node-07-gemini-api",
+        "name": "HTTP Request: Gemini API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [
+          1504,
+          464
+        ],
+        "notesInFlow": true,
+        "credentials": {
+          "httpQueryAuth": {
+            "id": "sGEkMgwYYwpMY3qE",
+            "name": "Query Auth account"
+          }
+        },
+        "notes": "Calls Gemini REST API. Auth via 'Gemini API Key' Query Auth credential (param name: key). Free-plan compatible — no $env needed."
+      },
+      {
+        "parameters": {
+          "jsCode": "// Parse Gemini Response — 4-strategy extractJson chain from Code.js\nconst response = $input.item.json;\nconst rawText  = response.candidates &&\n                 response.candidates[0] &&\n                 response.candidates[0].content &&\n                 response.candidates[0].content.parts &&\n                 response.candidates[0].content.parts[0]\n                 ? response.candidates[0].content.parts[0].text : '';\n\nif (!rawText) {\n  return [{ json: { parsedForm: null, parseError: 'Gemini returned empty text' } }];\n}\n\n// 4-strategy extractJson chain — verbatim from Code.js\nfunction extractJson(text) {\n  // Strategy 1: direct parse\n  try { return JSON.parse(text.trim()); } catch(e) {}\n  // Strategy 2: strip markdown code fences\n  const m = text.match(/```(?:json)?\\s*([\\s\\S]*?)```/i);\n  if (m) { try { return JSON.parse(m[1].trim()); } catch(e) {} }\n  // Strategy 3: find first { to last }\n  const start = text.indexOf('{');\n  const end   = text.lastIndexOf('}');\n  if (start !== -1 && end !== -1 && end > start) {\n    try { return JSON.parse(text.substring(start, end + 1)); } catch(e) {}\n  }\n  // Strategy 4: clean up common LLM JSON issues\n  if (start !== -1 && end !== -1) {\n    const cleaned = text.substring(start, end + 1)\n      .replace(/,\\s*([}\\]])/g, '$1')\n      .replace(/'/g, '\"')\n      .replace(/:\\s*True/g,  ': true')\n      .replace(/:\\s*False/g, ': false')\n      .replace(/:\\s*None/g,  ': null');\n    try { return JSON.parse(cleaned); } catch(e) {}\n  }\n  return null;\n}\n\nconst parsed = extractJson(rawText);\nif (!parsed) {\n  return [{ json: { parsedForm: null, parseError: 'JSON extract failed', rawText: rawText.substring(0, 300) } }];\n}\n\n// Strip <mailto:...> wrappers from tenant email\nif (parsed.tenantEmail) {\n  parsed.tenantEmail = parsed.tenantEmail.replace(/^<mailto:|>$/g, '').trim();\n}\n\n// Address fallback — LOOKUP_BY_SENDER when Gemini returns nothing useful\nif (!parsed.propertyAddress || parsed.propertyAddress === 'Unknown' || parsed.propertyAddress === '') {\n  parsed.propertyAddress    = 'LOOKUP_BY_SENDER';\n  parsed.senderLookupNeeded = true;\n}\n\nreturn [{ json: { parsedForm: parsed } }];"
+        },
+        "id": "node-08-parse-gemini-response",
+        "name": "Code: Parse Gemini Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 1,
+        "position": [
+          1760,
+          464
+        ],
+        "notesInFlow": true,
+        "notes": "4-strategy extractJson chain from Code.js — handles raw JSON, markdown fences, substring extract, and cleaned fallback."
+      },
+      {
+        "parameters": {
+          "jsCode": "// Normalize address key for Neon property lookup.\n// Verbatim port of normalizeAddressKey() from Code.js (7-step algorithm).\n\nconst incoming = $input.item.json;\n\n// Accept both Lapham (direct parsedForm fields) and Gemini (wrapped in parsedForm)\nconst parsedForm = incoming.isLaphamForm\n  ? incoming\n  : (incoming.parsedForm || incoming);\n\nfunction normalizeAddressKey(address, unit) {\n  // Step 1: ## → #\n  let addr = String(address || '').replace(/##/g, '#');\n  // Step 2: extract embedded unit (#word) when unit param absent/empty\n  const embeddedUnit = addr.match(/#(\\w+)/);\n  if (embeddedUnit && !unit) unit = embeddedUnit[1];\n  // Step 3: strip #\\w+ from address\n  addr = addr.replace(/#\\w+/g, '').trim();\n  // Step 4: strip city/state suffix\n  addr = addr.split(',')[0].trim();\n  // Step 5: normalize street-type tokens (lowercase + strip trailing period)\n  addr = addr.replace(/\\b(avenue|ave|street|st|boulevard|blvd|drive|dr|road|rd|lane|ln|way|place|pl|court|ct|terrace|terr)\\b\\.?/gi, m => m.replace(/\\.$/, '').toLowerCase());\n  // Step 6: lowercase, strip non-alphanumeric, collapse spaces\n  addr = addr.toLowerCase().replace(/[^a-z0-9\\s]/g, '').replace(/\\s+/g, ' ').trim();\n  const unitNorm = String(unit || '').toLowerCase().replace(/[^a-z0-9]/g, '').trim();\n  // Step 7: composite key\n  return addr + '||' + unitNorm;\n}\n\nconst addressKey = normalizeAddressKey(\n  parsedForm.propertyAddress || '',\n  parsedForm.unitNumber || ''\n);\n\nreturn [{ json: { ...parsedForm, addressKey } }];"
+        },
+        "id": "node-09-normalize-address-key",
+        "name": "Code: Normalize Address Key",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 1,
+        "position": [
+          2000,
+          304
+        ],
+        "notesInFlow": true,
+        "notes": "normalizeAddressKey() — verbatim 7-step port from Code.js. Adds addressKey field for Neon properties lookup."
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT id, address, address_key, rm_name, rm_email, access_info, org_id FROM properties WHERE org_id = 'APT-CA' AND (address_key = '{{ $json.addressKey }}' OR rm_email = lower('{{ $json.rmEmail || $json.senderEmail || '' }}')) LIMIT 1",
+          "options": {}
+        },
+        "id": "node-10-neon-property-lookup",
+        "name": "Neon: Property Lookup",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2,
+        "position": [
+          2256,
+          304
+        ],
+        "notesInFlow": true,
+        "credentials": {
+          "postgres": {
+            "id": "CAHXuGzNrYsMeENI",
+            "name": "Neon Postgres"
+          }
+        },
+        "notes": "SELECT from Neon properties. Two-strategy lookup: address_key match first, then rm_email fallback (enrichFromLaphamDb pattern from Code.js). Credential name: 'Neon Postgres' — must exist in Railway n8n before activation."
+      },
+      {
+        "parameters": {
+          "jsCode": "// Merge property data from Neon lookup into parsed form.\n// Mirrors enrichFromLaphamDb() from Code.js — two strategies: address-first, then sender-email fallback.\n// Access info: merge-not-replace (Neon DB is authoritative; inbound may add context).\n\nconst parsedForm   = $('Code: Normalize Address Key').item.json;\nconst neonRows     = $input.all().map(item => item.json);\nconst record       = neonRows.length > 0 ? neonRows[0] : null;\n\nfunction extractCodes(text) {\n  if (!text) return [];\n  const matches = String(text).match(/\\b\\d{3,6}\\b/g) || [];\n  return matches.filter((m, i, arr) => arr.indexOf(m) === i);\n}\n\nlet merged = { ...parsedForm };\n\nif (record && record.id) {\n  // Address-first match or email fallback — enrich the parsed form\n  merged.rmName        = merged.rmName  || record.rm_name  || '';\n  merged.rmEmail       = merged.rmEmail || record.rm_email || '';\n  merged.propertyKnown = true;\n\n  // If lookup used sender-email fallback and address was LOOKUP_BY_SENDER, fill in from DB\n  if (!merged.propertyAddress || merged.propertyAddress === 'LOOKUP_BY_SENDER') {\n    merged.propertyAddress    = record.address || merged.propertyAddress;\n    merged.senderLookupNeeded = false;\n  }\n\n  // Access info change detection (from enrichFromLaphamDb in Code.js)\n  const existingCodes = extractCodes(record.access_info || '');\n  const newCodes      = extractCodes(merged.accessInfo   || '');\n  const trulyNew      = newCodes.filter(c => !existingCodes.includes(c));\n\n  if (trulyNew.length > 0 && merged.accessInfo) {\n    merged.accessInfoChanged  = true;\n    merged.accessInfoNew      = merged.accessInfo;\n    merged.accessInfoExisting = record.access_info || '';\n  }\n\n  // Merge access info — DB first, email appended (never replace)\n  if (record.access_info && merged.accessInfo) {\n    merged.accessInfo = record.access_info + ' | ' + merged.accessInfo;\n  } else {\n    merged.accessInfo = record.access_info || merged.accessInfo || '';\n  }\n} else {\n  merged.propertyKnown = false;\n  if (merged.propertyAddress &&\n      merged.propertyAddress !== 'LOOKUP_BY_SENDER' &&\n      merged.propertyAddress !== 'Unknown') {\n    merged.newContactDetected = true;\n    merged.newContactNotes    = merged.newContactNotes || 'Property not in Neon properties table.';\n  }\n}\n\nmerged._neonPropertyId = record ? record.id : null;\n\n// ---------------------------------------------------------------------------\n// jobs/sync payload — explicit column mapping (raw merged blob is NOT a valid\n// jobs row and has no jobId; the route 400s without one).\n// jobId is DETERMINISTIC from the Gmail message id: the same email re-delivered\n// or re-processed produces the same jobId, and the jobs/sync upsert\n// (onConflictDoUpdate on jobId) absorbs it — this is the dedup mechanism,\n// equivalent to GAS processedIds-by-msgId. (GAS isDuplicateJob address+unit\n// heuristic intentionally not ported — msgId idempotency is stricter.)\n// ---------------------------------------------------------------------------\nconst gmailMsgId = String($('Gmail Trigger').item.json.id || merged.gmailMsgId || '');\nconst jobId = 'EMAIL-' + (gmailMsgId || Date.now());\n\nmerged.gmailMsgId = gmailMsgId;\nmerged.jobPayload = {\n  orgId:        'APT-CA',\n  jobId:        jobId,\n  timestamp:    new Date().toISOString(),\n  priority:     merged.urgency === 'Urgent' ? '1-URGENT' : '4-STANDARD',\n  emailType:    merged.emailType || 'adhoc_workorder',\n  category:     merged.serviceCategory || null,\n  address:      (merged.propertyAddress && merged.propertyAddress !== 'LOOKUP_BY_SENDER') ? merged.propertyAddress : null,\n  unit:         merged.unitNumber || null,\n  description:  merged.description || null,\n  accessInfo:   merged.accessInfo || null,\n  rmName:       merged.rmName || null,\n  rmEmail:      merged.rmEmail || null,\n  tenantName:   merged.tenantName || null,\n  tenantPhone:  merged.tenantPhone || null,\n  tenantEmail:  merged.tenantEmail || null,\n  tenantPref:   merged.tenantPreferredContact || null,\n  tenantPets:   merged.tenantHasPets || null,\n  pte:          merged.pteGranted || null,\n  status:       'Needs Review',\n  notes:        merged.newContactDetected ? (merged.newContactNotes || '') : null,\n  gmailMsgId:   gmailMsgId || null,\n};\n\nreturn [{ json: merged }];"
+        },
+        "id": "node-11-merge-property-data",
+        "name": "Code: Merge Property Data",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 1,
+        "position": [
+          2512,
+          304
+        ],
+        "notesInFlow": true,
+        "notes": "enrichFromLaphamDb() logic — merges Neon property record into parsed form. Access info: DB first, email appended (merge-not-replace). Sets accessInfoChanged flag when inbound has new codes."
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "boolean": [
+              {
+                "value1": "={{ $json.accessInfoChanged }}",
+                "value2": true
+              }
+            ]
+          }
+        },
+        "id": "node-12-if-access-changed",
+        "name": "IF: Access Info Changed?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          2752,
+          304
+        ],
+        "notesInFlow": true,
+        "notes": "true → POST to /api/intake/access-sync to write new codes to Neon. false → skip access sync, proceed to WO create."
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://dispatch.aptmaintenanceinc.com/api/intake/access-sync",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "string",
+          "body": "={{ JSON.stringify({ addressKey: $json.addressKey, inboundAccessInfo: $json.accessInfoNew, orgId: 'APT-CA' }) }}",
+          "options": {}
+        },
+        "id": "node-13-access-sync",
+        "name": "HTTP: POST access-sync",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [
+          3008,
+          160
+        ],
+        "notesInFlow": true,
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "4IQFvUn2BHCXQmK5",
+            "name": "Header Auth account"
+          }
+        },
+        "notes": "POST /api/intake/access-sync — auth via 'CC API Key' credential (x-api-key header). URL hardcoded — no $env needed."
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://dispatch.aptmaintenanceinc.com/api/jobs/sync",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $json.jobPayload }}",
+          "options": {}
+        },
+        "id": "node-14-sync-to-neon",
+        "name": "HTTP: POST jobs/sync",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [
+          3008,
+          400
+        ],
+        "notesInFlow": true,
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "4IQFvUn2BHCXQmK5",
+            "name": "Header Auth account"
+          }
+        },
+        "notes": "POST /api/jobs/sync — creates or upserts WO in Neon. Auth via 'CC API Key' credential. URL hardcoded."
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "boolean": [
+              {
+                "value2": true
+              }
+            ]
+          }
+        },
+        "id": "node-15-if-production",
+        "name": "IF: Comms Enabled?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          3232,
+          400
+        ],
+        "notesInFlow": true,
+        "notes": "Comms gate — hardcoded false until INTAKE_COMMS_ENABLED is explicitly turned on (edit value1 to true). $env blocked on free plan so gate is static."
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "string": [
+              {
+                "value1": "={{ $('Code: Merge Property Data').item.json.senderType }}",
+                "operation": "notEqual",
+                "value2": "APT Internal"
+              }
+            ],
+            "boolean": [
+              {
+                "value1": "={{ !!$('Code: Merge Property Data').item.json.requesterEmail || !!$('Code: Merge Property Data').item.json.rmEmail }}",
+                "value2": true
+              }
+            ]
+          }
+        },
+        "id": "node-16-if-auto-reply",
+        "name": "IF: Send Auto-Reply?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          3344,
+          112
+        ],
+        "notesInFlow": true,
+        "notes": "Gate: senderType !== 'APT Internal' AND requester email present. Prevents auto-replies to internal forwards (Pitfall 6)."
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "string": [
+              {
+                "value1": "={{ $('Code: Merge Property Data').item.json.senderEmail }}",
+                "operation": "contains",
+                "value2": "laphamcompany.com"
+              },
+              {
+                "value1": "={{ $('Code: Merge Property Data').item.json.senderEmail }}",
+                "operation": "equals",
+                "value2": "={{ $('Code: Merge Property Data').item.json.rmEmail }}"
+              }
+            ]
+          },
+          "combineOperation": "any"
+        },
+        "id": "node-17-if-lapham-affiliated",
+        "name": "IF: Lapham-Affiliated Sender?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          3696,
+          96
+        ],
+        "notesInFlow": true,
+        "notes": "Three-way segmentation: Lapham-affiliated senders get a different copy than general requesters. Lapham affiliated = laphamcompany.com domain OR sender email matches a property's rm_email (checked via isLaphamForm flag as proxy)."
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "boolean": [
+              {
+                "value1": "={{ $('Code: Merge Property Data').item.json.isLaphamForm }}",
+                "value2": true
+              }
+            ]
+          }
+        },
+        "id": "node-18-if-lapham-form-sent",
+        "name": "IF: Lapham Form Used?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          4000,
+          80
+        ],
+        "notesInFlow": true,
+        "notes": "Sub-branch of Lapham-affiliated: did they use the form (isLaphamForm=true)? Yes → standard ack. No → ack + ask to use form in future."
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.resend.com/emails",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "string",
+          "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('Code: Merge Property Data').item.json.requesterEmail || $('Code: Merge Property Data').item.json.rmEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Request Received — ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your property'), text: 'Your maintenance request for ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'the property') + ' has been received. Our dispatch team will be in touch shortly.\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
+          "options": {}
+        },
+        "id": "node-19-resend-lapham-ack",
+        "name": "Resend: Lapham Standard Ack",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [
+          4256,
+          0
+        ],
+        "notesInFlow": true,
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "aptL6JezMTMq6Trn",
+            "name": "Header Auth account 2"
+          }
+        },
+        "notes": "Segment 1: Lapham-affiliated sender who used the form correctly. Standard acknowledgement — no extra ask."
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.resend.com/emails",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "string",
+          "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('Code: Merge Property Data').item.json.requesterEmail || $('Code: Merge Property Data').item.json.rmEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Request Received — ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your property'), text: 'Your maintenance request for ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'the property') + ' has been received. Our dispatch team will be in touch shortly.\\n\\nFor fastest scheduling on future requests, please include the Lapham Maintenance Request form with your submission. This helps us capture all required tenant contact and access details upfront.\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
+          "options": {}
+        },
+        "id": "node-20-resend-lapham-no-form",
+        "name": "Resend: Lapham No-Form Ack",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [
+          4256,
+          208
+        ],
+        "notesInFlow": true,
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "aptL6JezMTMq6Trn",
+            "name": "Header Auth account 2"
+          }
+        },
+        "notes": "Segment 2: Lapham-affiliated sender who did NOT use the form. Standard ack + request to include form in future."
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.resend.com/emails",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "string",
+          "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('Code: Merge Property Data').item.json.requesterEmail || $('Code: Merge Property Data').item.json.rmEmail || $('Code: Merge Property Data').item.json.senderEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Request Received — ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your property'), text: 'Your maintenance request for ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'the property') + ' has been received. Our dispatch team will be in touch shortly.\\n\\n[TEMPLATE_TODO: Phase 26 — insert APT intake form link here for fastest scheduling]\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
+          "options": {}
+        },
+        "id": "node-21-resend-general-ack",
+        "name": "Resend: General Ack",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [
+          4256,
+          400
+        ],
+        "notesInFlow": true,
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "aptL6JezMTMq6Trn",
+            "name": "Header Auth account 2"
+          }
+        },
+        "notes": "Segment 3: General (non-Lapham) requesters. Standard ack with TEMPLATE_TODO marker for Phase 26 APT form link."
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "string": [
+              {
+                "value1": "={{ $('Code: Merge Property Data').item.json.emailType }}",
+                "operation": "notEqual",
+                "value2": "turnover"
+              },
+              {
+                "value1": "={{ $('Code: Merge Property Data').item.json.emailType }}",
+                "operation": "notEqual",
+                "value2": "inspection"
+              }
+            ],
+            "boolean": [
+              {
+                "value1": "={{ !!$('Code: Merge Property Data').item.json.tenantEmail }}",
+                "value2": true
+              }
+            ]
+          }
+        },
+        "id": "node-22-if-tenant-email",
+        "name": "IF: Send Tenant Email?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          3504,
+          560
+        ],
+        "notesInFlow": true,
+        "notes": "Gate: emailType != turnover AND emailType != inspection AND tenantEmail present. Turnover/inspection = no active tenant to coordinate (Pitfall 5)."
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.resend.com/emails",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "string",
+          "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('Code: Merge Property Data').item.json.tenantEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Coordinating Your Maintenance Visit — ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your unit'), text: 'Hi ' + ($('Code: Merge Property Data').item.json.tenantName || 'Resident') + ',\\n\\nWe received a maintenance work order for ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your unit') + (($('Code: Merge Property Data').item.json.unitNumber) ? ' Unit ' + $('Code: Merge Property Data').item.json.unitNumber : '') + '.\\n\\nOur team will be in touch to coordinate a convenient time. Please reply to this email or contact us at workorder@aptmaintenanceinc.com with your available dates and times.\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
+          "options": {}
+        },
+        "id": "node-23-resend-tenant-coordination",
+        "name": "Resend: Tenant Coordination Email",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [
+          3712,
+          416
+        ],
+        "notesInFlow": true,
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "aptL6JezMTMq6Trn",
+            "name": "Header Auth account 2"
+          }
+        },
+        "notes": "Tenant coordination email via Resend. Gated on non-turnover/inspection + tenantEmail present."
+      },
+      {
+        "parameters": {
+          "content": "Tenant SMS → Phase 23 (Unified Dispatch Comms)\nInsertion point: after 'Resend: Tenant Coordination Email'\nGate: emailType != turnover/inspection AND tenantPhone present AND A2P 10DLC registration complete\nDeferred: COO 2026-06-10",
+          "height": 140,
+          "width": 350
+        },
+        "id": "node-sticky-sms-deferred",
+        "name": "Sticky Note: Tenant SMS Deferred",
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          4064,
+          608
+        ],
+        "notesInFlow": false
+      }
+    ],
+    "connections": {
+      "Gmail Trigger": {
+        "main": [
+          [
+            {
+              "node": "Code: Skip Filter",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Skip Filter": {
+        "main": [
+          [
+            {
+              "node": "IF: Skip?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Skip?": {
+        "main": [
+          [],
+          [
+            {
+              "node": "IF: Lapham Form?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Lapham Form?": {
+        "main": [
+          [
+            {
+              "node": "Code: Lapham Extraction",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Code: Build Gemini Payload",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Lapham Extraction": {
+        "main": [
+          [
+            {
+              "node": "Code: Normalize Address Key",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Build Gemini Payload": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request: Gemini API",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request: Gemini API": {
+        "main": [
+          [
+            {
+              "node": "Code: Parse Gemini Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Parse Gemini Response": {
+        "main": [
+          [
+            {
+              "node": "Code: Normalize Address Key",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Normalize Address Key": {
+        "main": [
+          [
+            {
+              "node": "Neon: Property Lookup",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Neon: Property Lookup": {
+        "main": [
+          [
+            {
+              "node": "Code: Merge Property Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Merge Property Data": {
+        "main": [
+          [
+            {
+              "node": "IF: Access Info Changed?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Access Info Changed?": {
+        "main": [
+          [
+            {
+              "node": "HTTP: POST access-sync",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "HTTP: POST jobs/sync",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP: POST access-sync": {
+        "main": [
+          [
+            {
+              "node": "HTTP: POST jobs/sync",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP: POST jobs/sync": {
+        "main": [
+          [
+            {
+              "node": "IF: Comms Enabled?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Send Auto-Reply?": {
+        "main": [
+          [
+            {
+              "node": "IF: Lapham-Affiliated Sender?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "IF: Lapham-Affiliated Sender?": {
+        "main": [
+          [
+            {
+              "node": "IF: Lapham Form Used?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Resend: General Ack",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Lapham Form Used?": {
+        "main": [
+          [
+            {
+              "node": "Resend: Lapham Standard Ack",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Resend: Lapham No-Form Ack",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Send Tenant Email?": {
+        "main": [
+          [
+            {
+              "node": "Resend: Tenant Coordination Email",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "IF: Comms Enabled?": {
+        "main": [
+          [
+            {
+              "node": "IF: Send Auto-Reply?",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "IF: Send Tenant Email?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Brandon Bittner",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-06-16T20:11:18.156Z",
+        "id": 28,
+        "workflowId": "wif9XlVbK3M6a1C8",
+        "versionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
+        "event": "deactivated",
+        "userId": "49b0b0b1-006b-4452-9ab5-0cf056607f23"
+      },
+      {
+        "createdAt": "2026-06-16T20:11:18.454Z",
+        "id": 29,
+        "workflowId": "wif9XlVbK3M6a1C8",
+        "versionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
+        "event": "activated",
+        "userId": "49b0b0b1-006b-4452-9ab5-0cf056607f23"
+      },
+      {
+        "createdAt": "2026-06-16T20:11:44.997Z",
+        "id": 30,
+        "workflowId": "wif9XlVbK3M6a1C8",
+        "versionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
+        "event": "deactivated",
+        "userId": "49b0b0b1-006b-4452-9ab5-0cf056607f23"
+      },
+      {
+        "createdAt": "2026-06-16T20:11:47.482Z",
+        "id": 31,
+        "workflowId": "wif9XlVbK3M6a1C8",
+        "versionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
+        "event": "activated",
+        "userId": "49b0b0b1-006b-4452-9ab5-0cf056607f23"
+      }
+    ]
+  }
+}

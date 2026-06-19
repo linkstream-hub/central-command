@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  apt-central-command:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: apt-cc-sandbox
+    ports:
+      - "4141:4141"
+    env_file:
+      - .env.local
+      - .env.sandbox
+    environment:
+      - PORT=4141
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    restart: unless-stopped

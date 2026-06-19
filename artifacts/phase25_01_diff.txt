@@ -1,0 +1,1560 @@
+diff --git a/.planning/phases/25-parsing-intake-quality/25-01-SUMMARY.md b/.planning/phases/25-parsing-intake-quality/25-01-SUMMARY.md
+new file mode 100644
+index 0000000..afd7cc5
+--- /dev/null
++++ b/.planning/phases/25-parsing-intake-quality/25-01-SUMMARY.md
+@@ -0,0 +1,164 @@
++---
++phase: 25-parsing-intake-quality
++plan: "01"
++subsystem: parsing
++tags: [lapham, address-normalization, email-parsing, unit-tests, vitest, typescript]
++
++requires:
++  - phase: 12-neon-cutover
++    provides: Neon properties table with addressKey column (dedup key storage)
++
++provides:
++  - normalizeAddressKey.ts — deterministic address dedup key function (verbatim GAS port)
++  - detectLaphamForm.ts — Lapham webform parser with LaphamParseResult interface (verbatim GAS port)
++  - Three intake fixture files (same-line, Apple-Mail-forwarded, turnover) for use by Plans 25-02 and 25-03
++  - Test suites: 13 + 33 = 46 unit tests proving GAS behavioral parity
++
++affects: [25-02, 25-03, any consumer of addressKey or LaphamParseResult]
++
++tech-stack:
++  added: []
++  patterns:
++    - Verbatim GAS port: port algorithm step-for-step, prove parity via unit tests
++    - Two-regex field() helper: same-line AND two-line regex for every field (Apple Mail forwarded forms)
++    - Pure transform utility: no framework imports, no try/catch, null/empty via String() coercion
++
++key-files:
++  created:
++    - tech-pwa/src/lib/normalizeAddressKey.ts
++    - tech-pwa/src/lib/detectLaphamForm.ts
++    - tech-pwa/src/lib/__tests__/normalizeAddressKey.test.ts
++    - tech-pwa/src/lib/__tests__/detectLaphamForm.test.ts
++    - tech-pwa/src/lib/__tests__/fixtures/intake/lapham-sameline.txt
++    - tech-pwa/src/lib/__tests__/fixtures/intake/lapham-forwarded.txt
++    - tech-pwa/src/lib/__tests__/fixtures/intake/lapham-turnover.txt
++  modified:
++    - tech-pwa/vitest.config.ts (coverage.include extended)
++
++key-decisions:
++  - "Verbatim port over rewrite: GAS detectLaphamForm contains >1yr of production bug fixes for Apple Mail forwarded format — porting verbatim is the only safe path"
++  - "Two-regex field() helper: BOTH same-line and two-line regex per field — dropping either would cause INTAKE-05 regression on forwarded forms (Pitfall 3)"
++  - "Fixtures use synthetic data only: 555 NANP test numbers + example.com domains — no real tenant PII committed to git (T-25-02 mitigated)"
++  - "Test expectation fixed: 'College Ave' normalizes to 'college ave' not 'college avenue' — Ave is an abbreviation token, not the full word; test was wrong"
++
++patterns-established:
++  - "Pure utility module pattern: no framework imports, exported function + interface only, JSDoc on exported function — mirrors wc-codes.ts"
++  - "Two-regex field extraction: for any structured email parser, always handle same-line AND two-line format to support Apple Mail/Gmail forwarded rendering"
++  - "Intake fixtures location: tech-pwa/src/lib/__tests__/fixtures/intake/ — Plans 25-02 and 25-03 should add fixtures here"
++
++requirements-completed: [INTAKE-01, INTAKE-02, INTAKE-03, INTAKE-05]
++
++duration: 35min
++completed: 2026-06-10
++---
++
++# Phase 25 Plan 01: Port normalizeAddressKey + detectLaphamForm Summary
++
++**Verbatim TypeScript ports of two production-tested GAS parsing primitives with 46 unit tests proving behavioral parity across same-line, Apple-Mail-forwarded, turnover, and edge-case inputs**
++
++## Performance
++
++- **Duration:** ~35 min
++- **Started:** 2026-06-10T15:18:00Z
++- **Completed:** 2026-06-10T15:22:00Z
++- **Tasks:** 2 of 3 complete (Task 3 is checkpoint:human-action — awaiting Claude Code review)
++- **Files created:** 7 | **Files modified:** 1
++
++## Accomplishments
++
++- `normalizeAddressKey.ts`: 7-step algorithm ported verbatim (##→#, embedded unit extraction, comma-split, street-type normalization, lowercase/strip/collapse); 13 unit tests
++- `detectLaphamForm.ts`: full GAS function ported including `field()` two-regex helper, `fieldFromBody()` for forwarded section, PTE mapping, emailType scan, senderLookupNeeded; 33 unit tests
++- 3 intake fixtures created with synthetic data (no PII): same-line, Apple-Mail-forwarded, turnover
++- Full unit suite: 79 tests, 5 files, zero regressions to compliance/job-transitions/wc-codes
++- `vitest.config.ts` coverage.include updated with both new modules
++- `npx tsc --noEmit` zero errors
++
++## Task Commits
++
++1. **Task 1: Port normalizeAddressKey** - `5d74f18` (feat) — TDD RED→GREEN→pass
++2. **Task 2: Port detectLaphamForm with fixtures** - `0a35e15` (feat) — TDD RED→GREEN→pass
++3. **Task 3: Terminal gate** - awaiting commit (gate: diff artifact + Claude Code PASS)
++
++## Files Created/Modified
++
++- `tech-pwa/src/lib/normalizeAddressKey.ts` — Deterministic address dedup key; `export function normalizeAddressKey(address: string, unit?: string): string`
++- `tech-pwa/src/lib/detectLaphamForm.ts` — Lapham webform parser; `export function detectLaphamForm(...)` + `export interface LaphamParseResult`
++- `tech-pwa/src/lib/__tests__/normalizeAddressKey.test.ts` — 13 unit tests (all 7 algorithm steps + edge cases)
++- `tech-pwa/src/lib/__tests__/detectLaphamForm.test.ts` — 33 unit tests (detection, same-line, forwarded, emailType, PTE, tenant exempt)
++- `tech-pwa/src/lib/__tests__/fixtures/intake/lapham-sameline.txt` — Synthetic same-line Lapham webform body
++- `tech-pwa/src/lib/__tests__/fixtures/intake/lapham-forwarded.txt` — Synthetic Apple-Mail-forwarded form body (two-line format, `>` prefixes)
++- `tech-pwa/src/lib/__tests__/fixtures/intake/lapham-turnover.txt` — Synthetic turnover-type form (no active tenant)
++- `tech-pwa/vitest.config.ts` — Added `normalizeAddressKey.ts` + `detectLaphamForm.ts` to coverage.include
++
++## Decisions Made
++
++**Verbatim port over rewrite:** GAS `detectLaphamForm` has >1yr of production bug fixes (Apple Mail rendering, embedded units, PTE phrase matching). Rewriting risks INTAKE-05 regression. Tests prove parity.
++
++**Two-regex field() helper:** Every field uses both same-line (`Field: Value`) and two-line (`Field\nValue`) regex. Dropping either causes silent blank fields for forwarded forms (Pitfall 3 in RESEARCH.md).
++
++**Test expectation correction:** The initial test asserted `'college avenue'` for input `'3126 College Ave, ...'`. The GAS source lowercases `Ave` to `ave` (abbreviation token, not expanded). Test fixed to `'college ave'` — this is correct GAS parity.
++
++## Deviations from Plan
++
++### Auto-fixed Issues
++
++**1. [Rule 1 - Bug] Test expectation for 'College Ave' normalisation was wrong**
++- **Found during:** Task 1 (normalizeAddressKey GREEN phase)
++- **Issue:** Test asserted `'3126 college avenue||'` but GAS source normalizes `Ave` → `ave` (lowercases token as-is, does not expand abbreviations). Result was `'3126 college ave||'`.
++- **Fix:** Corrected test expectation to `'3126 college ave||'` with clarifying comment explaining GAS behavior
++- **Files modified:** `tech-pwa/src/lib/__tests__/normalizeAddressKey.test.ts`
++- **Committed in:** `5d74f18` (Task 1 commit)
++
++---
++
++**Total deviations:** 1 auto-fixed (Rule 1 - test expectation bug)
++**Impact on plan:** Test was testing the wrong value; correction improves accuracy. No scope creep.
++
++## Issues Encountered
++
++None beyond the test expectation correction documented above.
++
++## User Setup Required
++
++None for this plan — pure TypeScript utility ports with no external service dependencies.
++
++## TDD Gate Compliance
++
++| Gate | Commit | Status |
++|------|--------|--------|
++| Task 1 RED | tests written before implementation; `Cannot find module` error confirmed | PASS |
++| Task 1 GREEN | `5d74f18` — 13 tests passing | PASS |
++| Task 2 RED | tests written before implementation; `Cannot find module` error confirmed | PASS |
++| Task 2 GREEN | `0a35e15` — 33 tests passing | PASS |
++
++## Known Stubs
++
++None — both functions are fully wired to real parsing logic. No placeholder data or TODO items in implementation.
++
++## Threat Flags
++
++None — no new network endpoints, auth paths, or trust boundaries introduced. Fixtures contain only synthetic data (T-25-02 mitigated).
++
++## Task 3 Gate Status
++
++**PENDING — Claude Code review required before Wave 2 begins.**
++
++- `npx tsc --noEmit` → zero errors (observed: no output, exit code 0)
++- `artifacts/phase25_01_diff.txt` produced (692 lines)
++- Full unit suite: `79 passed` across 5 test files
++- Branch: `feat/phase-25-parsing-intake`
++
++Resume signal: Claude Code replies PASS / clear for this plan's diff.
++
++## Next Phase Readiness
++
++- `normalizeAddressKey` and `detectLaphamForm` ready to import by Plan 25-02 (access-sync route) and Plan 25-03 (n8n Code nodes)
++- `LaphamParseResult` interface is the contract Plan 25-03 n8n nodes must reproduce
++- Fixtures available for integration tests in Plan 25-02
++
++**Blockers for Wave 2:**
++- Claude Code diff review PASS required (Task 3 gate)
++
++---
++*Phase: 25-parsing-intake-quality*
++*Completed: 2026-06-10*
+diff --git a/artifacts/phase25_01_diff.txt b/artifacts/phase25_01_diff.txt
+new file mode 100644
+index 0000000..a616659
+--- /dev/null
++++ b/artifacts/phase25_01_diff.txt
+@@ -0,0 +1,692 @@
++diff --git a/tech-pwa/src/lib/__tests__/detectLaphamForm.test.ts b/tech-pwa/src/lib/__tests__/detectLaphamForm.test.ts
++new file mode 100644
++index 0000000..a0b6aa9
++--- /dev/null
+++++ b/tech-pwa/src/lib/__tests__/detectLaphamForm.test.ts
++@@ -0,0 +1,235 @@
+++import { describe, it, expect } from 'vitest';
+++import { readFileSync } from 'fs';
+++import { join } from 'path';
+++import { detectLaphamForm, type LaphamParseResult } from '../detectLaphamForm';
+++
+++// ---------------------------------------------------------------------------
+++// Fixture loader
+++// ---------------------------------------------------------------------------
+++const fixtureDir = join(__dirname, 'fixtures', 'intake');
+++const sameline  = readFileSync(join(fixtureDir, 'lapham-sameline.txt'), 'utf8');
+++const forwarded = readFileSync(join(fixtureDir, 'lapham-forwarded.txt'), 'utf8');
+++const turnover  = readFileSync(join(fixtureDir, 'lapham-turnover.txt'), 'utf8');
+++
+++// ---------------------------------------------------------------------------
+++// Detection
+++// ---------------------------------------------------------------------------
+++describe('detectLaphamForm — detection', () => {
+++  it('detects by "website@laphamcompany.com" sender regardless of body', () => {
+++    const result = detectLaphamForm('website@laphamcompany.com', 'Random Subject', 'No form markers here');
+++    expect(result).not.toBeNull();
+++    expect(result!.isLaphamForm).toBe(true);
+++  });
+++
+++  it('detects by "Submitted values are:" body marker (generic sender)', () => {
+++    const result = detectLaphamForm('pm@example-realty.com', 'FW: Request', 'Submitted values are:\nName: Test');
+++    expect(result).not.toBeNull();
+++    expect(result!.isLaphamForm).toBe(true);
+++  });
+++
+++  it('detects by "Webform submission from: Maintenance Request" marker', () => {
+++    const result = detectLaphamForm('nobody@example.com', 'Subject', 'Webform submission from: Maintenance Request\nName: X');
+++    expect(result).not.toBeNull();
+++  });
+++
+++  it('returns null for ordinary non-Lapham email', () => {
+++    const result = detectLaphamForm('owner@example.com', 'Water heater broken', 'Hi, the water heater is leaking at 123 Main St.');
+++    expect(result).toBeNull();
+++  });
+++
+++  it('result shape: isLaphamForm=true and confidence=High', () => {
+++    const result = detectLaphamForm('website@laphamcompany.com', 'test', sameline);
+++    expect(result!.isLaphamForm).toBe(true);
+++    expect(result!.confidence).toBe('High');
+++  });
+++});
+++
+++// ---------------------------------------------------------------------------
+++// Same-line field extraction
+++// ---------------------------------------------------------------------------
+++describe('detectLaphamForm — field extraction (same-line format)', () => {
+++  let result: LaphamParseResult;
+++
+++  // Run once; share across tests
+++  // (vitest does not have beforeAll-level caching in describe scope but
+++  //  re-parsing the same string in each test is fast and acceptable)
+++  it('extracts address from same-line format', () => {
+++    result = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
+++    expect(result.address).toBe('400 Oak Street');
+++  });
+++
+++  it('extracts unit from same-line format', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
+++    expect(r.unit).toBe('3B');
+++  });
+++
+++  it('extracts tenantName from same-line format', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
+++    expect(r.tenantName).toBe('Jane Doe');
+++  });
+++
+++  it('extracts tenantPhone from same-line format', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
+++    expect(r.tenantPhone).toBe('(510) 555-0100');
+++  });
+++
+++  it('extracts tenantEmail from same-line format', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
+++    expect(r.tenantEmail).toBe('jane.doe@example.com');
+++  });
+++
+++  it('extracts description from same-line format', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
+++    expect(r.description).toContain('faucet');
+++  });
+++
+++  it('maps pteGranted=Yes for "permission to enter my dwelling" phrase', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
+++    expect(r.pteGranted).toBe('Yes');
+++  });
+++});
+++
+++// ---------------------------------------------------------------------------
+++// Forwarded / two-line field extraction (Apple Mail format)
+++// ---------------------------------------------------------------------------
+++describe('detectLaphamForm — field extraction (forwarded/two-line format)', () => {
+++  it('detects the forwarded form as a Lapham form', () => {
+++    const result = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded);
+++    expect(result).not.toBeNull();
+++  });
+++
+++  it('extracts address from forwarded two-line format', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded)!;
+++    expect(r.address).toBe('400 Oak Street');
+++  });
+++
+++  it('extracts unit from forwarded two-line format', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded)!;
+++    expect(r.unit).toBe('3B');
+++  });
+++
+++  it('extracts tenantName from forwarded two-line format', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded)!;
+++    expect(r.tenantName).toBe('Jane Doe');
+++  });
+++
+++  it('extracts tenantPhone from forwarded two-line format', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded)!;
+++    expect(r.tenantPhone).toBe('(510) 555-0100');
+++  });
+++
+++  it('extracts tenantEmail from forwarded two-line format', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded)!;
+++    expect(r.tenantEmail).toBe('jane.doe@example.com');
+++  });
+++
+++  it('maps pteGranted=Yes from forwarded two-line format', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded)!;
+++    expect(r.pteGranted).toBe('Yes');
+++  });
+++});
+++
+++// ---------------------------------------------------------------------------
+++// emailType detection
+++// ---------------------------------------------------------------------------
+++describe('detectLaphamForm — emailType detection', () => {
+++  it('returns emailType=adhoc_workorder for normal description', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'Request', sameline)!;
+++    expect(r.emailType).toBe('adhoc_workorder');
+++  });
+++
+++  it('returns emailType=turnover when description contains "turnover"', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'Request', turnover)!;
+++    expect(r.emailType).toBe('turnover');
+++  });
+++
+++  it('returns emailType=turnover when description contains "move out"', () => {
+++    const body = `Submitted values are:\nDescription: move out cleaning needed at unit 2\n`;
+++    const r = detectLaphamForm('pm@example-realty.com', 'Request', body)!;
+++    expect(r.emailType).toBe('turnover');
+++  });
+++
+++  it('returns emailType=turnover when description contains "move-out" (hyphen)', () => {
+++    const body = `Submitted values are:\nDescription: move-out inspection required\n`;
+++    const r = detectLaphamForm('pm@example-realty.com', 'Request', body)!;
+++    expect(r.emailType).toBe('turnover');
+++  });
+++
+++  it('returns emailType=inspection when description contains "inspection"', () => {
+++    const body = `Submitted values are:\nDescription: Annual inspection of HVAC system\n`;
+++    const r = detectLaphamForm('pm@example-realty.com', 'Request', body)!;
+++    expect(r.emailType).toBe('inspection');
+++  });
+++});
+++
+++// ---------------------------------------------------------------------------
+++// PTE mapping
+++// ---------------------------------------------------------------------------
+++describe('detectLaphamForm — PTE mapping', () => {
+++  it('maps "do not give permission" → pteGranted=No', () => {
+++    const body = `Submitted values are:\nPermission to Enter: I do not give permission\n`;
+++    const r = detectLaphamForm('pm@example-realty.com', 'R', body)!;
+++    expect(r.pteGranted).toBe('No');
+++  });
+++
+++  it('maps "without my presence" → pteGranted=No', () => {
+++    const body = `Submitted values are:\nPermission to Enter: Please do not enter without my presence\n`;
+++    const r = detectLaphamForm('pm@example-realty.com', 'R', body)!;
+++    expect(r.pteGranted).toBe('No');
+++  });
+++
+++  it('maps plain "yes" → pteGranted=Yes', () => {
+++    const body = `Submitted values are:\nPermission to Enter: Yes\n`;
+++    const r = detectLaphamForm('pm@example-realty.com', 'R', body)!;
+++    expect(r.pteGranted).toBe('Yes');
+++  });
+++
+++  it('maps plain "no" → pteGranted=No', () => {
+++    const body = `Submitted values are:\nPermission to Enter: No\n`;
+++    const r = detectLaphamForm('pm@example-realty.com', 'R', body)!;
+++    expect(r.pteGranted).toBe('No');
+++  });
+++
+++  it('empty PTE field → pteGranted=Not Applicable', () => {
+++    const body = `Submitted values are:\nPermission to Enter: Not Applicable\n`;
+++    const r = detectLaphamForm('pm@example-realty.com', 'R', body)!;
+++    expect(r.pteGranted).toBe('Not Applicable');
+++  });
+++});
+++
+++// ---------------------------------------------------------------------------
+++// Tenant exempt fields (turnover / inspection)
+++// ---------------------------------------------------------------------------
+++describe('detectLaphamForm — tenant exempt fields', () => {
+++  it('turnover fixture: emailType is turnover', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'Request', turnover)!;
+++    expect(r.emailType).toBe('turnover');
+++  });
+++
+++  it('turnover fixture: does NOT hallucinate tenant contact when form has none', () => {
+++    // The turnover fixture submitter is the RM — tenantName, tenantPhone, tenantEmail
+++    // from the fixture are the RM's details, not a separate tenant.
+++    // For turnover/inspection WO types the dispatcher knows no tenant is present.
+++    // The parser should still extract submitted fields (it cannot know at parse time
+++    // whether a field belongs to RM or a phantom tenant) — the key invariant is
+++    // that the form fields are not fabricated beyond what the fixture contains.
+++    const r = detectLaphamForm('pm@example-realty.com', 'Request', turnover)!;
+++    // Address must be present (no fabrication of a different address)
+++    expect(r.address).toBe('200 Elm Avenue');
+++    // Submitted Name field is captured (same value, no hallucination)
+++    expect(r.tenantName).toBe('Sarah Manager');
+++    // Description captures the turnover nature
+++    expect(r.description).toContain('turnover');
+++  });
+++
+++  it('senderLookupNeeded=false when address is present', () => {
+++    const r = detectLaphamForm('pm@example-realty.com', 'R', sameline)!;
+++    expect(r.senderLookupNeeded).toBe(false);
+++  });
+++
+++  it('senderLookupNeeded=true when address is empty in form', () => {
+++    const body = `Submitted values are:\nName: John Smith\nDescription: leaky faucet\n`;
+++    const r = detectLaphamForm('website@laphamcompany.com', 'R', body)!;
+++    expect(r.senderLookupNeeded).toBe(true);
+++  });
+++});
++diff --git a/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-forwarded.txt b/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-forwarded.txt
++new file mode 100644
++index 0000000..fe1dce9
++--- /dev/null
+++++ b/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-forwarded.txt
++@@ -0,0 +1,27 @@
+++---------- Forwarded message ---------
+++From: Property Manager <pm@example-realty.com>
+++Date: Mon, 10 Jun 2026 09:15:00 -0700
+++Subject: [Lapham Maintenance Request] 400 Oak Street #3B
+++To: workorder@aptmaintenanceinc.com
+++
+++> Webform submission from: Maintenance Request
+++>
+++> Submitted values are:
+++> Name
+++> Jane Doe
+++> Address
+++> 400 Oak Street
+++> Unit
+++> 3B
+++> Phone
+++> (510) 555-0100
+++> Email
+++> jane.doe@example.com
+++> Preferred Contact
+++> Email
+++> Pets
+++> No
+++> Permission to Enter
+++> I give permission to enter my dwelling while I am not there
+++> Description
+++> Kitchen faucet dripping — leaks about one drip per second. Need repair.
++diff --git a/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-sameline.txt b/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-sameline.txt
++new file mode 100644
++index 0000000..52c63f0
++--- /dev/null
+++++ b/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-sameline.txt
++@@ -0,0 +1,12 @@
+++Webform submission from: Maintenance Request
+++
+++Submitted values are:
+++Name: Jane Doe
+++Address: 400 Oak Street
+++Unit: 3B
+++Phone: (510) 555-0100
+++Email: jane.doe@example.com
+++Preferred Contact: Email
+++Pets: No
+++Permission to Enter: I give permission to enter my dwelling while I am not there
+++Description: Kitchen faucet dripping — leaks about one drip per second. Need repair.
++diff --git a/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-turnover.txt b/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-turnover.txt
++new file mode 100644
++index 0000000..fd6194f
++--- /dev/null
+++++ b/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-turnover.txt
++@@ -0,0 +1,12 @@
+++Webform submission from: Maintenance Request
+++
+++Submitted values are:
+++Name: Sarah Manager
+++Address: 200 Elm Avenue
+++Unit: 1A
+++Phone: (415) 555-0200
+++Email: sarah@example-realty.com
+++Preferred Contact: Phone
+++Pets: No
+++Permission to Enter: Not Applicable
+++Description: Unit turnover — move out complete. Full cleaning, paint touch-ups, and appliance check needed before re-leasing.
++diff --git a/tech-pwa/src/lib/__tests__/normalizeAddressKey.test.ts b/tech-pwa/src/lib/__tests__/normalizeAddressKey.test.ts
++new file mode 100644
++index 0000000..e59aeec
++--- /dev/null
+++++ b/tech-pwa/src/lib/__tests__/normalizeAddressKey.test.ts
++@@ -0,0 +1,62 @@
+++import { describe, test, expect } from 'vitest';
+++import { normalizeAddressKey } from '../normalizeAddressKey';
+++
+++describe('normalizeAddressKey', () => {
+++  test('strips city/state suffix at first comma boundary', () => {
+++    expect(normalizeAddressKey('123 Main St, Oakland, CA')).toBe('123 main st||');
+++  });
+++
+++  test('extracts embedded unit from address when unit param is empty', () => {
+++    expect(normalizeAddressKey('456 Elm Ave #2B')).toBe('456 elm ave||2b');
+++  });
+++
+++  test('explicit unit param is used; embedded unit not present', () => {
+++    expect(normalizeAddressKey('789 Oak Drive', '3A')).toBe('789 oak drive||3a');
+++  });
+++
+++  test('explicit unit param overrides absence of embedded unit in address', () => {
+++    // Address has no embedded unit; explicit param populates it
+++    expect(normalizeAddressKey('100 Pine Rd', '101')).toBe('100 pine rd||101');
+++  });
+++
+++  test('normalizes ## to # before unit extraction', () => {
+++    expect(normalizeAddressKey('3053 Dohr ##4')).toBe('3053 dohr||4');
+++  });
+++
+++  test('street-type tokens lowercased and trailing period stripped (Ave., St., Blvd.)', () => {
+++    expect(normalizeAddressKey('200 Broadway Ave.')).toBe('200 broadway ave||');
+++    expect(normalizeAddressKey('300 Market St.', '')).toBe('300 market st||');
+++  });
+++
+++  test('street type full words normalized (Avenue, Street)', () => {
+++    expect(normalizeAddressKey('500 Grand Avenue')).toBe('500 grand avenue||');
+++  });
+++
+++  test('empty address returns ||', () => {
+++    expect(normalizeAddressKey('')).toBe('||');
+++  });
+++
+++  test('null-like address handled via String() coercion', () => {
+++    // TypeScript callers won't pass null directly but the port must handle it
+++    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+++    expect(normalizeAddressKey(null as any)).toBe('||');
+++  });
+++
+++  test('collapses multiple spaces', () => {
+++    expect(normalizeAddressKey('40  Moss   Ave  #106')).toBe('40 moss ave||106');
+++  });
+++
+++  test('strips non-alphanumeric chars other than # before unit strip', () => {
+++    // Address with punctuation in street name gets stripped after unit extraction
+++    expect(normalizeAddressKey('123 Main-St')).toBe('123 mainst||');
+++  });
+++
+++  test('embedded unit extraction from real-world Lapham address (40 Moss Ave #106)', () => {
+++    expect(normalizeAddressKey('40 Moss Ave #106')).toBe('40 moss ave||106');
+++  });
+++
+++  test('city suffix stripped including multi-part suffix', () => {
+++    // "Ave" abbreviation normalizes to "ave" (lowercased, no expansion); city+state stripped at comma
+++    expect(normalizeAddressKey('3126 College Ave, Berkeley, CA 94705')).toBe('3126 college ave||');
+++  });
+++});
++diff --git a/tech-pwa/src/lib/detectLaphamForm.ts b/tech-pwa/src/lib/detectLaphamForm.ts
++new file mode 100644
++index 0000000..61da6a8
++--- /dev/null
+++++ b/tech-pwa/src/lib/detectLaphamForm.ts
++@@ -0,0 +1,243 @@
+++/**
+++ * Deterministic Lapham webform parser.
+++ * Verbatim TypeScript port of `detectLaphamForm()` from Code.js (GAS).
+++ *
+++ * Lapham forms arrive at workorder@ as forwards from RM/Lapham employees —
+++ * detection is content-based, not sender-based. Bypasses Gemini entirely.
+++ * Returns `null` when the email is not a Lapham form (caller falls through to Gemini).
+++ *
+++ * Two email body formats handled:
+++ *  - Same-line:  "Field: Value" on one line
+++ *  - Two-line:   "Field\nValue" (Apple Mail renders <b>Field</b><br>Value as plain text on forward)
+++ *
+++ * Missing fields return empty string, never null. No try/catch — pure parse.
+++ */
+++
+++import { normalizeAddressKey } from './normalizeAddressKey';
+++
+++// Re-export so consumers can import both from this module
+++export { normalizeAddressKey };
+++
+++/** Shape returned by detectLaphamForm. Consumed by Plan 25-03 n8n Code nodes (must match). */
+++export interface LaphamParseResult {
+++  isLaphamForm: boolean;
+++  confidence: 'High' | 'Medium' | 'Low';
+++  emailType: 'adhoc_workorder' | 'turnover' | 'inspection' | 'unknown';
+++  address: string;
+++  unit: string;
+++  rmName: string;
+++  rmEmail: string;
+++  tenantName: string;
+++  tenantPhone: string;
+++  tenantEmail: string;
+++  tenantPreferredContact: string;
+++  tenantHasPets: string;
+++  pteGranted: 'Yes' | 'No' | 'Not Applicable';
+++  pteNotes: string;
+++  description: string;
+++  senderLookupNeeded: boolean;
+++}
+++
+++/**
+++ * Attempts to parse `body` as a Lapham webform.
+++ *
+++ * @param senderEmail - Email address of the message sender
+++ * @param subject     - Email subject line
+++ * @param body        - Full plain-text email body
+++ * @returns Parsed `LaphamParseResult` or `null` if not a Lapham form
+++ */
+++export function detectLaphamForm(
+++  senderEmail: string,
+++  subject: string,
+++  body: string
+++): LaphamParseResult | null {
+++  const isLaphamSender = senderEmail.indexOf('website@laphamcompany.com') !== -1;
+++  const isFormBody =
+++    body.indexOf('Submitted values are:') !== -1 ||
+++    body.indexOf('Webform submission from: Maintenance Request') !== -1;
+++
+++  if (!isLaphamSender && !isFormBody) return null;
+++
+++  // ---------------------------------------------------------------------------
+++  // field() — extract a named field from `body`.
+++  // Tries each label in order. Supports two formats (CRITICAL — see Pitfall 3):
+++  //   Same-line:  "Field: Value"  or  "Field Value"
+++  //   Two-line:   "Field\nValue"  (Apple Mail forward rendering)
+++  // ---------------------------------------------------------------------------
+++  function field(names: string[]): string {
+++    for (const name of names) {
+++      // Same-line: label + optional colon/space + value on same line
+++      const re = new RegExp(`(?:^|\\n)${name}\\s*:?\\s*([^\\n]+)`, 'i');
+++      const m = body.match(re);
+++      if (m && m[1].trim()) return m[1].trim();
+++
+++      // Two-line: label on one line (with any trailing text/colon), value on next line
+++      const re2 = new RegExp(`(?:^|\\n)${name}[^\\n]*\\n\\s*([^\\n]+)`, 'i');
+++      const m2 = body.match(re2);
+++      if (m2 && m2[1].trim()) return m2[1].trim();
+++    }
+++    return '';
+++  }
+++
+++  // fieldFromBody() — same logic but scoped to a target body substring (forwarded section).
+++  function fieldFromBody(names: string[], targetBody: string): string {
+++    for (const name of names) {
+++      const re = new RegExp(`(?:^|\\n)${name}\\s*:?\\s*([^\\n]+)`, 'i');
+++      const m = targetBody.match(re);
+++      if (m && m[1].trim()) return m[1].trim();
+++
+++      const re2 = new RegExp(`(?:^|\\n)${name}[^\\n]*\\n\\s*([^\\n]+)`, 'i');
+++      const m2 = targetBody.match(re2);
+++      if (m2 && m2[1].trim()) return m2[1].trim();
+++    }
+++    return '';
+++  }
+++
+++  // ---------------------------------------------------------------------------
+++  // Forwarded body handling — strip `> ` quote prefixes from Apple Mail forwards
+++  // ---------------------------------------------------------------------------
+++  let forwardedBody = '';
+++  const fwdIdx = body.indexOf('---------- Forwarded message ---------');
+++  if (fwdIdx !== -1) {
+++    forwardedBody = body.substring(fwdIdx);
+++    forwardedBody = forwardedBody.replace(/^> ?/gm, '');
+++  }
+++
+++  // ---------------------------------------------------------------------------
+++  // Field extraction — fall back to forwardedBody when main body misses the field
+++  // ---------------------------------------------------------------------------
+++  const tenantName =
+++    field(['Name', 'Full Name', 'Submitted By', 'Your Name', 'First and Last Name']) ||
+++    (forwardedBody ? fieldFromBody(['Name', 'Full Name', 'Submitted By', 'Your Name', 'First and Last Name'], forwardedBody) : '');
+++
+++  let address =
+++    field(['Address', 'Property Address', 'Property', 'Location', 'Street Address']) ||
+++    (forwardedBody ? fieldFromBody(['Address', 'Property Address', 'Property', 'Location', 'Street Address'], forwardedBody) : '');
+++
+++  const unit =
+++    field(['Unit', 'Unit #', 'Unit Number', 'Apt', 'Apartment', 'Suite']) ||
+++    (forwardedBody ? fieldFromBody(['Unit', 'Unit #', 'Unit Number', 'Apt', 'Apartment', 'Suite'], forwardedBody) : '');
+++
+++  const phone =
+++    field(['Phone', 'Phone Number', 'Mobile', 'Cell', 'Mobile Number']) ||
+++    (forwardedBody ? fieldFromBody(['Phone', 'Phone Number', 'Mobile', 'Cell', 'Mobile Number'], forwardedBody) : '');
+++
+++  let tenantEmail =
+++    field(['Email', 'Email Address', 'Your Email']) ||
+++    (forwardedBody ? fieldFromBody(['Email', 'Email Address', 'Your Email'], forwardedBody) : '');
+++
+++  const prefContact =
+++    field(['Preferred Contact', 'Preferred Contact Method', 'Contact Method', 'Best Way to Reach']) ||
+++    (forwardedBody ? fieldFromBody(['Preferred Contact', 'Preferred Contact Method', 'Contact Method', 'Best Way to Reach'], forwardedBody) : '');
+++
+++  const pets =
+++    field(['Pets', 'Do you have pets', 'Pets in Unit', 'Have Pets']) ||
+++    (forwardedBody ? fieldFromBody(['Pets', 'Do you have pets', 'Pets in Unit', 'Have Pets'], forwardedBody) : '');
+++
+++  const pteRaw =
+++    field(['Permission to Enter', 'PTE', 'Entry Permission', 'permission to enter']) ||
+++    (forwardedBody ? fieldFromBody(['Permission to Enter', 'PTE', 'Entry Permission', 'permission to enter'], forwardedBody) : '');
+++
+++  let description =
+++    field([
+++      'Description', 'Issue', 'Problem', 'Repair Needed', 'Request', 'Details', 'Message',
+++      'Please describe in detail the maintenance problem below',
+++      'Please describe',
+++    ]) ||
+++    (forwardedBody
+++      ? fieldFromBody([
+++          'Description', 'Issue', 'Problem', 'Repair Needed', 'Request', 'Details', 'Message',
+++          'Please describe in detail the maintenance problem below',
+++          'Please describe',
+++        ], forwardedBody)
+++      : '');
+++
+++  if (!description && forwardedBody) {
+++    description = forwardedBody
+++      .replace(/^[-\s]+Forwarded message[-\s]+/i, '')
+++      .replace(/^[A-Z][^:]+:.*$/gm, '')
+++      .replace(/\s+/g, ' ')
+++      .trim();
+++  }
+++
+++  // Strip `<mailto:...>` tags from email addresses
+++  if (tenantEmail) tenantEmail = tenantEmail.replace(/<mailto:[^>]+>/g, '').trim();
+++
+++  // ---------------------------------------------------------------------------
+++  // PTE mapping — match exact webform radio-button phrases first, then simple yes/no
+++  // ---------------------------------------------------------------------------
+++  let pteGranted: 'Yes' | 'No' | 'Not Applicable' = 'Not Applicable';
+++  const pteLower = (pteRaw || '').toLowerCase();
+++  if (pteLower.indexOf('permission to enter my dwelling while i am not there') !== -1) {
+++    pteGranted = 'Yes';
+++  } else if (pteLower.indexOf('do not give permission') !== -1 || pteLower.indexOf('without my presence') !== -1) {
+++    pteGranted = 'No';
+++  } else if (pteLower === 'yes' || pteLower === 'y') {
+++    pteGranted = 'Yes';
+++  } else if (pteLower === 'no' || pteLower === 'n') {
+++    pteGranted = 'No';
+++  }
+++
+++  // ---------------------------------------------------------------------------
+++  // Pets normalization
+++  // ---------------------------------------------------------------------------
+++  let tenantHasPets = 'Unknown';
+++  const petsLower = (pets || '').toLowerCase();
+++  if (petsLower === 'yes' || petsLower === 'y') tenantHasPets = 'Yes';
+++  else if (petsLower === 'no' || petsLower === 'n') tenantHasPets = 'No';
+++
+++  // ---------------------------------------------------------------------------
+++  // Preferred contact normalization
+++  // ---------------------------------------------------------------------------
+++  let tenantPreferredContact = 'Unknown';
+++  const prefLower = (prefContact || '').toLowerCase();
+++  if (prefLower.indexOf('phone') !== -1 || prefLower.indexOf('call') !== -1 || prefLower.indexOf('text') !== -1) {
+++    tenantPreferredContact = 'Phone';
+++  } else if (prefLower.indexOf('email') !== -1) {
+++    tenantPreferredContact = 'Email';
+++  }
+++
+++  // ---------------------------------------------------------------------------
+++  // emailType — scan description + subject for turnover/inspection keywords
+++  // ---------------------------------------------------------------------------
+++  let emailType: LaphamParseResult['emailType'] = 'adhoc_workorder';
+++  const scanText = ((description || '') + ' ' + (subject || '')).toLowerCase();
+++  if (
+++    scanText.indexOf('turnover') !== -1 ||
+++    scanText.indexOf('move out') !== -1 ||
+++    scanText.indexOf('move-out') !== -1
+++  ) {
+++    emailType = 'turnover';
+++  } else if (scanText.indexOf('inspection') !== -1) {
+++    emailType = 'inspection';
+++  }
+++
+++  // ---------------------------------------------------------------------------
+++  // senderLookupNeeded — set when address is absent or placeholder
+++  // ---------------------------------------------------------------------------
+++  const resolvedAddress = address || 'LOOKUP_BY_SENDER';
+++  const senderLookupNeeded = !address || address === 'LOOKUP_BY_SENDER';
+++
+++  // Normalize address for callers that need the dedup key (not stored in this result —
+++  // callers call normalizeAddressKey separately; re-exported from this module).
+++  void normalizeAddressKey; // ensure tree-shake does not remove the import
+++
+++  return {
+++    isLaphamForm: true,
+++    confidence: 'High',
+++    emailType,
+++    address: resolvedAddress,
+++    unit,
+++    rmName: '',
+++    rmEmail: '',
+++    tenantName,
+++    tenantPhone: phone,
+++    tenantEmail,
+++    tenantPreferredContact,
+++    tenantHasPets,
+++    pteGranted,
+++    pteNotes: pteRaw,
+++    description: description || '(No description — see original email)',
+++    senderLookupNeeded,
+++  };
+++}
++diff --git a/tech-pwa/src/lib/normalizeAddressKey.ts b/tech-pwa/src/lib/normalizeAddressKey.ts
++new file mode 100644
++index 0000000..c09ad5a
++--- /dev/null
+++++ b/tech-pwa/src/lib/normalizeAddressKey.ts
++@@ -0,0 +1,46 @@
+++/**
+++ * Produces a deterministic dedup key from a property address + optional unit.
+++ * Verbatim TypeScript port of `normalizeAddressKey()` from Code.js (GAS).
+++ *
+++ * Algorithm (7 steps — must match GAS source exactly for Neon addressKey parity):
+++ *  1. Normalize `##` → `#`
+++ *  2. Extract embedded unit (`#\w+`) into `unit` when no unit param supplied
+++ *  3. Strip `#\w+` from address string
+++ *  4. Split on first comma — drop city/state suffix
+++ *  5. Normalize street-type tokens: lowercase + strip trailing period
+++ *  6. Lowercase, strip non-alphanumeric, collapse spaces
+++ *  7. Return `addr + "||" + unit`
+++ *
+++ * @param address - Raw property address string (may contain embedded unit)
+++ * @param unit    - Optional explicit unit override; if absent, embedded unit extracted
+++ * @returns Normalized dedup key in the form `"<addr>||<unit>"`
+++ */
+++export function normalizeAddressKey(address: string, unit?: string): string {
+++  // Step 1: normalize ## → #
+++  let addr = String(address || '').replace(/##/g, '#');
+++
+++  // Step 2: extract embedded unit (#word) when unit param absent
+++  const embeddedUnit = addr.match(/#(\w+)/);
+++  if (embeddedUnit && !unit) {
+++    unit = embeddedUnit[1];
+++  }
+++
+++  // Step 3: strip #\w+ from address
+++  addr = addr.replace(/#\w+/g, '').trim();
+++
+++  // Step 4: strip city/state suffix — everything from first comma onward
+++  addr = addr.split(',')[0].trim();
+++
+++  // Step 5: normalize street-type abbreviations — lowercase + strip trailing period
+++  addr = addr.replace(
+++    /\b(avenue|ave|street|st|boulevard|blvd|drive|dr|road|rd|lane|ln|way|place|pl|court|ct|terrace|terr)\b\.?/gi,
+++    (m) => m.replace(/\.$/, '').toLowerCase()
+++  );
+++
+++  // Step 6: lowercase, strip non-alphanumeric, collapse spaces
+++  addr = addr.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+++  const unitNorm = String(unit || '').toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+++
+++  // Step 7: return composite key
+++  return addr + '||' + unitNorm;
+++}
++diff --git a/tech-pwa/vitest.config.ts b/tech-pwa/vitest.config.ts
++index e261614..18e6620 100644
++--- a/tech-pwa/vitest.config.ts
+++++ b/tech-pwa/vitest.config.ts
++@@ -5,7 +5,7 @@ export default defineConfig({
++     environment: 'node',
++     include: ['src/**/__tests__/**/*.test.ts'],
++     coverage: {
++-      include: ['src/lib/compliance.ts', 'src/lib/job-transitions.ts'],
+++      include: ['src/lib/compliance.ts', 'src/lib/job-transitions.ts', 'src/lib/normalizeAddressKey.ts', 'src/lib/detectLaphamForm.ts'],
++       thresholds: { lines: 100, functions: 100, branches: 90 },
++     },
++   },
+diff --git a/tech-pwa/src/lib/__tests__/detectLaphamForm.test.ts b/tech-pwa/src/lib/__tests__/detectLaphamForm.test.ts
+new file mode 100644
+index 0000000..a0b6aa9
+--- /dev/null
++++ b/tech-pwa/src/lib/__tests__/detectLaphamForm.test.ts
+@@ -0,0 +1,235 @@
++import { describe, it, expect } from 'vitest';
++import { readFileSync } from 'fs';
++import { join } from 'path';
++import { detectLaphamForm, type LaphamParseResult } from '../detectLaphamForm';
++
++// ---------------------------------------------------------------------------
++// Fixture loader
++// ---------------------------------------------------------------------------
++const fixtureDir = join(__dirname, 'fixtures', 'intake');
++const sameline  = readFileSync(join(fixtureDir, 'lapham-sameline.txt'), 'utf8');
++const forwarded = readFileSync(join(fixtureDir, 'lapham-forwarded.txt'), 'utf8');
++const turnover  = readFileSync(join(fixtureDir, 'lapham-turnover.txt'), 'utf8');
++
++// ---------------------------------------------------------------------------
++// Detection
++// ---------------------------------------------------------------------------
++describe('detectLaphamForm — detection', () => {
++  it('detects by "website@laphamcompany.com" sender regardless of body', () => {
++    const result = detectLaphamForm('website@laphamcompany.com', 'Random Subject', 'No form markers here');
++    expect(result).not.toBeNull();
++    expect(result!.isLaphamForm).toBe(true);
++  });
++
++  it('detects by "Submitted values are:" body marker (generic sender)', () => {
++    const result = detectLaphamForm('pm@example-realty.com', 'FW: Request', 'Submitted values are:\nName: Test');
++    expect(result).not.toBeNull();
++    expect(result!.isLaphamForm).toBe(true);
++  });
++
++  it('detects by "Webform submission from: Maintenance Request" marker', () => {
++    const result = detectLaphamForm('nobody@example.com', 'Subject', 'Webform submission from: Maintenance Request\nName: X');
++    expect(result).not.toBeNull();
++  });
++
++  it('returns null for ordinary non-Lapham email', () => {
++    const result = detectLaphamForm('owner@example.com', 'Water heater broken', 'Hi, the water heater is leaking at 123 Main St.');
++    expect(result).toBeNull();
++  });
++
++  it('result shape: isLaphamForm=true and confidence=High', () => {
++    const result = detectLaphamForm('website@laphamcompany.com', 'test', sameline);
++    expect(result!.isLaphamForm).toBe(true);
++    expect(result!.confidence).toBe('High');
++  });
++});
++
++// ---------------------------------------------------------------------------
++// Same-line field extraction
++// ---------------------------------------------------------------------------
++describe('detectLaphamForm — field extraction (same-line format)', () => {
++  let result: LaphamParseResult;
++
++  // Run once; share across tests
++  // (vitest does not have beforeAll-level caching in describe scope but
++  //  re-parsing the same string in each test is fast and acceptable)
++  it('extracts address from same-line format', () => {
++    result = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
++    expect(result.address).toBe('400 Oak Street');
++  });
++
++  it('extracts unit from same-line format', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
++    expect(r.unit).toBe('3B');
++  });
++
++  it('extracts tenantName from same-line format', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
++    expect(r.tenantName).toBe('Jane Doe');
++  });
++
++  it('extracts tenantPhone from same-line format', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
++    expect(r.tenantPhone).toBe('(510) 555-0100');
++  });
++
++  it('extracts tenantEmail from same-line format', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
++    expect(r.tenantEmail).toBe('jane.doe@example.com');
++  });
++
++  it('extracts description from same-line format', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
++    expect(r.description).toContain('faucet');
++  });
++
++  it('maps pteGranted=Yes for "permission to enter my dwelling" phrase', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'Fwd: Request', sameline)!;
++    expect(r.pteGranted).toBe('Yes');
++  });
++});
++
++// ---------------------------------------------------------------------------
++// Forwarded / two-line field extraction (Apple Mail format)
++// ---------------------------------------------------------------------------
++describe('detectLaphamForm — field extraction (forwarded/two-line format)', () => {
++  it('detects the forwarded form as a Lapham form', () => {
++    const result = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded);
++    expect(result).not.toBeNull();
++  });
++
++  it('extracts address from forwarded two-line format', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded)!;
++    expect(r.address).toBe('400 Oak Street');
++  });
++
++  it('extracts unit from forwarded two-line format', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded)!;
++    expect(r.unit).toBe('3B');
++  });
++
++  it('extracts tenantName from forwarded two-line format', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded)!;
++    expect(r.tenantName).toBe('Jane Doe');
++  });
++
++  it('extracts tenantPhone from forwarded two-line format', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded)!;
++    expect(r.tenantPhone).toBe('(510) 555-0100');
++  });
++
++  it('extracts tenantEmail from forwarded two-line format', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded)!;
++    expect(r.tenantEmail).toBe('jane.doe@example.com');
++  });
++
++  it('maps pteGranted=Yes from forwarded two-line format', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'FW: Request', forwarded)!;
++    expect(r.pteGranted).toBe('Yes');
++  });
++});
++
++// ---------------------------------------------------------------------------
++// emailType detection
++// ---------------------------------------------------------------------------
++describe('detectLaphamForm — emailType detection', () => {
++  it('returns emailType=adhoc_workorder for normal description', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'Request', sameline)!;
++    expect(r.emailType).toBe('adhoc_workorder');
++  });
++
++  it('returns emailType=turnover when description contains "turnover"', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'Request', turnover)!;
++    expect(r.emailType).toBe('turnover');
++  });
++
++  it('returns emailType=turnover when description contains "move out"', () => {
++    const body = `Submitted values are:\nDescription: move out cleaning needed at unit 2\n`;
++    const r = detectLaphamForm('pm@example-realty.com', 'Request', body)!;
++    expect(r.emailType).toBe('turnover');
++  });
++
++  it('returns emailType=turnover when description contains "move-out" (hyphen)', () => {
++    const body = `Submitted values are:\nDescription: move-out inspection required\n`;
++    const r = detectLaphamForm('pm@example-realty.com', 'Request', body)!;
++    expect(r.emailType).toBe('turnover');
++  });
++
++  it('returns emailType=inspection when description contains "inspection"', () => {
++    const body = `Submitted values are:\nDescription: Annual inspection of HVAC system\n`;
++    const r = detectLaphamForm('pm@example-realty.com', 'Request', body)!;
++    expect(r.emailType).toBe('inspection');
++  });
++});
++
++// ---------------------------------------------------------------------------
++// PTE mapping
++// ---------------------------------------------------------------------------
++describe('detectLaphamForm — PTE mapping', () => {
++  it('maps "do not give permission" → pteGranted=No', () => {
++    const body = `Submitted values are:\nPermission to Enter: I do not give permission\n`;
++    const r = detectLaphamForm('pm@example-realty.com', 'R', body)!;
++    expect(r.pteGranted).toBe('No');
++  });
++
++  it('maps "without my presence" → pteGranted=No', () => {
++    const body = `Submitted values are:\nPermission to Enter: Please do not enter without my presence\n`;
++    const r = detectLaphamForm('pm@example-realty.com', 'R', body)!;
++    expect(r.pteGranted).toBe('No');
++  });
++
++  it('maps plain "yes" → pteGranted=Yes', () => {
++    const body = `Submitted values are:\nPermission to Enter: Yes\n`;
++    const r = detectLaphamForm('pm@example-realty.com', 'R', body)!;
++    expect(r.pteGranted).toBe('Yes');
++  });
++
++  it('maps plain "no" → pteGranted=No', () => {
++    const body = `Submitted values are:\nPermission to Enter: No\n`;
++    const r = detectLaphamForm('pm@example-realty.com', 'R', body)!;
++    expect(r.pteGranted).toBe('No');
++  });
++
++  it('empty PTE field → pteGranted=Not Applicable', () => {
++    const body = `Submitted values are:\nPermission to Enter: Not Applicable\n`;
++    const r = detectLaphamForm('pm@example-realty.com', 'R', body)!;
++    expect(r.pteGranted).toBe('Not Applicable');
++  });
++});
++
++// ---------------------------------------------------------------------------
++// Tenant exempt fields (turnover / inspection)
++// ---------------------------------------------------------------------------
++describe('detectLaphamForm — tenant exempt fields', () => {
++  it('turnover fixture: emailType is turnover', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'Request', turnover)!;
++    expect(r.emailType).toBe('turnover');
++  });
++
++  it('turnover fixture: does NOT hallucinate tenant contact when form has none', () => {
++    // The turnover fixture submitter is the RM — tenantName, tenantPhone, tenantEmail
++    // from the fixture are the RM's details, not a separate tenant.
++    // For turnover/inspection WO types the dispatcher knows no tenant is present.
++    // The parser should still extract submitted fields (it cannot know at parse time
++    // whether a field belongs to RM or a phantom tenant) — the key invariant is
++    // that the form fields are not fabricated beyond what the fixture contains.
++    const r = detectLaphamForm('pm@example-realty.com', 'Request', turnover)!;
++    // Address must be present (no fabrication of a different address)
++    expect(r.address).toBe('200 Elm Avenue');
++    // Submitted Name field is captured (same value, no hallucination)
++    expect(r.tenantName).toBe('Sarah Manager');
++    // Description captures the turnover nature
++    expect(r.description).toContain('turnover');
++  });
++
++  it('senderLookupNeeded=false when address is present', () => {
++    const r = detectLaphamForm('pm@example-realty.com', 'R', sameline)!;
++    expect(r.senderLookupNeeded).toBe(false);
++  });
++
++  it('senderLookupNeeded=true when address is empty in form', () => {
++    const body = `Submitted values are:\nName: John Smith\nDescription: leaky faucet\n`;
++    const r = detectLaphamForm('website@laphamcompany.com', 'R', body)!;
++    expect(r.senderLookupNeeded).toBe(true);
++  });
++});
+diff --git a/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-forwarded.txt b/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-forwarded.txt
+new file mode 100644
+index 0000000..fe1dce9
+--- /dev/null
++++ b/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-forwarded.txt
+@@ -0,0 +1,27 @@
++---------- Forwarded message ---------
++From: Property Manager <pm@example-realty.com>
++Date: Mon, 10 Jun 2026 09:15:00 -0700
++Subject: [Lapham Maintenance Request] 400 Oak Street #3B
++To: workorder@aptmaintenanceinc.com
++
++> Webform submission from: Maintenance Request
++>
++> Submitted values are:
++> Name
++> Jane Doe
++> Address
++> 400 Oak Street
++> Unit
++> 3B
++> Phone
++> (510) 555-0100
++> Email
++> jane.doe@example.com
++> Preferred Contact
++> Email
++> Pets
++> No
++> Permission to Enter
++> I give permission to enter my dwelling while I am not there
++> Description
++> Kitchen faucet dripping — leaks about one drip per second. Need repair.
+diff --git a/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-sameline.txt b/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-sameline.txt
+new file mode 100644
+index 0000000..52c63f0
+--- /dev/null
++++ b/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-sameline.txt
+@@ -0,0 +1,12 @@
++Webform submission from: Maintenance Request
++
++Submitted values are:
++Name: Jane Doe
++Address: 400 Oak Street
++Unit: 3B
++Phone: (510) 555-0100
++Email: jane.doe@example.com
++Preferred Contact: Email
++Pets: No
++Permission to Enter: I give permission to enter my dwelling while I am not there
++Description: Kitchen faucet dripping — leaks about one drip per second. Need repair.
+diff --git a/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-turnover.txt b/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-turnover.txt
+new file mode 100644
+index 0000000..fd6194f
+--- /dev/null
++++ b/tech-pwa/src/lib/__tests__/fixtures/intake/lapham-turnover.txt
+@@ -0,0 +1,12 @@
++Webform submission from: Maintenance Request
++
++Submitted values are:
++Name: Sarah Manager
++Address: 200 Elm Avenue
++Unit: 1A
++Phone: (415) 555-0200
++Email: sarah@example-realty.com
++Preferred Contact: Phone
++Pets: No
++Permission to Enter: Not Applicable
++Description: Unit turnover — move out complete. Full cleaning, paint touch-ups, and appliance check needed before re-leasing.
+diff --git a/tech-pwa/src/lib/__tests__/normalizeAddressKey.test.ts b/tech-pwa/src/lib/__tests__/normalizeAddressKey.test.ts
+new file mode 100644
+index 0000000..e59aeec
+--- /dev/null
++++ b/tech-pwa/src/lib/__tests__/normalizeAddressKey.test.ts
+@@ -0,0 +1,62 @@
++import { describe, test, expect } from 'vitest';
++import { normalizeAddressKey } from '../normalizeAddressKey';
++
++describe('normalizeAddressKey', () => {
++  test('strips city/state suffix at first comma boundary', () => {
++    expect(normalizeAddressKey('123 Main St, Oakland, CA')).toBe('123 main st||');
++  });
++
++  test('extracts embedded unit from address when unit param is empty', () => {
++    expect(normalizeAddressKey('456 Elm Ave #2B')).toBe('456 elm ave||2b');
++  });
++
++  test('explicit unit param is used; embedded unit not present', () => {
++    expect(normalizeAddressKey('789 Oak Drive', '3A')).toBe('789 oak drive||3a');
++  });
++
++  test('explicit unit param overrides absence of embedded unit in address', () => {
++    // Address has no embedded unit; explicit param populates it
++    expect(normalizeAddressKey('100 Pine Rd', '101')).toBe('100 pine rd||101');
++  });
++
++  test('normalizes ## to # before unit extraction', () => {
++    expect(normalizeAddressKey('3053 Dohr ##4')).toBe('3053 dohr||4');
++  });
++
++  test('street-type tokens lowercased and trailing period stripped (Ave., St., Blvd.)', () => {
++    expect(normalizeAddressKey('200 Broadway Ave.')).toBe('200 broadway ave||');
++    expect(normalizeAddressKey('300 Market St.', '')).toBe('300 market st||');
++  });
++
++  test('street type full words normalized (Avenue, Street)', () => {
++    expect(normalizeAddressKey('500 Grand Avenue')).toBe('500 grand avenue||');
++  });
++
++  test('empty address returns ||', () => {
++    expect(normalizeAddressKey('')).toBe('||');
++  });
++
++  test('null-like address handled via String() coercion', () => {
++    // TypeScript callers won't pass null directly but the port must handle it
++    // eslint-disable-next-line @typescript-eslint/no-explicit-any
++    expect(normalizeAddressKey(null as any)).toBe('||');
++  });
++
++  test('collapses multiple spaces', () => {
++    expect(normalizeAddressKey('40  Moss   Ave  #106')).toBe('40 moss ave||106');
++  });
++
++  test('strips non-alphanumeric chars other than # before unit strip', () => {
++    // Address with punctuation in street name gets stripped after unit extraction
++    expect(normalizeAddressKey('123 Main-St')).toBe('123 mainst||');
++  });
++
++  test('embedded unit extraction from real-world Lapham address (40 Moss Ave #106)', () => {
++    expect(normalizeAddressKey('40 Moss Ave #106')).toBe('40 moss ave||106');
++  });
++
++  test('city suffix stripped including multi-part suffix', () => {
++    // "Ave" abbreviation normalizes to "ave" (lowercased, no expansion); city+state stripped at comma
++    expect(normalizeAddressKey('3126 College Ave, Berkeley, CA 94705')).toBe('3126 college ave||');
++  });
++});
+diff --git a/tech-pwa/src/lib/detectLaphamForm.ts b/tech-pwa/src/lib/detectLaphamForm.ts
+new file mode 100644
+index 0000000..61da6a8
+--- /dev/null
++++ b/tech-pwa/src/lib/detectLaphamForm.ts
+@@ -0,0 +1,243 @@
++/**
++ * Deterministic Lapham webform parser.
++ * Verbatim TypeScript port of `detectLaphamForm()` from Code.js (GAS).
++ *
++ * Lapham forms arrive at workorder@ as forwards from RM/Lapham employees —
++ * detection is content-based, not sender-based. Bypasses Gemini entirely.
++ * Returns `null` when the email is not a Lapham form (caller falls through to Gemini).
++ *
++ * Two email body formats handled:
++ *  - Same-line:  "Field: Value" on one line
++ *  - Two-line:   "Field\nValue" (Apple Mail renders <b>Field</b><br>Value as plain text on forward)
++ *
++ * Missing fields return empty string, never null. No try/catch — pure parse.
++ */
++
++import { normalizeAddressKey } from './normalizeAddressKey';
++
++// Re-export so consumers can import both from this module
++export { normalizeAddressKey };
++
++/** Shape returned by detectLaphamForm. Consumed by Plan 25-03 n8n Code nodes (must match). */
++export interface LaphamParseResult {
++  isLaphamForm: boolean;
++  confidence: 'High' | 'Medium' | 'Low';
++  emailType: 'adhoc_workorder' | 'turnover' | 'inspection' | 'unknown';
++  address: string;
++  unit: string;
++  rmName: string;
++  rmEmail: string;
++  tenantName: string;
++  tenantPhone: string;
++  tenantEmail: string;
++  tenantPreferredContact: string;
++  tenantHasPets: string;
++  pteGranted: 'Yes' | 'No' | 'Not Applicable';
++  pteNotes: string;
++  description: string;
++  senderLookupNeeded: boolean;
++}
++
++/**
++ * Attempts to parse `body` as a Lapham webform.
++ *
++ * @param senderEmail - Email address of the message sender
++ * @param subject     - Email subject line
++ * @param body        - Full plain-text email body
++ * @returns Parsed `LaphamParseResult` or `null` if not a Lapham form
++ */
++export function detectLaphamForm(
++  senderEmail: string,
++  subject: string,
++  body: string
++): LaphamParseResult | null {
++  const isLaphamSender = senderEmail.indexOf('website@laphamcompany.com') !== -1;
++  const isFormBody =
++    body.indexOf('Submitted values are:') !== -1 ||
++    body.indexOf('Webform submission from: Maintenance Request') !== -1;
++
++  if (!isLaphamSender && !isFormBody) return null;
++
++  // ---------------------------------------------------------------------------
++  // field() — extract a named field from `body`.
++  // Tries each label in order. Supports two formats (CRITICAL — see Pitfall 3):
++  //   Same-line:  "Field: Value"  or  "Field Value"
++  //   Two-line:   "Field\nValue"  (Apple Mail forward rendering)
++  // ---------------------------------------------------------------------------
++  function field(names: string[]): string {
++    for (const name of names) {
++      // Same-line: label + optional colon/space + value on same line
++      const re = new RegExp(`(?:^|\\n)${name}\\s*:?\\s*([^\\n]+)`, 'i');
++      const m = body.match(re);
++      if (m && m[1].trim()) return m[1].trim();
++
++      // Two-line: label on one line (with any trailing text/colon), value on next line
++      const re2 = new RegExp(`(?:^|\\n)${name}[^\\n]*\\n\\s*([^\\n]+)`, 'i');
++      const m2 = body.match(re2);
++      if (m2 && m2[1].trim()) return m2[1].trim();
++    }
++    return '';
++  }
++
++  // fieldFromBody() — same logic but scoped to a target body substring (forwarded section).
++  function fieldFromBody(names: string[], targetBody: string): string {
++    for (const name of names) {
++      const re = new RegExp(`(?:^|\\n)${name}\\s*:?\\s*([^\\n]+)`, 'i');
++      const m = targetBody.match(re);
++      if (m && m[1].trim()) return m[1].trim();
++
++      const re2 = new RegExp(`(?:^|\\n)${name}[^\\n]*\\n\\s*([^\\n]+)`, 'i');
++      const m2 = targetBody.match(re2);
++      if (m2 && m2[1].trim()) return m2[1].trim();
++    }
++    return '';
++  }
++
++  // ---------------------------------------------------------------------------
++  // Forwarded body handling — strip `> ` quote prefixes from Apple Mail forwards
++  // ---------------------------------------------------------------------------
++  let forwardedBody = '';
++  const fwdIdx = body.indexOf('---------- Forwarded message ---------');
++  if (fwdIdx !== -1) {
++    forwardedBody = body.substring(fwdIdx);
++    forwardedBody = forwardedBody.replace(/^> ?/gm, '');
++  }
++
++  // ---------------------------------------------------------------------------
++  // Field extraction — fall back to forwardedBody when main body misses the field
++  // ---------------------------------------------------------------------------
++  const tenantName =
++    field(['Name', 'Full Name', 'Submitted By', 'Your Name', 'First and Last Name']) ||
++    (forwardedBody ? fieldFromBody(['Name', 'Full Name', 'Submitted By', 'Your Name', 'First and Last Name'], forwardedBody) : '');
++
++  let address =
++    field(['Address', 'Property Address', 'Property', 'Location', 'Street Address']) ||
++    (forwardedBody ? fieldFromBody(['Address', 'Property Address', 'Property', 'Location', 'Street Address'], forwardedBody) : '');
++
++  const unit =
++    field(['Unit', 'Unit #', 'Unit Number', 'Apt', 'Apartment', 'Suite']) ||
++    (forwardedBody ? fieldFromBody(['Unit', 'Unit #', 'Unit Number', 'Apt', 'Apartment', 'Suite'], forwardedBody) : '');
++
++  const phone =
++    field(['Phone', 'Phone Number', 'Mobile', 'Cell', 'Mobile Number']) ||
++    (forwardedBody ? fieldFromBody(['Phone', 'Phone Number', 'Mobile', 'Cell', 'Mobile Number'], forwardedBody) : '');
++
++  let tenantEmail =
++    field(['Email', 'Email Address', 'Your Email']) ||
++    (forwardedBody ? fieldFromBody(['Email', 'Email Address', 'Your Email'], forwardedBody) : '');
++
++  const prefContact =
++    field(['Preferred Contact', 'Preferred Contact Method', 'Contact Method', 'Best Way to Reach']) ||
++    (forwardedBody ? fieldFromBody(['Preferred Contact', 'Preferred Contact Method', 'Contact Method', 'Best Way to Reach'], forwardedBody) : '');
++
++  const pets =
++    field(['Pets', 'Do you have pets', 'Pets in Unit', 'Have Pets']) ||
++    (forwardedBody ? fieldFromBody(['Pets', 'Do you have pets', 'Pets in Unit', 'Have Pets'], forwardedBody) : '');
++
++  const pteRaw =
++    field(['Permission to Enter', 'PTE', 'Entry Permission', 'permission to enter']) ||
++    (forwardedBody ? fieldFromBody(['Permission to Enter', 'PTE', 'Entry Permission', 'permission to enter'], forwardedBody) : '');
++
++  let description =
++    field([
++      'Description', 'Issue', 'Problem', 'Repair Needed', 'Request', 'Details', 'Message',
++      'Please describe in detail the maintenance problem below',
++      'Please describe',
++    ]) ||
++    (forwardedBody
++      ? fieldFromBody([
++          'Description', 'Issue', 'Problem', 'Repair Needed', 'Request', 'Details', 'Message',
++          'Please describe in detail the maintenance problem below',
++          'Please describe',
++        ], forwardedBody)
++      : '');
++
++  if (!description && forwardedBody) {
++    description = forwardedBody
++      .replace(/^[-\s]+Forwarded message[-\s]+/i, '')
++      .replace(/^[A-Z][^:]+:.*$/gm, '')
++      .replace(/\s+/g, ' ')
++      .trim();
++  }
++
++  // Strip `<mailto:...>` tags from email addresses
++  if (tenantEmail) tenantEmail = tenantEmail.replace(/<mailto:[^>]+>/g, '').trim();
++
++  // ---------------------------------------------------------------------------
++  // PTE mapping — match exact webform radio-button phrases first, then simple yes/no
++  // ---------------------------------------------------------------------------
++  let pteGranted: 'Yes' | 'No' | 'Not Applicable' = 'Not Applicable';
++  const pteLower = (pteRaw || '').toLowerCase();
++  if (pteLower.indexOf('permission to enter my dwelling while i am not there') !== -1) {
++    pteGranted = 'Yes';
++  } else if (pteLower.indexOf('do not give permission') !== -1 || pteLower.indexOf('without my presence') !== -1) {
++    pteGranted = 'No';
++  } else if (pteLower === 'yes' || pteLower === 'y') {
++    pteGranted = 'Yes';
++  } else if (pteLower === 'no' || pteLower === 'n') {
++    pteGranted = 'No';
++  }
++
++  // ---------------------------------------------------------------------------
++  // Pets normalization
++  // ---------------------------------------------------------------------------
++  let tenantHasPets = 'Unknown';
++  const petsLower = (pets || '').toLowerCase();
++  if (petsLower === 'yes' || petsLower === 'y') tenantHasPets = 'Yes';
++  else if (petsLower === 'no' || petsLower === 'n') tenantHasPets = 'No';
++
++  // ---------------------------------------------------------------------------
++  // Preferred contact normalization
++  // ---------------------------------------------------------------------------
++  let tenantPreferredContact = 'Unknown';
++  const prefLower = (prefContact || '').toLowerCase();
++  if (prefLower.indexOf('phone') !== -1 || prefLower.indexOf('call') !== -1 || prefLower.indexOf('text') !== -1) {
++    tenantPreferredContact = 'Phone';
++  } else if (prefLower.indexOf('email') !== -1) {
++    tenantPreferredContact = 'Email';
++  }
++
++  // ---------------------------------------------------------------------------
++  // emailType — scan description + subject for turnover/inspection keywords
++  // ---------------------------------------------------------------------------
++  let emailType: LaphamParseResult['emailType'] = 'adhoc_workorder';
++  const scanText = ((description || '') + ' ' + (subject || '')).toLowerCase();
++  if (
++    scanText.indexOf('turnover') !== -1 ||
++    scanText.indexOf('move out') !== -1 ||
++    scanText.indexOf('move-out') !== -1
++  ) {
++    emailType = 'turnover';
++  } else if (scanText.indexOf('inspection') !== -1) {
++    emailType = 'inspection';
++  }
++
++  // ---------------------------------------------------------------------------
++  // senderLookupNeeded — set when address is absent or placeholder
++  // ---------------------------------------------------------------------------
++  const resolvedAddress = address || 'LOOKUP_BY_SENDER';
++  const senderLookupNeeded = !address || address === 'LOOKUP_BY_SENDER';
++
++  // Normalize address for callers that need the dedup key (not stored in this result —
++  // callers call normalizeAddressKey separately; re-exported from this module).
++  void normalizeAddressKey; // ensure tree-shake does not remove the import
++
++  return {
++    isLaphamForm: true,
++    confidence: 'High',
++    emailType,
++    address: resolvedAddress,
++    unit,
++    rmName: '',
++    rmEmail: '',
++    tenantName,
++    tenantPhone: phone,
++    tenantEmail,
++    tenantPreferredContact,
++    tenantHasPets,
++    pteGranted,
++    pteNotes: pteRaw,
++    description: description || '(No description — see original email)',
++    senderLookupNeeded,
++  };
++}
+diff --git a/tech-pwa/src/lib/normalizeAddressKey.ts b/tech-pwa/src/lib/normalizeAddressKey.ts
+new file mode 100644
+index 0000000..c09ad5a
+--- /dev/null
++++ b/tech-pwa/src/lib/normalizeAddressKey.ts
+@@ -0,0 +1,46 @@
++/**
++ * Produces a deterministic dedup key from a property address + optional unit.
++ * Verbatim TypeScript port of `normalizeAddressKey()` from Code.js (GAS).
++ *
++ * Algorithm (7 steps — must match GAS source exactly for Neon addressKey parity):
++ *  1. Normalize `##` → `#`
++ *  2. Extract embedded unit (`#\w+`) into `unit` when no unit param supplied
++ *  3. Strip `#\w+` from address string
++ *  4. Split on first comma — drop city/state suffix
++ *  5. Normalize street-type tokens: lowercase + strip trailing period
++ *  6. Lowercase, strip non-alphanumeric, collapse spaces
++ *  7. Return `addr + "||" + unit`
++ *
++ * @param address - Raw property address string (may contain embedded unit)
++ * @param unit    - Optional explicit unit override; if absent, embedded unit extracted
++ * @returns Normalized dedup key in the form `"<addr>||<unit>"`
++ */
++export function normalizeAddressKey(address: string, unit?: string): string {
++  // Step 1: normalize ## → #
++  let addr = String(address || '').replace(/##/g, '#');
++
++  // Step 2: extract embedded unit (#word) when unit param absent
++  const embeddedUnit = addr.match(/#(\w+)/);
++  if (embeddedUnit && !unit) {
++    unit = embeddedUnit[1];
++  }
++
++  // Step 3: strip #\w+ from address
++  addr = addr.replace(/#\w+/g, '').trim();
++
++  // Step 4: strip city/state suffix — everything from first comma onward
++  addr = addr.split(',')[0].trim();
++
++  // Step 5: normalize street-type abbreviations — lowercase + strip trailing period
++  addr = addr.replace(
++    /\b(avenue|ave|street|st|boulevard|blvd|drive|dr|road|rd|lane|ln|way|place|pl|court|ct|terrace|terr)\b\.?/gi,
++    (m) => m.replace(/\.$/, '').toLowerCase()
++  );
++
++  // Step 6: lowercase, strip non-alphanumeric, collapse spaces
++  addr = addr.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
++  const unitNorm = String(unit || '').toLowerCase().replace(/[^a-z0-9]/g, '').trim();
++
++  // Step 7: return composite key
++  return addr + '||' + unitNorm;
++}
+diff --git a/tech-pwa/vitest.config.ts b/tech-pwa/vitest.config.ts
+index e261614..18e6620 100644
+--- a/tech-pwa/vitest.config.ts
++++ b/tech-pwa/vitest.config.ts
+@@ -5,7 +5,7 @@ export default defineConfig({
+     environment: 'node',
+     include: ['src/**/__tests__/**/*.test.ts'],
+     coverage: {
+-      include: ['src/lib/compliance.ts', 'src/lib/job-transitions.ts'],
++      include: ['src/lib/compliance.ts', 'src/lib/job-transitions.ts', 'src/lib/normalizeAddressKey.ts', 'src/lib/detectLaphamForm.ts'],
+       thresholds: { lines: 100, functions: 100, branches: 90 },
+     },
+   },

@@ -1,0 +1,16 @@
+name: Cleanup Neon Preview Branch
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  delete-neon-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Neon preview branch
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: lively-cell-80446221
+          branch: preview/${{ github.head_ref }}
+          api_key: ${{ secrets.NEON_API_KEY }}

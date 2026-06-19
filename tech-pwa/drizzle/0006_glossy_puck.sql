@@ -1,0 +1,1 @@
+ALTER TABLE "jobs" ADD COLUMN "dispatch_sent_at" timestamp;

@@ -1,0 +1,81 @@
+name: Deploy to Apps Script
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.gs'
+      - 'appsscript.json'
+      - 'dashboard-api/appsscript.json'
+      - '!scratch/**'
+      - '!tech-pwa/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-dashboard-api:
+    name: Deploy DashboardAPI.gs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Install clasp
+        run: npm install -g @google/clasp
+      - name: Authenticate clasp
+        run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+      - name: Push and deploy DashboardAPI
+        id: deploy
+        run: |
+          cd dashboard-api
+          clasp push --force
+          clasp deploy \
+            --deploymentId AKfycbyum_KLprgPh51GxFiwhsoNHScc4TqIBrzZS0GPfHsnhrc9hAtp03AciyiydhfyJyxCCQ \
+            --description "Auto-deploy $(git log -1 --pretty=%s)"
+      - name: Open or comment on GitHub Issue on failure
+        if: failure()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const title = `[Quality Gate] Apps Script Deployment Failed: DashboardAPI`;
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'quality-gate',
+              per_page: 50,
+            });
+            const open = existing.find(i => i.title === title);
+            const comment = [
+              `## ❌ Deployment Failed: DashboardAPI.gs`,
+              `**Commit:** ${context.sha}`,
+              `**Branch:** ${context.ref}`,
+              `**Possible Causes:**`,
+              `- Expired \`CLASPRC_JSON\` secret (Review CLAUDE.md for reauth steps)`,
+              `- Syntax error in \`.gs\` file (clasp push --force does not catch all errors)`,
+              `- Google Apps Script API Quota exceeded`,
+              ``,
+              `Check the Actions log for full details. Deployment to production blocked until resolved.`,
+            ].join('\n');
+            if (open) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: open.number,
+                body: `_New failure on commit ${context.sha.slice(0,7)} — same issue still open._`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body: comment,
+                labels: ['quality-gate'],
+              });
+            }

@@ -1,0 +1,8 @@
+Clone the design language of this landing page and build a fresh equivalent.
+Visual feel: flat. Tone: friendly · Headings: Title Case · CTA verbs: [object Object], [object Object], [object Object], [object Object]
+Primary palette: #404040, #000000, #ffffff, #1c3b7d, #4169e1.
+Typography: [object Object], [object Object].
+Corner radius vocabulary: 2, 10, 40, 100.
+Shadow vocabulary: rgb(128, 128, 128) 0px 0px 5px 0px | rgb(27, 54, 98) 0px 3px 8px 0px | rgba(0, 0, 0, 0.184) 0px 0px 50px 20px.
+Page structure:
+- footer — heading: "GET IN TOUCH"

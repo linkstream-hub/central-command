@@ -1,0 +1,288 @@
+{
+  "name": "APT Sentinel Checks",
+  "description": "Consolidated work-hours sentinel checks. Sequential Neon queries = one connection window per run. Checks: time-anomaly (open clock-ins > 12h → push to admin role), stale-job (non-terminal jobs with no tech assigned > 3 days → push to dispatch role). WC scanner dropped — see ADR-009.",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7-18 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "node-01-schedule",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notesInFlow": true,
+      "notes": "Hourly 7am-6pm PT Mon-Fri. One execution window = one Neon connection burst. Timezone set via workflow settings.timezone = America/Los_Angeles."
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*) AS cnt FROM time_records WHERE org_id = 'APT-CA' AND clock_in IS NOT NULL AND clock_out IS NULL AND clock_in < NOW() - INTERVAL '12 hours'",
+        "options": {
+          "connectionTimeout": 10
+        }
+      },
+      "id": "node-02-time-anomaly-query",
+      "name": "Neon: Time Anomaly Query",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [500, 300],
+      "credentials": {
+        "postgres": {
+          "name": "Neon Postgres"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "time-anomaly: clock-in records with no clock-out older than 12 hours. Indicates tech forgot to clock out or a session was left open. connectionTimeout=10s handles Neon cold start."
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $input.item.json;\nconst cnt = parseInt(row.cnt || row['count'] || 0, 10);\nconst finding = cnt > 0;\nconst summary = finding\n  ? `Time Anomaly: ${cnt} open clock-in record(s) older than 12 hours. Technician(s) may have forgotten to clock out.`\n  : `Time Anomaly: no open clock-ins older than 12 hours.`;\nreturn [{ json: { finding, summary, check: 'time-anomaly', count: cnt } }];"
+      },
+      "id": "node-03-time-anomaly-eval",
+      "name": "Code: Time Anomaly Eval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [750, 300],
+      "notesInFlow": true,
+      "notes": "Emits { finding: bool, summary, check, count }. finding=true if any clock-in has no clock-out after 12h."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.finding }}",
+              "value2": true
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "node-04-time-anomaly-if",
+      "name": "IF: Time Anomaly Finding?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1000, 300],
+      "notesInFlow": true,
+      "notes": "true → push alert to admin role. false → continue to stale-job check."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dispatch.aptmaintenanceinc.com/api/push/send-role",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ role: 'admin', payload: { title: 'Time Anomaly Alert', body: $json.summary } }) }}"
+      },
+      "id": "node-05-time-anomaly-alert",
+      "name": "HTTP: Time Anomaly Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 150],
+      "continueOnFail": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "CC API Key"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "POST /api/push/send-role with role=admin. Uses 'CC API Key' Header Auth credential (x-api-key: DASHBOARD_API_KEY). continueOnFail=true so stale-job check always runs even if push endpoint is down."
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*) AS cnt FROM jobs WHERE org_id = 'APT-CA' AND status NOT IN ('Complete', 'Archived') AND tech IS NULL AND created_at < NOW() - INTERVAL '3 days'",
+        "options": {
+          "connectionTimeout": 10
+        }
+      },
+      "id": "node-06-stale-job-query",
+      "name": "Neon: Stale Job Query",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [1250, 300],
+      "credentials": {
+        "postgres": {
+          "name": "Neon Postgres"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "stale-job: non-terminal jobs with no tech assigned (tech IS NULL) created more than 3 days ago. Signal is unassigned ownership, not age alone — automation-immune unlike comms-based signals. connectionTimeout=10s."
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $input.item.json;\nconst cnt = parseInt(row.cnt || row['count'] || 0, 10);\nconst finding = cnt > 0;\nconst summary = finding\n  ? `Stale Job: ${cnt} work order(s) have no tech assigned and are 3+ days old. Assign a technician in the dispatch board.`\n  : `Stale Job: no unassigned jobs older than 3 days.`;\nreturn [{ json: { finding, summary, check: 'stale-job', count: cnt } }];"
+      },
+      "id": "node-07-stale-job-eval",
+      "name": "Code: Stale Job Eval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1500, 300],
+      "notesInFlow": true,
+      "notes": "Emits { finding: bool, summary, check, count }. finding=true if any active job has tech=NULL after 3 days."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.finding }}",
+              "value2": true
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "id": "node-08-stale-job-if",
+      "name": "IF: Stale Job Finding?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1750, 300],
+      "notesInFlow": true,
+      "notes": "true → push alert to dispatch role. false → workflow ends cleanly."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dispatch.aptmaintenanceinc.com/api/push/send-role",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ role: 'dispatch', payload: { title: 'Stale Job Alert', body: $json.summary } }) }}"
+      },
+      "id": "node-09-stale-job-alert",
+      "name": "HTTP: Stale Job Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2000, 150],
+      "continueOnFail": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "CC API Key"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "POST /api/push/send-role with role=dispatch. Uses 'CC API Key' Header Auth credential (x-api-key: DASHBOARD_API_KEY)."
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Neon: Time Anomaly Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Neon: Time Anomaly Query": {
+      "main": [
+        [
+          {
+            "node": "Code: Time Anomaly Eval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Time Anomaly Eval": {
+      "main": [
+        [
+          {
+            "node": "IF: Time Anomaly Finding?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Time Anomaly Finding?": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Time Anomaly Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Neon: Stale Job Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Time Anomaly Alert": {
+      "main": [
+        [
+          {
+            "node": "Neon: Stale Job Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Neon: Stale Job Query": {
+      "main": [
+        [
+          {
+            "node": "Code: Stale Job Eval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Stale Job Eval": {
+      "main": [
+        [
+          {
+            "node": "IF: Stale Job Finding?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Stale Job Finding?": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Stale Job Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "timezone": "America/Los_Angeles",
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "tags": []
+}

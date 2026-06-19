@@ -1,0 +1,8 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "railway/flowise/Dockerfile"
+
+[deploy]
+startCommand = "flowise start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

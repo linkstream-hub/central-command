@@ -1,0 +1,311 @@
+{
+  "updatedAt": "2026-05-31T00:00:00.000Z",
+  "createdAt": "2026-04-26T23:05:51.094Z",
+  "id": "Wiuvox8VOZNtVoDN",
+  "name": "CA Break Compliance Monitor",
+  "description": "",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ca-compliance",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        112
+      ],
+      "webhookId": "ca-compliance",
+      "id": "50ea4766-abfe-4d07-90ce-9f0f22f97c50"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1eCSHpj5381R7Hhloe718r1n8fEfesY2tjYOuOLxTSd4",
+          "mode": "list",
+          "cachedResultName": "APT Lead Intake Master",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eCSHpj5381R7Hhloe718r1n8fEfesY2tjYOuOLxTSd4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1977347245,
+          "mode": "list",
+          "cachedResultName": "Time Records",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eCSHpj5381R7Hhloe718r1n8fEfesY2tjYOuOLxTSd4/edit#gid=1977347245"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Tech Badge #",
+              "lookupValue": "={{ $json.body.employeeId }}"
+            },
+            {
+              "lookupColumn": "Date",
+              "lookupValue": "={{ $json.body.shiftDate }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "name": "Read Time Records",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        -608,
+        112
+      ],
+      "id": "4879367a-acc5-4213-87b8-38093f619041",
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ugq0azaz74udheI4",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "var record      = items[0].json;\nvar webhookBody = $node[\"Webhook\"].json.body;\n\nvar clockInRaw  = record[\"Clock In\"];\nvar clockOutRaw = record[\"Clock Out\"];\n\nif (!clockInRaw || !clockOutRaw) {\n  return [{ json: {\n    techName:      webhookBody.techName   || '',\n    employeeId:    webhookBody.employeeId || '',\n    shiftDate:     webhookBody.shiftDate  || '',\n    hasViolations: false,\n    violations:    []\n  }}];\n}\n\nvar clockIn      = new Date(clockInRaw);\nvar clockOut     = new Date(clockOutRaw);\nvar breakStart   = record[\"Break Start\"] ? new Date(record[\"Break Start\"]) : null;\nvar breakMinutes = parseFloat(record[\"Break Duration (min)\"] || 0);\nvar hourlyRate   = parseFloat(webhookBody.hourlyRate || 0);\n\nvar elapsedMinutes = (clockOut - clockIn) / 60000;\nvar violations     = [];\n\nif (elapsedMinutes > 300) {\n  var firstMealViolation = null;\n  if (breakMinutes < 30) {\n    firstMealViolation = 'Missed 1st Meal Period';\n  } else if (breakStart && (breakStart - clockIn) / 60000 > 300) {\n    firstMealViolation = 'Late 1st Meal Period';\n  }\n  if (firstMealViolation) {\n    violations.push({\n      type:          firstMealViolation,\n      totalHours:    Math.round(elapsedMinutes / 60 * 100) / 100,\n      premiumAmount: hourlyRate\n    });\n  }\n}\n\nif (elapsedMinutes > 600 && breakMinutes < 60) {\n  violations.push({\n    type:          'Missed/Short 2nd Meal Period',\n    totalHours:    Math.round(elapsedMinutes / 60 * 100) / 100,\n    premiumAmount: hourlyRate\n  });\n}\n\n// P2-3: one item out — Write node uses violations[0].\n// violations[0] = 1st meal (highest priority). Multi-violation looping is P2-4.\nreturn [{ json: {\n  techName:      webhookBody.techName   || '',\n  employeeId:    webhookBody.employeeId || '',\n  shiftDate:     webhookBody.shiftDate  || '',\n  hasViolations: violations.length > 0,\n  violations:    violations\n}}];"
+      },
+      "name": "Calculate Shift State",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        112
+      ],
+      "id": "de0c0da4-f6de-4642-be63-8ab1ea459e72"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.hasViolations }}",
+              "value2": true
+            }
+          ]
+        },
+        "combineOperation": "all"
+      },
+      "name": "Any Violations?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        112
+      ],
+      "id": "142d8b5d-dcf9-41fd-9808-74687cbb2f8a"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1eCSHpj5381R7Hhloe718r1n8fEfesY2tjYOuOLxTSd4",
+          "mode": "list",
+          "cachedResultName": "APT Lead Intake Master",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eCSHpj5381R7Hhloe718r1n8fEfesY2tjYOuOLxTSd4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 411155696,
+          "mode": "list",
+          "cachedResultName": "ComplianceAlerts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eCSHpj5381R7Hhloe718r1n8fEfesY2tjYOuOLxTSd4/edit#gid=411155696"
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "Alert ID",
+              "fieldValue": "={{ 'CA-' + $now.format('yyyyMMdd-HHmmss') + '-' + $json.employeeId }}"
+            },
+            {
+              "fieldId": "Employee Name",
+              "fieldValue": "={{ $json.techName }}"
+            },
+            {
+              "fieldId": "Employee ID",
+              "fieldValue": "={{ $json.employeeId }}"
+            },
+            {
+              "fieldId": "Violation Type",
+              "fieldValue": "={{ $json.violations[0].type }}"
+            },
+            {
+              "fieldId": "Shift Date",
+              "fieldValue": "={{ $json.shiftDate }}"
+            },
+            {
+              "fieldId": "Total Hours",
+              "fieldValue": "={{ $json.violations[0].totalHours }}"
+            },
+            {
+              "fieldId": "Premium Amount",
+              "fieldValue": "={{ $json.violations[0].premiumAmount }}"
+            },
+            {
+              "fieldId": "Status",
+              "fieldValue": "Active"
+            },
+            {
+              "fieldId": "Created At",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "Resolved At"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Write to ComplianceAlerts Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        0,
+        0
+      ],
+      "executeOnce": false,
+      "id": "52e48af5-2450-45a5-b293-0ec017a640e4",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Ugq0azaz74udheI4",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Respond OK (Violations)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "b2d06108-b3d6-4cdc-8a68-4318df922a12"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Respond OK (No Violations)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        208
+      ],
+      "id": "5efeb7f4-c3bb-48e0-bef9-f2f959981994"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'Compliance check failed: unable to read Time Records from Google Sheets.', employeeId: $('Webhook').item.json.body.employeeId, shiftDate: $('Webhook').item.json.body.shiftDate, timestamp: $now.toISO() }) }}",
+        "options": {
+          "responseCode": 503
+        }
+      },
+      "name": "Respond Error (Sheets Failed)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        330
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Read Time Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Time Records": {
+      "main": [
+        [
+          {
+            "node": "Calculate Shift State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error (Sheets Failed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Shift State": {
+      "main": [
+        [
+          {
+            "node": "Any Violations?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Violations?": {
+      "main": [
+        [
+          {
+            "node": "Write to ComplianceAlerts Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond OK (No Violations)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to ComplianceAlerts Sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond OK (Violations)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "errorWorkflow": "REPLACE_WITH_PTOW_ERROR_HANDLER_WORKFLOW_ID"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "tags": []
+}
