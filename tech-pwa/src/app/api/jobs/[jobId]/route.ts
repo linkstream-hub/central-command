@@ -8,6 +8,8 @@ import { sendTenantScheduledEmail, sendPteCoordinationEmail } from '@/lib/email'
 import type { JobStatus } from '@/lib/types';
 import { resolveJobStatus, resolveEmailTrigger } from '@/lib/job-transitions';
 import { mapNeonJobToJob } from '@/lib/job-mapper';
+import { createJobStateService, toJobId, toTechId } from '@/domain/job';
+import { makeJobStateDAL } from '@/lib/dal/job-state-dal';
 
 export async function GET(
   req: Request,
@@ -101,10 +103,63 @@ export async function PATCH(
       return NextResponse.json({ success: true, message: 'No updates provided' });
     }
 
-    // Auto-transition: RtS → Scheduled when tech + date + time are all present
-    // Server-side safety net; UI already does this client-side before submitting
-    const resolvedStatus = resolveJobStatus({ prevStatus: prevStatus as JobStatus, updates, jobState });
-    if (resolvedStatus) updates.status = resolvedStatus;
+    // ── FSM gate: Ready to Schedule → Scheduled ──────────────────────────────────
+    // Fires when dispatcher assigns tech + date + time on an RtS job.
+    // The FSM validates, writes status via DAL, and declares SEND_CONFIRMATION side effect.
+    const willSchedule =
+      prevStatus === 'Ready to Schedule' &&
+      (updates.tech !== undefined || updates.scheduledDate !== undefined || updates.scheduledTime !== undefined);
+
+    if (willSchedule) {
+      const effectiveTech = updates.tech ?? jobState.tech;
+      const effectiveDate = updates.scheduledDate ?? jobState.scheduledDate;
+      const effectiveTime = updates.scheduledTime ?? jobState.scheduledTime;
+
+      if (!effectiveTech || !effectiveDate || !effectiveTime) {
+        return NextResponse.json(
+          { success: false, message: 'Cannot schedule: tech, date, and time all required' },
+          { status: 422 }
+        );
+      }
+
+      const window = effectiveTime === 'morning' || effectiveTime === 'afternoon' || effectiveTime === 'late_afternoon'
+        ? effectiveTime
+        : 'morning'; // fallback — scheduledTime values should already match ArrivalWindow
+
+      const svc = createJobStateService(makeJobStateDAL());
+      const fsmResult = await svc.transition({
+        type: 'SCHEDULE',
+        payload: {
+          jobId: toJobId(jobId),
+          techId: toTechId(effectiveTech),
+          scheduledDate: effectiveDate,
+          scheduledWindow: window,
+        },
+      });
+
+      if (!fsmResult.ok) {
+        return NextResponse.json(
+          { success: false, message: `Cannot schedule: ${fsmResult.error.code}` },
+          { status: 409 }
+        );
+      }
+
+      // FSM wrote status + assignedTechId + scheduledDate + scheduledWindow via DAL.
+      // Remove those from the direct-write `updates` to avoid double-write.
+      delete updates.status;
+      delete updates.tech;
+      delete updates.scheduledDate;
+      delete updates.scheduledTime;
+
+      // TODO Phase 21: execute fsmResult.value.sideEffects (SEND_CONFIRMATION) instead
+      // of resolveEmailTrigger. For now, the existing email block below handles it.
+    }
+
+    // Pre-FSM path: all other status changes (Phase 21 will replace)
+    if (!willSchedule) {
+      const resolvedStatus = resolveJobStatus({ prevStatus: prevStatus as JobStatus, updates, jobState });
+      if (resolvedStatus) updates.status = resolvedStatus;
+    }
 
     await db.update(jobs)
       .set(updates)
