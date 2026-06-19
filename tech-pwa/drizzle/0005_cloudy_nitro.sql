@@ -1,0 +1,2 @@
+ALTER TABLE "job_comments" ADD COLUMN "sheets_id" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "job_comments_sheets_id_idx" ON "job_comments" USING btree ("sheets_id") WHERE sheets_id IS NOT NULL;

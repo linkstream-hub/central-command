@@ -1,0 +1,37 @@
+CC FULL VALIDATION RESULTS — 2026-05-28
+Preview URL: https://tech-ol3ibg7fv-aptmaintenanceincs-projects.vercel.app
+Neon branch: preview/feat/go-live-validation (ep-holy-glade-aktl2mly)
+
+AUTOMATED FLOWS (AG — API key auth):
+
+Flow | Description                      | Result  | HTTP Status | Evidence
+-----|----------------------------------|---------|-------------|----------
+
+MANUAL FLOWS (Brandon — Google OAuth session):
+
+Flow | Description                      | Result
+-----|----------------------------------|--------
+M1   | Dispatch Dashboard Login          | PENDING
+M2   | View Test Job in UI               | PENDING
+M3   | Assign + Schedule (email test)    | PENDING
+M4   | Comms Thread View                 | PENDING
+M5   | Reply to Tenant                   | PENDING
+
+KNOWN GAPS (not failures — pre-existing, remediation required):
+- Original email body not stored in comms_messages (Phase 3 regression — Gmail fallback removed, gmailMsgId still on job record, restore required)
+- SMS/tech channel not supported (422 — by design, Phase 4)
+- Comms routes require Google OAuth (no API key path — by design)
+- Email delivery via API key: PATCH /api/jobs returns 200 but email does NOT fire (session auth required for Resend trigger — by design)
+- /api/jobs (GET list) is session-only — no x-api-key branch in route code (Flow A returns 401 with API key — expected)
+- /api/techs is session-only — no x-api-key branch in route code (Flow C returns 401 with API key — expected)
+
+FAILURES (observed bugs, not gaps):
+(none)
+
+EVIDENCE (HTTP status + body excerpt per automated flow):
+
+
+Summary: 0 PASS | 0 FAIL
+
+PLAYWRIGHT SUMMARY LINE:
+0 tests run — 0 passed, 0 failed

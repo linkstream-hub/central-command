@@ -1,0 +1,119 @@
+diff --git a/.planning/phases/28-sentinel-diet/SENTINEL_INVENTORY.md b/.planning/phases/28-sentinel-diet/SENTINEL_INVENTORY.md
+new file mode 100644
+index 0000000..7db784f
+--- /dev/null
++++ b/.planning/phases/28-sentinel-diet/SENTINEL_INVENTORY.md
+@@ -0,0 +1,113 @@
++# Sentinel Inventory — Phase 28
++
++**Source:** `railway_read_sentinels.cjs` output, run 2026-06-14 by Brandon
++**Railway project:** apt-infrastructure (`c905a353-0927-4eeb-85f1-11c11d392a08`)
++**Environment:** production (`dc5f2d57-7a83-43b9-b3d0-3f95792678ea`)
++
++---
++
++## Critical Discovery
++
++**ALL FOUR sentinels have `DATABASE_URL present: false`.** None query Neon directly. They are API clients that call the GAS Dashboard API (`DASHBOARD_API_URL`) which then (formerly) hit Neon. Since GAS auth has since been revoked for these services, all current logs show UNAUTHORIZED — the call chain is broken. This means:
++
++1. **No SQL can be ported** — there is no SQL inside these containers; they made HTTP calls.
++2. **Wave 1 must build the Neon SQL from scratch** using the Drizzle schema + check intent inferred from names and log messages.
++3. **spec-architect confirmed: RETIRE-without-porting** per Pitfall 4 (no DATABASE_URL, no Neon access, not a polling sentinel).
++
++---
++
++## Service Inventory
++
++| Field | sentinel-wc-scanner | sentinel-time-anomaly | sentinel-stale-job | sentinel-spec-architect |
++|-------|--------------------|-----------------------|--------------------|------------------------|
++| **Railway service ID** | `0901b8ff-08d9-4adb-b5f4-075238a7bfeb` | `5e52ad9b-b7e6-4018-8f29-04941c359df6` | `683baff4-3c47-4acf-9f68-eb656bc7575d` | `7efbc87b-04af-4fef-a84b-21550bc9bf34` |
++| **DATABASE_URL present** | NO | NO | NO | NO |
++| **Data access pattern** | HTTP → GAS `getDispatchData` via `DASHBOARD_API_URL` | HTTP → GAS `getComplianceAlerts` via `DASHBOARD_API_URL` | HTTP → GAS `getDispatchData` via `DASHBOARD_API_URL` | Unknown (no log lines; has `SPEC_ARCHITECT_KEY` + GitHub vars) |
++| **Polling cadence (from logs)** | Daily at ~21:38 UTC (1×/day) | Every hour at :39 UTC (24×/day — biggest contributor) | Every 4 hours at 01/05/09/13/17/21:38 UTC (6×/day) | Unknown — no log lines returned |
++| **Log message** | `Running WC code scan…` → `getDispatchData failed: UNAUTHORIZED` | `Running time-anomaly audit…` → `getComplianceAlerts returned failure: UNAUTHORIZED` | `Running stale-job scan…` → `getDispatchData failed: UNAUTHORIZED` | No log lines |
++| **Neon tables** | [GAP — API-mediated; no direct Neon access; inferred: `jobs` + work order fields] | [GAP — API-mediated; inferred: `time_entries` / clock records or similar] | [GAP — API-mediated; inferred: `jobs` table, `status` / `updated_at` fields] | None — not a Neon poller |
++| **SQL / check logic** | [GAP — no SQL in container; see Wave 1 guidance below] | [GAP — no SQL in container; see Wave 1 guidance below] | [GAP — no SQL in container; see Wave 1 guidance below] | N/A |
++| **Read-only vs writes** | Read-only (monitoring/alerting) | Read-only (monitoring/alerting) | Read-only (monitoring/alerting) | N/A |
++| **Current status** | PAUSED (2026-06-11, Brandon) | PAUSED (2026-06-11, Brandon) | PAUSED (2026-06-11, Brandon) | PAUSED (2026-06-11, Brandon) |
++| **Verdict** | **PORT** (build Neon SQL from scratch in Wave 1) | **PORT** (highest priority — was 24×/day) | **PORT** (build Neon SQL from scratch in Wave 1) | **RETIRE-without-porting** |
++
++---
++
++## Per-Service Detail
++
++### sentinel-wc-scanner
++
++- **Railway ID:** `0901b8ff-08d9-4adb-b5f4-075238a7bfeb`
++- **DATABASE_URL present:** NO
++- **Cadence:** 1×/day (~21:38 UTC)
++- **Check purpose (inferred):** "WC code scan" — scans work orders for missing/invalid WC (work code) data. Called GAS `getDispatchData` to get current dispatch state, then scanned for anomalies.
++- **SQL recovery:** [GAP — no SQL in container; called GAS API which was intermediate layer to Neon. Wave 1 executor must: (1) read Drizzle schema for `jobs` table WC/work-code columns, (2) design a direct Neon SELECT for WOs with missing or invalid work codes, (3) alert if count > 0 via PTOW Error Handler]
++- **Wave 1 SQL guidance:** Query `jobs` table for records where work code field is NULL or does not match valid codes. Confirm exact column names from `tech-pwa/src/db/schema.ts`.
++- **Verdict:** PORT — schedule 2×/day during work hours (e.g., 9am + 2pm PT Mon–Fri)
++
++---
++
++### sentinel-time-anomaly
++
++- **Railway ID:** `5e52ad9b-b7e6-4018-8f29-04941c359df6`
++- **DATABASE_URL present:** NO
++- **Cadence:** 24×/day (every hour — THE primary Neon compute driver when active)
++- **Check purpose (inferred):** "time-anomaly audit" — called GAS `getComplianceAlerts` to detect time record anomalies: likely clock-ins without matching clock-outs, anomalously long shifts, or compliance threshold violations.
++- **SQL recovery:** [GAP — no SQL in container; called GAS `getComplianceAlerts` endpoint. Wave 1 executor must: (1) read Drizzle schema for time/clock tables, (2) design direct Neon SQL for open clock-ins older than X hours, shifts exceeding Y hours, or other anomaly patterns, (3) alert via PTOW Error Handler if findings]
++- **Wave 1 SQL guidance:** Check for clock-in records with no clock-out after N hours (e.g., 12h threshold). Confirm table/column names from schema — look for `clock_sessions`, `time_entries`, or equivalent in `tech-pwa/src/db/schema.ts`. Work-hours-only scheduling reduces this from 24×/day to ~11×/day (7am–6pm PT).
++- **Verdict:** PORT — highest priority; was the biggest compute contributor at 24×/day
++
++---
++
++### sentinel-stale-job
++
++- **Railway ID:** `683baff4-3c47-4acf-9f68-eb656bc7575d`
++- **DATABASE_URL present:** NO
++- **Cadence:** 6×/day (every 4 hours)
++- **Check purpose (inferred):** "stale-job scan" — called GAS `getDispatchData` to detect jobs stuck in an active status for too long. Looking for WOs overdue for status updates or technician acknowledgment.
++- **SQL recovery:** [GAP — no SQL in container; called GAS `getDispatchData`. Wave 1 executor must: (1) read Drizzle schema for `jobs` / `work_orders` table + status fields, (2) design a Neon SELECT for jobs in non-terminal status (`pending`, `assigned`, `in-progress`, etc.) whose `updated_at` exceeds a staleness threshold (e.g., 3 days), (3) alert via PTOW Error Handler]
++- **Wave 1 SQL guidance:** Query jobs with active/non-terminal status where `updated_at` or `dispatched_at` is older than staleness threshold. Confirm field names from `tech-pwa/src/db/schema.ts`. Consider joining with technician assignments to qualify.
++- **Verdict:** PORT — schedule 2×/day during work hours (9am + 2pm PT Mon–Fri); 4× frequency during work-hours window is sufficient for a stale-job alert
++
++---
++
++### sentinel-spec-architect
++
++- **Railway ID:** `7efbc87b-04af-4fef-a84b-21550bc9bf34`
++- **DATABASE_URL present:** NO
++- **Cadence:** Unknown — no log lines returned from Railway
++- **Check purpose:** NOT a monitoring sentinel. Has `SPEC_ARCHITECT_KEY`, `GITHUB_REPO`, `GITHUB_TOKEN`, `RAILWAY_PUBLIC_DOMAIN`, `RAILWAY_STATIC_URL` — suggests a spec-generation or code-architecture service, not a DB poller. Confirmed by RESEARCH.md (Open Question 2): "likely a GH Actions-adjacent spec-generator — inferred from git history 'upgrade spec-generator to Claude API'."
++- **SQL recovery:** N/A — no Neon access ever
++- **Verdict:** **RETIRE-without-porting** — SENT-01 compliant by deletion alone. Not a Neon poller (confirmed: no DATABASE_URL). Excluded from n8n consolidation scope. Delete in Wave 2 along with the other three.
++
++---
++
++## Wave 1 Build Inputs
++
++Wave 1 (`28-02`) builds the consolidated n8n workflow. This is the spec:
++
++| Input | Value |
++|-------|-------|
++| Checks to port | wc-scanner, time-anomaly, stale-job (3 checks; spec-architect excluded) |
++| Check execution pattern | Sequential in one workflow — one connection window per run |
++| Schedule | Work hours only: 7am–6pm PT Mon–Fri; timezone `America/Los_Angeles` in n8n workflow settings |
++| Suggested cadence | wc-scanner: 2×/day (9am + 2pm) · time-anomaly: hourly (0 7-18 * * 1-5) · stale-job: 2×/day (9am + 2pm) |
++| Neon credential | Existing "Neon Postgres" credential in n8n (HTTP mode — SENT-02 compliant) |
++| Alert path | PTOW Error Handler workflow (existing) — set as error workflow in n8n settings |
++| SQL source | **Must be designed from scratch** — read `tech-pwa/src/db/schema.ts` + Drizzle migrations to find correct table/column names |
++| n8n workflow destination | `tools/n8n/workflows/phase-28-sentinel-checks.json` |
++
++---
++
++## Wave 2 Deletion Inputs
++
++Wave 2 (`28-03`) deletes the Railway services. Service IDs for deletion script:
++
++```
++sentinel-wc-scanner:    0901b8ff-08d9-4adb-b5f4-075238a7bfeb
++sentinel-time-anomaly:  5e52ad9b-b7e6-4018-8f29-04941c359df6
++sentinel-stale-job:     683baff4-3c47-4acf-9f68-eb656bc7575d
++sentinel-spec-architect: 7efbc87b-04af-4fef-a84b-21550bc9bf34
++```
++
++All four deleted in Wave 2 (not slept — locked decision from CONTEXT.md).

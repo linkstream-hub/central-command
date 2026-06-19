@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# We don't copy package.json and run npm install here because we want to use the host's node_modules 
+# or mount them. But standard practice for a dev container is to copy and install so it has its own binaries,
+# then mount the source code over it.
+
+COPY package*.json ./
+RUN npm install --legacy-peer-deps
+
+COPY . .
+
+# Expose our unique port
+EXPOSE 4141
+
+# Start the Next.js development server on the custom port
+CMD ["npm", "run", "dev", "--", "-p", "4141"]

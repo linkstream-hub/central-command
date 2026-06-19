@@ -1,0 +1,5 @@
+- Lock and Send click → loading state visible: YES
+- Confirmation screen appeared with counts: techCount=1 jobCount=1
+- Second click 409 alert appeared: YES
+- N8N_LOCK_SEND_WEBHOOK_URL set: YES (graceful degrade confirmed with ECONNREFUSED)
+- Playwright summary line: 43 passed (3.0m), 69 skipped, 0 failed

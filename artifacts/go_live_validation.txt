@@ -1,0 +1,81 @@
+GO-LIVE VALIDATION RESULTS — 2026-05-28
+Preview URL (S109): https://tech-h40z0nfrs-aptmaintenanceincs-projects.vercel.app
+Neon branch: preview/feat/go-live-validation (preview ep-holy-glade-aktl2mly)
+Test credentials: badge T01, PIN 1234
+
+=====================================================================
+AUTOMATED FLOW RESULTS (S108 cc_full_validation.py)
+=====================================================================
+Flow | Description              | Result | Evidence
+-----|--------------------------|--------|--------
+1    | Tech Login               | PASS   | 200 {"success":true,"token":"[REDACTED]","techId":"T01"}
+2    | Job Queue                | PASS   | 200 {"success":true,"jobs":[...TEST-VALIDATION-001...]}
+3    | Clock In (API level)     | PASS   | 200 {"success":true,"recordId":"9fa55103-..."}
+4    | Break Start (API level)  | PASS   | 200 {"success":true,"breakStart":"..."}
+5    | Break End (API level)    | PASS   | 200 {"success":true,"breakDurationMinutes":0}
+6    | Job Complete             | PASS   | 200 {"success":true}
+7    | Clock Out                | PASS   | 404 "Already clocked out" (acceptable — record closed by job/complete)
+8    | Dashboard Auth Guard     | PASS   | 401 {"success":false,"message":"Unauthorized"} — route properly guarded
+9    | Archive Auth Guard       | PASS   | 401 — route guarded
+
+=====================================================================
+MANUAL BROWSER FLOWS (S109 — tech-h40z0nfrs preview)
+Tester: Brandon | Date: 2026-05-28
+=====================================================================
+Flow | Description              | Result | Notes
+-----|--------------------------|--------|--------
+1    | Tech Login               | PASS   | Badge/PIN form visible via ?tech=1, session established
+2    | Job Queue                | PASS   | Test jobs appear (2 seeded jobs — expected)
+3    | Clock In / Shift Active  | PASS   | ClockedInBar appears green, timer running
+4    | Break Start              | PASS   | Bar turns purple, "On Break" label — HTTP 200
+5    | Break End                | PASS   | Bar returns green — HTTP 200
+6    | Job Complete             | PASS   | Location prompt → celebration overlay → job status Complete
+7    | Clock Out + Attestation  | PASS   | End Shift (double-confirm) → "Confirm Your Time" modal → session clears
+8    | Dashboard Live Status    | PASS   | Google OAuth (brandon@aptmaintenanceinc.com) → dashboard loads with real jobs; session confirms permissions set correctly
+9    | Archive Job              | PASS   | Archived WO from job detail modal → job removed from Live queue immediately
+
+=====================================================================
+BUGS FOUND AND FIXED DURING VALIDATION
+=====================================================================
+Fix 1 — login/page.tsx: detectMode() always returned 'dispatch' on *.vercel.app
+  Patch: added ?tech=1 override (commit 7b25da2)
+
+Fix 2 — scripts/seed-test-data.ts: leadId→jobId column name, missing role field
+  Patch: seed corrections (commit 446e8e6)
+
+Fix 3 — jobs/page.tsx, job/[jobId]/page.tsx: getTechJobs→getJobs wrong action key
+  Patch: correct action key (commit 615813f)
+
+Fix 4 — ShiftSession.recordId was undefined (shift/start returns shiftId, not recordId)
+  Root cause: break/start, break/end, endShift, signAttestation all used shift.recordId=undefined
+  Patch: renamed ShiftSession.recordId→shiftId, rewrote break routes to query shifts table,
+         fixed all four ClockedInBar.tsx call sites, fixed attestation payload (commit adaeb28)
+
+Fix 5 — auth.ts: NEXT_PUBLIC_DASHBOARD_API_URL missing from .env.local
+  Root cause: env var not set locally → fetchStaffPermissions returned null silently → permissions=null → AccessDenied
+  Patch: added URL to .env.local; improved GAS error logging in auth.ts (S111)
+
+Fix 6 — DashboardAPI.gs v41: Active column strict boolean check
+  Root cause: Staff Roster Active column stored as text "true" → row[DA_SR.ACTIVE] !== true → INACTIVE error
+  Patch: accept both boolean true and string "true" (S111)
+
+Fix 7 — dashboard-api.ts: archiveJob in DEV_BLOCKED_WRITES
+  Root cause: archiveJob was blocked in dev (legacy GAS guard) — now routes to Neon, safe to allow
+  Patch: removed archiveJob from DEV_BLOCKED_WRITES set (S111)
+
+=====================================================================
+KNOWN ISSUES / PRODUCT GAPS (non-blocking for go-live)
+=====================================================================
+P1 — Tech timecard view: No UI for techs to view their own hours worked per period.
+     Data is in Neon (shifts table: shiftStart, shiftEnd, totalBreakMinutes, actualHours +
+     attestations table). Missing: a "My Hours" page in the Tech PWA showing the tech's
+     shift history and weekly totals. Required for hourly employees to verify their own pay.
+     → Roadmap: post-go-live sprint.
+
+P2 — "Rest Period" button label: Should read "Start Break" (UX clarity)
+     → Backlog.
+
+P3 — Timer carryover across browsers: Expected behavior (idempotent shift/start returns
+     original shiftStart from DB). Not a bug.
+
+P4 — Two seeded test jobs visible in queue: Artifact from seed script, not production behavior.

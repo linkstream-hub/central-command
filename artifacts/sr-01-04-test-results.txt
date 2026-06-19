@@ -1,0 +1,6 @@
+- Keypad visible at /login?tech=1: PASS
+- Badge digits filled on keypress: PASS
+- PIN dots filled (4 amber): PASS
+- "Invalid badge number or PIN." error on bad credentials: PASS
+- auth.spec.ts 1.6 result: PASS
+- Full Playwright summary line: 43 passed (2.6m), 69 skipped, 0 failed

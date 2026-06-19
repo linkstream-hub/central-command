@@ -1,0 +1,12 @@
+{
+  "name": "sentinel-health",
+  "version": "1.0.0",
+  "description": "APT Central Command — Health & Uptime Sentinel",
+  "main": "index.js",
+  "type": "module",
+  "scripts": { "start": "node index.js" },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "engines": { "node": ">=20" }
+}

@@ -1,0 +1,83 @@
+# APT Central Command - Git Ignore
+node_modules
+.next
+out
+build
+.env
+.env.local
+
+*.log
+.DS_Store
+dist
+# Python
+*.pyc
+# Railway / Misc
+railway/n8n/.env
+railway/flowise/.env
+scratch/
+# Claude Code worktrees
+.claude/worktrees/
+# Claude Code runtime files (sessions, state, local settings, skill packages)
+.claude/sessions/
+.claude/state/
+.claude/settings.local.json
+.claude/skills/
+.claude/memory/session-log.md
+# Claude Code per-project state subdirectories
+tech-pwa/.claude/
+# GCP OAuth credential downloads — contain client secrets, never commit
+*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!playwright.config.json
+!.clasp.json
+!tools/n8n/workflows/*.json
+# AG review artifacts (ephemeral — overwritten each sprint)
+artifacts/ag_diff.txt
+artifacts/ag_test_results.txt
+artifacts/*-test-results.txt
+artifacts/*.png
+tech-pwa/artifacts/
+# Production data dumps
+data_exports/
+tech-pwa/scripts/data/
+# ADW Orchestrator  runtime directories
+trees/
+agents/*/raw_output/
+agents/context_bundles/
+agents/hook_logs/
+agents/security_logs/
+agents/scout_files/
+logs/
+.codegraph/
+.agents/skills/
+# Stray binaries
+*.exe
+
+.vercel
+
+# Ops credentials — never commit
+.ops/
+
+# AI tool local configs — not project artifacts, regenerate on demand
+.agent/
+.augment/
+.clinerules/
+.codebuddy/
+.codex/
+.cursor/
+.gemini/
+.gsd-profile
+.hermes/
+.kilo/
+.opencode/
+.qwen/
+.trae/
+.windsurf/
+# Duplicate GSD install at repo root (canonical: .claude/gsd-core/)
+gsd-core/
+# Temp / one-off scripts
+fix_tavily_pkg.js
+ROSTER_PROOF.txt
+

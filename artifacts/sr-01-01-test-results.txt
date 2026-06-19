@@ -1,0 +1,4 @@
+- Font check result: document.fonts.check("1em Outfit") = true
+- /login accent color: amber = PASS
+- /live accent color: amber = PASS
+- Playwright summary line: 44 passed, 68 skipped, 0 failed

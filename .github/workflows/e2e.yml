@@ -1,0 +1,59 @@
+name: E2E Test Suite
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tech-pwa/**'
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Playwright E2E
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tech-pwa
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tech-pwa/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium webkit --with-deps
+
+      - name: Run E2E tests
+        id: e2e
+        run: npx playwright test
+        env:
+          NODE_ENV: test
+          DEV_BYPASS_AUTH: 'true'
+          AUTH_SECRET: ${{ secrets.E2E_AUTH_SECRET }}
+          NEXTAUTH_SECRET: ${{ secrets.E2E_AUTH_SECRET }}
+          NEXTAUTH_URL: http://localhost:3010
+          GOOGLE_CLIENT_ID: dummy-id
+          GOOGLE_CLIENT_SECRET: dummy-secret
+          PLAYWRIGHT_BASE_URL: http://localhost:3010
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-results
+          path: tech-pwa/test-results/
+          retention-days: 14
+

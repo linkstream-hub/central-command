@@ -1,0 +1,25 @@
+# Normalize all text files to LF on commit.
+# Git will convert CRLF → LF when you stage a file, and will not
+# convert back on checkout — so editors see LF on disk (which both
+# VS Code and PowerShell handle fine). This eliminates the
+# "LF will be replaced by CRLF" warning permanently.
+
+* text=auto eol=lf
+
+# Windows batch files genuinely need CRLF — keep them as-is.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files — no line-ending conversion ever.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+.graphify/graph.json merge=graphify-json
+graphify-out/graph.json merge=graphify-json

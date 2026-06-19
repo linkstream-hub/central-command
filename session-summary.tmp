@@ -1,0 +1,47 @@
+## Objective
+S153: Domain model grilling + architectural decisions. Lock phase sequence. Save memory. Close session.
+
+## What Worked
+- Graphify binary conflicts resolved: pip + npm shadows removed; bare `graphify` → pipx 0.8.38 correct
+- ADR-004 rewritten: 8-state → 6-state blocker-organized WO lifecycle
+- ADR-014 new: domain/ boundary with ESLint enforcement
+- ADR-010 amended: JobStateService location → domain/job/job-state.ts
+- CONTEXT.md glossary updated (6 new/revised terms)
+- SESSION_STATE.md fully rewritten for S154+
+- Matt Pocock skills installed (34 skills via `npx skills@latest add mattpocock/skills`)
+- Linkstream entity formed (infra restructure pending)
+- All changes committed to main via fix/dashboard-stats-semantics branch
+
+## What Failed
+- Context compacted mid-session; graphify pipeline output from prior session lost
+- PTE coordination was underspecified in original ADR; grilling session corrected it
+
+## Next Steps (in order)
+1. Linkstream infra restructure — GitHub new account + org → transfer repo → Neon → Railway (n8n redeploy) → Vercel; Brandon: APT GCP Gemini key
+2. `design-an-interface` on JobStateService — ADR-010 interface update (new Advance event, remove Archive, remove PTE_REQUIRED)
+3. Schema migration — Drizzle migration for ADR-004 columns (woType, missingFields, tenantProposedDate, tenantProposedWindow, schedulingToken, schedulingTokenExpiresAt, scheduledWindow)
+4. `request-refactor-plan` for GAS exit → GitHub issue with tiny commits
+5. install eslint-plugin-import before Phase 17
+6. Phase 17 TDD-first — red job-state.test.ts from ADR-010 table → green domain/job/job-state.ts → wire 3 API routes
+7. PR for fix/dashboard-stats-semantics — diff review checklist in memory (project_diff_review_dashboard_stats.md)
+
+## Key Decisions Locked (S153)
+- 6-state machine: Needs Info → Awaiting Tenant → Ready to Schedule → Scheduled → In Progress → Complete
+- woType = field (not status): maintenance | turnover | inspection
+- missingFields[] drives Needs Info sub-labels + "Request Info" suggested actions
+- Awaiting Tenant: CC auto-sends SMS + email with scheduling link (date + arrival window)
+- Arrival windows: morning | afternoon | late_afternoon (not exact times)
+- Dispatcher confirms after tenant proposes (never auto-schedules)
+- Two reschedule paths: internal field update OR tenant re-coordination → Awaiting Tenant
+- 21-day auto-drop replaces Archived status
+- domain/ directory: ESLint-enforced boundary, DAL injection, narrow public API via index.ts
+- ADR count: 14
+
+## Graphify Usage (corrected)
+- Correct binary: C:/Users/Aldrick/.local/bin/graphify.exe (pipx 0.8.38)
+- Bare `graphify` now resolves correctly (pip + npm shadows removed)
+- Command: graphify update . (AST-only, ~2 min, no LLM)
+
+## Branch State
+Current: fix/dashboard-stats-semantics (commit 33617fd)
+PR not yet opened for this branch.

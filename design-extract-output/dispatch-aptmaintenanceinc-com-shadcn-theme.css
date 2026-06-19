@@ -1,0 +1,17 @@
+/* shadcn/ui Theme — extracted from https://dispatch.aptmaintenanceinc.com */
+/* Paste into your globals.css */
+
+@layer base {
+  :root {
+    --background: 223 21% 6%;
+    --foreground: 0 0% 100%;
+    --primary: 223 21% 6%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 215 16% 47%;
+    --muted-foreground: 0 0% 100%;
+    --border: 215 16% 47%;
+    --radius: 12px;
+  }
+}

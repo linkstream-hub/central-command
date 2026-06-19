@@ -1,0 +1,91 @@
+{
+  "name": "FLAG Gate Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "flag-gate",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Receive FLAG Gate",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.RESEND_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ JSON.stringify({ \"from\": \"ADW Orchestrator <onboarding@resend.dev>\", \"to\": [\"brandon@aptmaintenanceinc.com\"], \"subject\": \"\\u2691 FLAG Review Required \\u2014 PR #\" + $json.body.pr_number + \" \\u2014 \" + $json.body.spec, \"text\": \"ADW Orchestrator \\u2014 DIFF REVIEW RETURNED FLAG\\n============================================\\n\\nPR #: \" + $json.body.pr_number + \"\\nSpec: \" + $json.body.spec + \"\\nTime: \" + $json.body.timestamp + \"\\n\\nThe automated diff review requires human judgment before proceeding.\\n\\n--- REVIEW EXCERPT ---\\n\" + $json.body.review_excerpt + \"\\n\\n--- NEXT STEPS ---\\n1. Review the full diff on GitHub PR #\" + $json.body.pr_number + \"\\n2. If acceptable, tell AG to run:\\n\\n   \" + $json.body.resume_command + \"\\n\\n3. If blocked, tell AG to address the review findings first.\" }) }}",
+        "options": {}
+      },
+      "id": "2",
+      "name": "Send FLAG Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\":\"notified\"}",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receive FLAG Gate": {
+      "main": [
+        [
+          {
+            "node": "Send FLAG Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send FLAG Email": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

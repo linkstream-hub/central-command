@@ -1,0 +1,3 @@
+# WC Code populated at tech-assignment, not caught by sentinel
+
+WC code (`wc_code`) is only auto-resolved by `resolveWCCode(category, hourlyRate)` in `createManualJob`. Email-intake jobs (the majority) are created with `wc_code = NULL` and the PATCH route does not recalculate it when a tech is assigned. A sentinel checking `wc_code IS NULL` would fire on virtually every non-terminal job — signal becomes noise. The correct fix is to call `resolveWCCode` inside `/api/jobs/[jobId]` PATCH when `tech` is set, so WC code is populated at the moment of assignment. A narrow sentinel can catch residual gaps (unknown category, unresolved tech) once the root cause is fixed. The Phase 28 WC scanner sentinel is dropped; the PATCH route fix is filed as a follow-up feature.

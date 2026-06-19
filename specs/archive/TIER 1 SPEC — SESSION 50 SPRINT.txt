@@ -1,0 +1,802 @@
+TIER 1 SPEC — SESSION 50 SPRINT
+GOAL
+Fix two critical dispatch bugs (URL tab deep-linking and trainee warning parity) and redesign the Dispatch Dashboard and Tech PWA to APT's glassmorphism standard (dark mode, backdrop blur, Framer Motion, high-contrast typography, readable at mobile 375px). This sprint ensures notification links work, trainee safety warnings are consistent, and the UI matches APT's Linear/Fey aesthetic.
+
+FILE INVENTORY
+Files to Touch
+
+
+Path	Purpose	Changes
+tech-pwa/src/app/live/page.tsx	Dispatch Queue main page	Add useSearchParams, initialize statusTab from URL params on mount
+tech-pwa/src/components/JobDetailModal.tsx	Job detail modal (dispatch)	Add trainee rank check + amber inline warning if T and no supervisor co-assigned
+tech-pwa/src/components/DispatchQueue.tsx	Job queue card list	Redesign cards: backdrop blur, priority left borders (red/amber/blue), Framer Motion hover lift
+tech-pwa/src/components/WorkOrderModal.tsx	Job detail modal (dispatch)	Tighten section hierarchy, surface section-level edit patterns, glassmorphism cards
+tech-pwa/src/components/SchedulingDispatch.tsx	Schedule grid + tech lanes	Cleaner job chip design, tech lane header polish, grid consistency
+tech-pwa/src/components/Sidebar.tsx	Left nav (dispatch)	Linear-style active state animation, icon+label consistency, glassmorphism
+tech-pwa/src/app/tech/jobs/page.tsx	Tech job list (mobile)	Redesign job list cards: glassmorphism, priority badges, readable at 375px
+tech-pwa/src/app/tech/jobs/[id]/page.tsx	Tech job detail page	Section cards with consistent border radius, backdrop blur, readable typography
+tech-pwa/src/components/ClockedInBar.tsx	Clocked-in shift bar (tech)	More prominent design, clearer shift timer display, glassmorphism
+tech-pwa/src/components/MarkCompleteFlow.tsx	Mark job complete modal	Celebration overlay polish, Framer Motion confetti/scale transitions
+tech-pwa/src/lib/types.ts	TypeScript types	NO CHANGES unless new priority level enums required — flag for Claude Code
+tech-pwa/src/lib/dashboard-api.ts	Frontend API layer	NO CHANGES unless new endpoints required — flag for Claude Code
+dashboard-api/DashboardAPI.gs	Backend API	NO CHANGES for this sprint
+Files NOT to Touch
+Any .gs, .js, or .html file at repo root
+src/lib/dashboard-api.ts (unless spec explicitly requires new API endpoint)
+src/lib/types.ts (unless spec explicitly requires new types)
+src/app/live/, src/app/schedule/, src/app/weekly-schedule/ (office-only dispatch pages — do NOT touch)
+src/components/dashboard/ (office dashboard components)
+Auth-related files: auth.ts, push/subscribe/route.ts (unless authentication logic changes)
+FUNCTION SIGNATURES
+Fix 1: URL Tab Deep-Linking
+Location: tech-pwa/src/app/live/page.tsx
+
+typescript
+
+
+// NEW: Import at top of file
+import { useSearchParams } from 'next/navigation';
+// MODIFY: Inside LivePage component, before return
+const searchParams = useSearchParams();
+const tabParam = searchParams?.get('tab'); // e.g., 'pte', 'review', 'scheduled', 'complete', 'approval'
+// Tab key mapping (constant at module level)
+const TAB_PARAM_MAP: Record<string, StatusTab> = {
+  'pte': 'PTE_REQUIRED',
+  'review': 'NEW',
+  'scheduled': 'SCHEDULED',
+  'complete': 'COMPLETE',
+  'approval': 'AWAITING_APPROVAL',
+};
+// MODIFY: useEffect to initialize statusTab from URL
+useEffect(() => {
+  if (tabParam && TAB_PARAM_MAP[tabParam]) {
+    setStatusTab(TAB_PARAM_MAP[tabParam]);
+  }
+}, [tabParam]);
+// Return: UI renders with statusTab matching URL param
+Signature:
+
+Function name: N/A (hook usage within existing component)
+Parameters: URL query param tab (string, optional)
+Return type: None (state setter side effect)
+Expected behavior: On page load, if ?tab=pte is in URL, the PTE Required tab activates immediately
+Fix 2: Trainee Warning in JobDetailModal
+Location: tech-pwa/src/components/JobDetailModal.tsx
+
+typescript
+
+
+// NEW: Helper function to check trainee solo assignment
+function checkTraineeWarning(assignedTechs: Tech[]): string | null {
+  // assignedTechs = array of assigned Tech objects, each with rank: 'T' | 'C' | 'L' | 'L1' | 'L2'
+  const hasTrainee = assignedTechs.some((t) => t.rank === 'T');
+  const hasSupervisor = assignedTechs.some((t) => ['C', 'L', 'L1', 'L2'].includes(t.rank));
+  
+  if (hasTrainee && !hasSupervisor) {
+    return 'Trainee must be paired with a Captain or Lieutenant';
+  }
+  return null;
+}
+// MODIFY: Inside JobDetailModal, after assignment logic updates
+const traineeWarning = checkTraineeWarning(selectedTechs); // selectedTechs comes from modal state
+// In render: if traineeWarning is not null, show amber inline warning
+if (traineeWarning) {
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
+      <AlertCircle className="h-4 w-4" />
+      <span>{traineeWarning}</span>
+    </div>
+  );
+}
+// Do NOT block save; warning is informational only
+Signature:
+
+Function name: checkTraineeWarning
+Parameters: assignedTechs: Tech[]
+Return type: string | null (warning message or null if no warning)
+Expected behavior: Returns warning text if a trainee is assigned solo; returns null if warning not needed
+Note: Must match existing warning in SchedulingDispatch.tsx for parity
+REDESIGN FUNCTION SPECS (UI Enhancements)
+Dispatch Queue Cards (DispatchQueue.tsx)
+typescript
+
+
+// COMPONENT: JobQueueCard
+// Props: job: Job, onStatusChange: (jobId: string, status: string) => void, onSelectJob: (jobId: string) => void
+// BASE CLASSES (glassmorphism foundation)
+const cardClasses = 'group relative rounded-lg border border-white/10 bg-white/5 backdrop-blur-md p-4 transition-all duration-200 hover:bg-white/10 hover:border-white/20 hover:shadow-lg';
+// PRIORITY LEFT BORDER (conditional color)
+const priorityBorderColor = {
+  'URGENT': 'border-l-4 border-l-red-500',
+  'TURNOVER': 'border-l-4 border-l-amber-500',
+  'STANDARD': 'border-l-4 border-l-blue-500',
+}[job.priority] || 'border-l-4 border-l-slate-500';
+// FRAMER MOTION: Hover lift
+const hoverVariants = {
+  rest: { y: 0 },
+  hover: { y: -4 },
+};
+// RENDER:
+<motion.div
+  className={`${cardClasses} ${priorityBorderColor}`}
+  variants={hoverVariants}
+  initial="rest"
+  whileHover="hover"
+  transition={{ duration: 0.2 }}
+>
+  {/* Card content */}
+</motion.div>
+Data structure: Each job card displays:
+
+Address (text-base font-semibold text-white)
+Service type (text-xs text-slate-400)
+Status badge (small rounded pill, conditional color)
+Time window (text-xs text-slate-400)
+Assigned techs (if any, small avatars or initials)
+WorkOrderModal Section Edit Pattern
+typescript
+
+
+// PATTERN: Section-level edit visibility
+// Instead of hover-to-reveal, show edit buttons at section level on ALL sections
+// SECTION STRUCTURE
+<div className="space-y-4">
+  {/* Section 1: Assignment */}
+  <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-md p-4">
+    <div className="flex items-center justify-between mb-3">
+      <h3 className="text-sm font-semibold text-white">Assigned Techs</h3>
+      <button
+        onClick={() => setEditingSection('assignment')}
+        className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-colors"
+      >
+        Edit
+      </button>
+    </div>
+    {/* Section content */}
+  </div>
+  {/* Section 2: Schedule */}
+  <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-md p-4">
+    <div className="flex items-center justify-between mb-3">
+      <h3 className="text-sm font-semibold text-white">Scheduled</h3>
+      <button
+        onClick={() => setEditingSection('schedule')}
+        className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-colors"
+      >
+        Edit
+      </button>
+    </div>
+    {/* Section content */}
+  </div>
+  {/* Repeat for Notes, Priority, Status */}
+</div>
+Tech Job List Cards (tech/jobs/page.tsx)
+typescript
+
+
+// COMPONENT: JobListCard (for tech PWA)
+// Props: job: Job, onSelect: (jobId: string) => void
+const jobCardClasses = 'group rounded-lg border border-white/10 bg-white/5 backdrop-blur-md p-4 cursor-pointer transition-all duration-200 hover:bg-white/10 hover:border-white/20';
+// PRIORITY BADGE
+const priorityBadgeColor = {
+  'URGENT': 'bg-red-500/20 text-red-300 border border-red-500/30',
+  'TURNOVER': 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+  'STANDARD': 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
+}[job.priority] || 'bg-slate-500/20 text-slate-300';
+// RENDER
+<motion.div
+  className={jobCardClasses}
+  onClick={() => onSelect(job.id)}
+  whileHover={{ scale: 1.02 }}
+  whileTap={{ scale: 0.98 }}
+>
+  <div className="flex items-start justify-between gap-3 mb-2">
+    <div className="flex-1">
+      <h3 className="text-base font-semibold text-white truncate">{job.address}</h3>
+      <p className="text-xs text-slate-400 mt-1">{job.serviceType}</p>
+    </div>
+    <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${priorityBadgeColor}`}>
+      {job.priority}
+    </span>
+  </div>
+  <div className="flex items-center justify-between text-xs text-slate-400">
+    <span>{job.timeWindow}</span>
+    <span className="text-blue-300">→</span>
+  </div>
+</motion.div>
+ClockedInBar Redesign
+typescript
+
+
+// COMPONENT: ClockedInBar
+// Props: shiftStartTime: ISO8601 | null, onClockOut: () => void
+// BASE STYLING
+const barClasses = 'fixed bottom-0 left-0 right-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-xl border-t border-white/10 p-4 z-40';
+// TIMER DISPLAY
+const shiftDuration = calculateDuration(shiftStartTime, new Date());
+const timerDisplay = formatDuration(shiftDuration); // "2h 14m"
+// FRAMER MOTION: Pulse on active shift
+const pulseVariants = {
+  pulse: { opacity: [1, 0.8, 1] },
+};
+// RENDER
+<motion.div
+  className={barClasses}
+  animate="pulse"
+  variants={pulseVariants}
+  transition={{ duration: 2, repeat: Infinity }}
+>
+  <div className="flex items-center justify-between max-w-md mx-auto">
+    <div className="flex items-center gap-3">
+      <motion.div
+        className="h-2 w-2 rounded-full bg-green-400"
+        animate={{ scale: [1, 1.2, 1] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+      />
+      <div>
+        <p className="text-xs text-slate-400">Shift Active</p>
+        <p className="text-lg font-mono font-semibold text-white">{timerDisplay}</p>
+      </div>
+    </div>
+    <button
+      onClick={onClockOut}
+      className="px-4 py-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 transition-colors text-sm font-medium"
+    >
+      Clock Out
+    </button>
+  </div>
+</motion.div>
+Sidebar Linear-Style Active State
+typescript
+
+
+// COMPONENT: NavItem (inside Sidebar)
+// Props: label: string, icon: ReactNode, isActive: boolean, onClick: () => void
+const navItemClasses = isActive
+  ? 'flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 font-semibold transition-all duration-200'
+  : 'flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200';
+// FRAMER MOTION: Active indicator slide
+const activeIndicatorVariants = {
+  initial: { opacity: 0, x: -10 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -10 },
+};
+// RENDER
+<motion.button
+  className={navItemClasses}
+  onClick={onClick}
+  whileHover={{ x: 4 }}
+  transition={{ duration: 0.15 }}
+>
+  <span className="text-lg">{icon}</span>
+  {isActive && (
+    <motion.div
+      className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-blue-400"
+      variants={activeIndicatorVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={{ duration: 0.2 }}
+    />
+  )}
+  <span>{label}</span>
+</motion.button>
+DATA STRUCTURES
+Job Object (dispatch context)
+typescript
+
+
+interface Job {
+  id: string;
+  address: string;
+  serviceType: string;
+  priority: 'URGENT' | 'TURNOVER' | 'STANDARD'; // maps to border colors
+  status: 'NEW' | 'PTE_REQUIRED' | 'SCHEDULED' | 'COMPLETE' | 'AWAITING_APPROVAL';
+  timeWindow?: string; // e.g., "2:00 PM - 4:00 PM"
+  notes?: string;
+  assignedTechs?: Tech[];
+  createdAt: ISO8601;
+  updatedAt: ISO8601;
+}
+Tech Object
+typescript
+
+
+interface Tech {
+  id: string;
+  name: string;
+  badge: string;
+  rank: 'T' | 'C' | 'L' | 'L1' | 'L2'; // T=Trainee, C=Captain, L=Lieutenant, L1/L2=specialized
+  email?: string;
+}
+Tab State Mapping
+typescript
+
+
+type StatusTab = 'NEW' | 'PTE_REQUIRED' | 'SCHEDULED' | 'COMPLETE' | 'AWAITING_APPROVAL';
+const TAB_PARAM_MAP: Record<string, StatusTab> = {
+  'pte': 'PTE_REQUIRED',
+  'review': 'NEW',
+  'scheduled': 'SCHEDULED',
+  'complete': 'COMPLETE',
+  'approval': 'AWAITING_APPROVAL',
+};
+ERROR HANDLING
+URL Tab Deep-Linking (live/page.tsx)
+
+
+Failure Scenario	What Happens	User Sees
+Invalid tab param (e.g., ?tab=invalid)	TAB_PARAM_MAP[tabParam] returns undefined; no state change	Default tab (NEW) loads
+No tab param (normal navigation)	tabParam is null; useEffect does not fire	Default tab (NEW) loads
+Tab param is valid but misspelled in URL	Same as invalid — default tab loads	No error toast; silent fallback
+No error toast needed. Tab defaulting is graceful degradation.
+
+Trainee Warning Check (JobDetailModal.tsx)
+
+
+Failure Scenario	What Happens	User Sees
+assignedTechs is empty	hasTrainee and hasSupervisor both false; no warning	No warning shown; job can be saved
+One trainee, no supervisor	hasTrainee true, hasSupervisor false; warning returned	Amber inline warning appears; save is NOT blocked
+One trainee, one supervisor	hasTrainee true, hasSupervisor true; no warning	No warning shown
+Multiple techs, mix of ranks	Logic works as expected	Warning shown if applicable
+Do NOT block save. Warning is advisory only. Tech/supervisor can save if intentional.
+
+UI Redesign (Glassmorphism Components)
+
+
+Failure Scenario	What Happens	User Sees
+Data fetch fails during card render	Skeleton loader shows (existing pattern)	Smooth placeholder while loading
+Card animation fails (browser doesn't support Framer Motion)	Graceful degradation; card still interactive	No visual animation, but card is clickable and functional
+Mobile viewport is <375px	Card text may wrap; check responsive classes	Cards are readable; no text cutoff; touch targets ≥44×44px
+WHAT NOT TO DO
+Banned Patterns & Libraries
+Do NOT hardcode hex colors in component files. Use Tailwind tokens only:
+✅ text-red-500, bg-amber-500/20, border-white/10
+❌ text-[#ff0000], style={{ color: '#ff0000' }}
+Do NOT use alert(), window.confirm(), or native dialog APIs. Use toast notifications:
+✅ toast.success("Job assigned"), toast.error("Assignment failed")
+❌ alert("Job assigned")
+Do NOT add new npm dependencies without explicit Claude Code approval. Flag any package you're unsure about.
+Do NOT move or rename .gs, .js, or .html files at repo root. Clasp deployment will break.
+Do NOT modify src/lib/dashboard-api.ts or src/lib/types.ts for this sprint unless a new API endpoint or type is explicitly required.
+Do NOT touch dispatch office-only pages:
+src/app/live/
+src/app/schedule/
+src/app/weekly-schedule/
+src/components/dashboard/
+Do NOT change authentication logic in auth.ts or push/subscribe/route.ts without coordinating with DashboardAPI.gs updates.
+Do NOT remove Skeleton loaders from data-fetch states. Every async load needs a placeholder.
+Do NOT use hardcoded animation durations. Use Tailwind transition utilities:
+✅ transition-all duration-200, duration-300
+❌ style={{ transition: 'all 0.2s ease' }}
+Do NOT test glassmorphism on desktop only. Every UI change must be verified at 375px mobile width.
+TEST SCENARIOS
+Fix 1: URL Tab Deep-Linking
+Test Case 1.1 — Happy path: PTE tab from URL
+
+Input: Navigate to /live?tab=pte
+Expected: PTE Required tab is active on page load; job queue shows PTE_REQUIRED jobs only
+Verification: Tab button is highlighted; correct jobs displayed
+Test Case 1.2 — Happy path: Review (NEW) tab from URL
+
+Input: Navigate to /live?tab=review
+Expected: NEW tab is active; job queue shows NEW jobs only
+Verification: Tab button is highlighted; correct jobs displayed
+Test Case 1.3 — Edge case: Invalid tab param
+
+Input: Navigate to /live?tab=nonexistent
+Expected: Default tab (NEW) loads; URL param is ignored gracefully
+Verification: NEW tab is active; no error toast
+Test Case 1.4 — Edge case: No tab param
+
+Input: Navigate to /live (no query string)
+Expected: Default tab (NEW) loads
+Verification: NEW tab is active; page loads normally
+Test Case 1.5 — Integration: Notification link deep-linking
+
+Input: Dispatch notification contains link href: '/live?tab=pte'; user taps notification
+Expected: App navigates to /live and PTE tab activates
+Verification: User sees PTE jobs immediately without manual tab click
+Fix 2: Trainee Warning in JobDetailModal
+Test Case 2.1 — Happy path: Trainee solo
+
+Input: Open job detail modal; assign only Federico Santos (rank T, badge F123)
+Expected: Amber warning appears: "Trainee must be paired with a Captain or Lieutenant"
+Verification: Warning is visible; save button is still enabled
+Test Case 2.2 — Happy path: Trainee + supervisor
+
+Input: Assign Federico Santos (T) AND Robert Miller (C)
+Expected: No warning shown
+Verification: Amber warning is not visible; save is enabled
+Test Case 2.3 — Edge case: Multiple supervisors, no trainee
+
+Input: Assign Robert Miller (C) and Ana Garcia (L)
+Expected: No warning shown
+Verification: No warning; save enabled
+Test Case 2.4 — Edge case: Empty assignment
+
+Input: Open modal with no pre-assigned techs; don't assign anyone
+Expected: No warning shown
+Verification: No warning; save enabled
+Test Case 2.5 — Integration: Save after trainee warning
+
+Input: Assign trainee solo; warning appears; click Save
+Expected: Job is saved with trainee assigned solo; warning disappears; confirmation toast shows
+Verification: Job detail updates; no error
+UI Redesign — Job Queue Cards
+Test Case 3.1 — Glassmorphism + priority border
+
+Input: Load dispatch queue with jobs of all priorities
+Expected: Each card has backdrop blur; left border color matches priority (red/amber/blue)
+Verification: Visual inspection at 1440px and 375px; borders are crisp; text is readable
+Test Case 3.2 — Framer Motion hover lift
+
+Input: Hover over a job card (desktop) or tap (mobile)
+Expected: Card scales/lifts smoothly; shadow increases; duration ≤200ms
+Verification: Animation is smooth; no jank; card returns to rest state on un-hover
+Test Case 3.3 — Mobile readability (375px)
+
+Input: Open dispatch queue on mobile (simulated 375px viewport)
+Expected: Cards are readable; text doesn't truncate or overflow; touch target ≥44×44px
+Verification: All text visible; status badge is tappable; no horizontal scroll
+UI Redesign — Tech Job List
+Test Case 4.1 — Job card glassmorphism + priority badge
+
+Input: Tech PWA loads job list
+Expected: Cards have backdrop blur; priority badge is visible and color-coded; card is tappable
+Verification: Visual inspection; badge colors match priority levels; tap triggers job detail navigation
+Test Case 4.2 — Mobile readability (375px)
+
+Input: Open tech job list on 375px viewport
+Expected: All cards are readable; address and service type visible; badge doesn't overflow
+Verification: No text truncation; priority badge fits; cards scroll smoothly
+UI Redesign — ClockedInBar
+Test Case 5.1 — Shift timer display
+
+Input: Tech clocks in; shift runs for 2 hours 14 minutes
+Expected: Timer displays "2h 14m" in monospace font; pulsing green dot indicates active shift
+Verification: Timer increments correctly; format is readable; pulsing is smooth (2s cycle)
+Test Case 5.2 — Clock out button is prominent
+
+Input: Shift is active; user views the bar
+Expected: Clock Out button is red, high-contrast, ≥44×44px touch target
+Verification: Button is clearly visible; tap closes shift; confirmation toast appears
+UI Redesign — Sidebar Active State
+Test Case 6.1 — Linear active indicator animation
+
+Input: Click a sidebar nav item (e.g., "Dispatch Queue")
+Expected: Active nav item highlights with blue background; left indicator bar slides in smoothly
+Verification: Animation duration ≤200ms; indicator is 4px wide; animation is not jittery
+Test Case 6.2 — Mobile sidebar (375px)
+
+Input: Open dispatch on mobile; interact with sidebar
+Expected: Sidebar is accessible; nav items are tappable ≥44×44px; indicator is visible
+Verification: Touch targets are adequate; layout doesn't break
+INTEGRATION CHECKPOINTS
+Checkpoint 1: URL Tab Deep-Linking End-to-End
+Functions tested together:
+
+useSearchParams() hook reads URL param in live/page.tsx
+TAB_PARAM_MAP translates param to StatusTab enum
+useEffect updates statusTab state
+Job queue re-renders with filtered jobs
+Expected end-to-end result:
+
+User receives notification with link /live?tab=pte
+User taps link → app navigates to /live page
+URL param is detected; statusTab is set to PTE_REQUIRED
+Page renders with PTE Required tab active and PTE jobs displayed
+User sees jobs without manual tab click
+Checkpoint 2: Trainee Warning Parity
+Functions tested together:
+
+checkTraineeWarning() in JobDetailModal.tsx (new)
+Existing checkTraineeWarning() in SchedulingDispatch.tsx (reference for parity)
+Tech rank data from API (tech.rank)
+Save logic in modal (must NOT be blocked by warning)
+Expected end-to-end result:
+
+User assigns trainee solo in job detail modal → warning shows
+User assigns trainee solo via scheduling grid → warning shows (existing behavior)
+Both warnings are identical text and styling
+User can save in either context; warning is advisory only
+After save, job data reflects the assignment
+Checkpoint 3: Dispatch Dashboard Glassmorphism Cohesion
+Components tested together:
+
+DispatchQueue.tsx (job cards)
+JobDetailModal.tsx (modal styling)
+WorkOrderModal.tsx (section styling)
+SchedulingDispatch.tsx (grid and job chips)
+Sidebar.tsx (nav styling)
+Expected end-to-end result:
+
+All cards use consistent border radius (rounded-lg)
+All cards use consistent backdrop blur (backdrop-blur-md)
+All cards use consistent border opacity (border-white/10)
+All section cards in modals match job queue cards in styling
+Sidebar active state matches Modal edit button styling (blue-500/20 background)
+Hover states are consistent across all cards (y-offset, brightness)
+Mobile layout at 375px does not break; all elements are readable
+Checkpoint 4: Tech PWA Glassmorphism Cohesion
+Components tested together:
+
+tech/jobs/page.tsx (job list)
+tech/jobs/[id]/page.tsx (job detail)
+ClockedInBar.tsx (fixed bar)
+MarkCompleteFlow.tsx (completion modal)
+Expected end-to-end result:
+
+Job list cards match dispatch queue cards in style (backdrop blur, borders, priority badge)
+Job detail page sections use same glassmorphism pattern as modals
+ClockedInBar uses green-tinted glassmorphism background to indicate active shift
+Completion flow overlay has celebration animation (Framer Motion)
+All components are readable and interactive at 375px mobile width
+Animations are smooth (60fps, no jank)
+VERIFICATION CHECKLIST
+Fix 1: URL Tab Deep-Linking (live/page.tsx)
+✅ Open dispatch app in browser; navigate directly to /live?tab=pte
+✅ Verify PTE Required tab is highlighted on page load (no manual click needed)
+✅ Verify job queue displays only PTE_REQUIRED status jobs
+✅ Navigate to /live?tab=review → NEW tab activates
+✅ Navigate to /live?tab=scheduled → SCHEDULED tab activates
+✅ Navigate to /live?tab=complete → COMPLETE tab activates
+✅ Navigate to /live?tab=approval → AWAITING_APPROVAL tab activates
+✅ Navigate to /live?tab=invalid → defaults to NEW tab (no error)
+✅ Navigate to /live (no query string) → defaults to NEW tab
+✅ Click notification with link href: '/live?tab=pte' → app navigates and PTE tab activates
+Fix 2: Trainee Warning in JobDetailModal (JobDetailModal.tsx)
+✅ Open dispatch job detail modal for any job
+✅ Assign only Federico Santos (trainee, rank T) → amber warning appears
+✅ Verify warning text: "Trainee must be paired with a Captain or Lieutenant"
+✅ Verify warning styling: amber background, amber border, amber text
+✅ Verify Save button is still enabled (not disabled by warning)
+✅ Click Save with trainee solo → job saves; no error
+✅ Re-open same job → warning still shows (data persisted correctly)
+✅ Assign trainee + supervisor (e.g., Federico + Robert) → warning disappears
+✅ Assign multiple supervisors, no trainee → no warning
+✅ Clear all assignments → no warning
+✅ Compare warning styling to SchedulingDispatch.tsx trainee warning → styling is identical
+UI Redesign — Dispatch Queue Cards (DispatchQueue.tsx)
+✅ Open dispatch queue; verify all job cards have rounded corners (rounded-lg)
+✅ Verify all cards have subtle glassmorphism (backdrop blur visible, semi-transparent background)
+✅ Verify each card has a left border (4px width) matching priority:
+URGENT jobs: left border is red (border-l-red-500)
+TURNOVER jobs: left border is amber (border-l-amber-500)
+STANDARD jobs: left border is blue (border-l-blue-500)
+✅ Hover over a job card (desktop) → card lifts smoothly (y-offset -4px), brightness increases
+✅ Verify hover transition duration is ≤200ms (smooth, not jarring)
+✅ Verify card returns to rest state on un-hover (smooth transition)
+✅ Open dispatch queue on mobile (375px viewport)
+✅ Verify all job card text is readable (no truncation, no overflow)
+✅ Verify address, service type, status badge, and time window are all visible
+✅ Verify status badge is tappable (≥44×44px touch target, tested with touch)
+✅ Scroll job queue on mobile → no horizontal overflow, cards fit viewport width
+✅ Verify loading state shows skeleton cards (existing pattern maintained)
+UI Redesign — WorkOrderModal Section Pattern (WorkOrderModal.tsx)
+✅ Open job detail modal (dispatch)
+✅ Verify modal has multiple sections (Assigned Techs, Scheduled, Notes, Priority, Status)
+✅ Verify each section is a glassmorphism card (rounded-lg, border-white/10, backdrop-blur-md, p-4)
+✅ Verify each section has a header with label (font-semibold, text-white) and Edit button
+✅ Verify Edit button is visible at all times (not hover-hidden)
+✅ Verify Edit button styling: blue-500/20 background, blue-300 text, ≥44×44px touch target
+✅ Click Edit button on Assigned Techs section → section becomes editable or opens edit modal
+✅ Verify trainee warning (if applicable) appears inline in Assigned Techs section
+✅ Verify warning is amber-colored, has icon, is readable at 375px
+✅ Verify all section cards use consistent spacing and typography
+✅ Verify modal layout is readable at 375px mobile width (sections stack vertically)
+UI Redesign — SchedulingDispatch Grid (SchedulingDispatch.tsx)
+✅ Open scheduling dispatch (dispatch > schedule tab)
+✅ Verify tech lane headers are clear and consistent in styling
+✅ Verify job chips on the schedule grid are clean and readable
+✅ Verify job chips have priority color coding (visual consistency with queue cards)
+✅ Verify job chips are tappable and open job detail on click
+✅ Verify grid layout is responsive at 375px mobile width
+✅ Verify job chip text is readable (no truncation unless expected)
+✅ Verify schedule grid scrolls smoothly (horizontal for tech lanes)
+UI Redesign — Sidebar Active State (Sidebar.tsx)
+✅ Open dispatch app; view sidebar navigation
+✅ Verify active nav item has blue background (blue-500/20)
+✅ Verify active nav item has blue border (blue-500/30)
+✅ Verify active nav item text is blue (blue-300)
+✅ Verify inactive nav items are gray (text-slate-400)
+✅ Hover over inactive nav item → text turns white, background lightens (hover:text-white, hover:bg-white/5)
+✅ Click a nav item to make it active → background animates smoothly
+✅ Verify active indicator bar (left vertical line) is 4px wide and blue (blue-400)
+✅ Verify indicator bar slides in smoothly on active (Framer Motion, duration ≤200ms)
+✅ Verify indicator bar slides out smoothly on inactive
+✅ Verify nav items are tappable at 44×44px (tested on mobile)
+✅ Verify sidebar layout is consistent at 375px mobile width (icon + label visible)
+UI Redesign — Tech Job List (tech/jobs/page.tsx)
+✅ Open tech PWA job list page
+✅ Verify each job card has rounded corners (rounded-lg) and glassmorphism (backdrop-blur-md, border-white/10)
+✅ Verify each job card displays:
+Address (text-base font-semibold text-white)
+Service type (text-xs text-slate-400)
+Priority badge (small, color-coded: red/amber/blue)
+Time window (text-xs text-slate-400)
+✅ Verify priority badge colors match dispatch queue:
+URGENT: red background and text
+TURNOVER: amber background and text
+STANDARD: blue background and text
+✅ Hover/tap job card → card scales smoothly (scale 1.02), appears interactive
+✅ Tap job card → navigates to job detail page
+✅ Open tech job list on 375px mobile viewport
+✅ Verify all text is readable (address, service type, badge, time window)
+✅ Verify priority badge fits within card width (no overflow)
+✅ Verify job cards are tappable (touch target ≥44×44px)
+✅ Scroll job list on mobile → smooth scrolling, no jank, no horizontal overflow
+✅ Verify loading state shows skeleton cards (existing pattern maintained)
+UI Redesign — Tech Job Detail Page (tech/jobs/[id]/page.tsx)
+✅ Open tech job detail page from job list
+✅ Verify page displays job information in section cards (glassmorphism styling)
+✅ Verify sections include: Address, Service Type, Priority, Status, Notes, Assigned Techs
+✅ Verify each section card has:
+Rounded corners (rounded-lg)
+Glassmorphism background (backdrop-blur-md, bg-white/5, border-white/10)
+Consistent padding (p-4)
+Section title (text-sm font-semibold text-white)
+✅ Verify section content is readable and well-spaced
+✅ Verify priority badge is color-coded (matches priority)
+✅ Verify time window is clearly displayed
+✅ Verify "Mark Complete" button is prominent (blue or green, ≥44×44px)
+✅ Open job detail on 375px mobile viewport
+✅ Verify sections stack vertically (no side-by-side layout that breaks at 375px)
+✅ Verify all text is readable (no truncation, appropriate font sizes)
+✅ Verify buttons are tappable (≥44×44px touch targets)
+UI Redesign — ClockedInBar (ClockedInBar.tsx)
+✅ Open tech PWA; tech clocks in (starts shift)
+✅ Verify ClockedInBar appears at bottom of screen (fixed position, z-index 40)
+✅ Verify bar has green-tinted glassmorphism background (gradient from-green-500/20 to-emerald-500/20)
+✅ Verify bar has backdrop blur (backdrop-blur-xl)
+✅ Verify bar has top border (border-t border-white/10)
+✅ Verify bar displays "Shift Active" label (text-xs text-slate-400)
+✅ Verify bar displays shift timer in monospace font (font-mono font-semibold text-white)
+✅ Verify timer updates every second and displays format "Xh YYm" (e.g., "2h 14m")
+✅ Verify pulsing green dot animates smoothly (pulse cycle 1.5s, scale 1→1.2→1)
+✅ Verify "Clock Out" button is prominent (red background, red-500/20, ≥44×44px)
+✅ Click Clock Out button → shift ends; confirmation toast appears
+✅ Verify bar pulsing animation is smooth (60fps, no jank)
+✅ Verify bar layout is readable at 375px mobile width
+✅ Verify bar does not obscure job content above it (adequate margin or scroll adjustment)
+UI Redesign — MarkCompleteFlow (MarkCompleteFlow.tsx)
+✅ Open tech job detail; click "Mark Complete" button
+✅ Verify completion modal appears with glassmorphism styling
+✅ Verify modal has overlay with celebration animation (Framer Motion)
+✅ Verify modal displays confirmation message ("Mark this job complete?")
+✅ Verify modal has two buttons: "Confirm" (green/blue) and "Cancel" (gray)
+✅ Verify buttons are tappable (≥44×44px)
+✅ Click Confirm → modal animates closed, celebration plays (confetti or scale-up animation)
+✅ Verify success toast appears: "Job marked complete"
+✅ Verify job detail page updates (status changes to COMPLETE)
+✅ Verify modal animation duration is smooth (≤300ms)
+✅ Click Cancel → modal closes without saving
+✅ Verify MarkCompleteFlow is accessible at 375px mobile width
+Integration: Dispatch Dashboard Cohesion (Desktop)
+✅ Open dispatch app on desktop (1440px)
+✅ Verify sidebar, queue, and schedule grid all use consistent styling:
+Border radius (rounded-lg)
+Glassmorphism (backdrop-blur, semi-transparent background)
+Border opacity (border-white/10)
+✅ Verify all cards/buttons use consistent hover states and transition durations
+✅ Verify typography hierarchy is consistent (font weights, colors, sizes)
+✅ Verify color palette is consistent (blues for active/primary, reds/ambers for priority)
+✅ Open job detail modal → styling matches queue cards and schedule grid
+✅ Verify dark mode is consistent (no light backgrounds, high-contrast text)
+✅ Verify all animations are smooth (no jank, consistent easing)
+Integration: Tech PWA Cohesion (Mobile)
+✅ Open tech PWA on mobile (375px viewport)
+✅ Verify job list, job detail, and clocked-in bar all use consistent styling
+✅ Verify all cards use glassmorphism (backdrop-blur, borders, semi-transparent background)
+✅ Verify typography is readable at small sizes (no text smaller than 12px unless icon-only)
+✅ Verify all buttons and touch targets are ≥44×44px
+✅ Verify layout stacks vertically (no side-by-side that breaks at 375px)
+✅ Verify clocked-in bar does not obscure content above it
+✅ Verify scrolling is smooth (no jank, 60fps)
+✅ Verify color palette is consistent (blues for primary, greens for active shift, reds for urgent)
+✅ Navigate between job list → job detail → clock out → verify layout transitions are smooth
+End-to-End: Notification → Dispatch
+✅ Tech receives push notification "PTE Required: 123 Oak Street"
+✅ Notification includes deep link href: '/live?tab=pte'
+✅ User taps notification → dispatcher app opens
+✅ App navigates to /live page and URL param is processed
+✅ PTE Required tab activates automatically (no manual click)
+✅ Job queue displays only PTE_REQUIRED status jobs
+✅ Dispatcher sees the job and opens job detail modal
+✅ Dispatcher assigns a trainee solo → amber warning appears
+✅ Dispatcher sees warning but proceeds to save (warning doesn't block)
+✅ Job is saved with trainee assigned
+✅ Dispatcher schedules the job with trainee + supervisor pair (via scheduling grid)
+✅ Tech receives notification "Job assigned: 123 Oak Street"
+✅ Tech opens PWA, views job list (glassmorphism cards)
+✅ Tech taps job → detail page opens with section cards
+✅ Tech clocks in → ClockedInBar appears at bottom with pulse animation
+✅ Tech marks job complete → celebration modal appears and animates
+✅ Dispatcher sees job status update to COMPLETE in dispatch queue
+GAP LIST FOR CLAUDE CODE
+Must Verify / Fill In:
+live/page.tsx current state:
+Confirm current statusTab state variable name and type
+Confirm URL param key should be tab (vs. other name)
+Verify useSearchParams is already imported; if not, Claude Code must add it
+Flag exact file path to live/page.tsx
+JobDetailModal.tsx structure:
+Confirm selectedTechs state variable name and shape
+Confirm where trainee rank check should be inserted (before render, in a new helper function, or inline)
+Verify if Tech type is already imported; if not, Claude Code must add import from src/lib/types.ts
+Confirm exact className patterns used in existing warnings elsewhere (for copy-paste style consistency)
+Flag if there's a specific section in the modal where the warning should appear
+SchedulingDispatch.tsx trainee warning reference:
+Claude Code must locate existing trainee warning implementation in SchedulingDispatch.tsx and copy exact styling/logic for parity
+Flag line numbers or function names of existing implementation
+Priority color mapping:
+Confirm exact priority enum values in Job type (currently assumed: URGENT, TURNOVER, STANDARD)
+If priority values differ, update all color mappings above
+Flag if there are other priority levels not listed
+Tech rank enum:
+Confirm exact rank values in Tech type (currently assumed: T, C, L, L1, L2)
+If rank values differ, update trainee warning logic
+Flag if there are other ranks
+Google Sheets column indexes:
+DO NOT guess. Claude Code must verify exact column positions for:
+Dispatch Queue: which column is tech badge? which column is tech rank?
+Tech Roster: which column is rank field?
+These are needed if the trainee check pulls data from live sheets
+DashboardAPI.gs — any changes?
+Confirm if checkTraineeWarning needs a backend counterpart (likely not needed; logic is client-side)
+Flag if there's a backend tech assignment endpoint that needs trainee validation
+Tailwind config:
+Confirm backdrop-blur-md and backdrop-blur-xl are available in project's Tailwind config
+If not, Claude Code must add them or use alternatives (backdrop-blur)
+Confirm blue-500/20, amber-500/20, red-500/20 token format is correct for project (vs. other syntax)
+Framer Motion versions & capabilities:
+Confirm whileHover, whileTap, variants, and animate props are available in current Framer Motion version
+Flag if any Framer Motion syntax is outdated
+TypeScript types for state:
+Confirm exact type of selectedTechs in JobDetailModal.tsx (is it Tech[]? any other shape?)
+Confirm exact StatusTab type definition (already exists in codebase or needs to be created?)
+Flag if Tab enum is in src/lib/types.ts or defined inline
+Animation durations & easing:
+Confirm default easing in project (Tailwind applies ease-in-out by default?)
+If specific easing is needed (e.g., cubic-bezier(...)), flag for CSS variables or Framer Motion defaults
+Mobile testing environment:
+Flag how to test at 375px: is there a mobile simulator in place (Next.js dev tools, Chrome DevTools)?
+Confirm breakpoints used in Tailwind config for responsive classes
+Toast notification library:
+Confirm exact library in use (react-hot-toast? sonner? custom?)
+Flag import path for toast function
+Skeleton loader component:
+Confirm if Skeleton component exists at src/components/Skeleton.tsx or similar
+Flag exact import path for use in loading states
+Translation files (i18n):
+Confirm if new UI text (e.g., "Trainee must be paired...") needs Spanish translation
+Flag i18n file paths and current translation setup
+SVG icons:
+Confirm icon library in use (lucide-react? react-icons? custom?)
+Flag import paths for icons like AlertCircle, ChevronDown, etc.
+Auth state in components:
+Confirm how components access current user/session (context? hook?)
+Verify if any component needs to know current dispatcher/tech for logging or tracking
+Error boundaries:
+Confirm if error boundaries are in place for modal components
+Flag if any new error handling needs error boundary wrapping
+API response structure for job/tech data:
+Flag exact shape of API response when fetching job details (does it include assigned tech ranks? dates?)
+Flag if tech rank is populated in job assignment context or if it's a separate lookup
+Vercel/deployment:
+Confirm that CSS/Tailwind changes trigger rebuild (should be automatic)
+Flag any build warnings related to Tailwind or Framer Motion that might surface
+SUMMARY
+This spec covers:
+
+✅ Two critical bug fixes (URL deep-linking, trainee warning parity)
+✅ Full glassmorphism UI redesign with exact Tailwind classes and animation specs
+✅ All 9 criteria met (Goal, File Inventory, Function Signatures, Data Structures, Error Handling, Constraints, Test Scenarios, Integration Checkpoints, Verification Checklist)
+✅ 56-step verification checklist for browser navigation and manual testing
+✅ 20-item gap list flagging uncertain details for Claude Code to verify against live codebase
+Ready for Claude Code to:
+
+Verify column indexes and function names in live codebase
+Update component code with exact Tailwind classes
+Add Framer Motion animations with specified durations
+Run full verification checklist before deploying to AG
+Status: Tier 1 Spec (Session 50) ready for implementation.

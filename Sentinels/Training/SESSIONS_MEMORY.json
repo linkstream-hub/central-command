@@ -1,0 +1,58 @@
+[
+  {
+    "date": "2026-04-18",
+    "session": 7,
+    "type": "critical_failure",
+    "title": "Antigravity moved .gs files to subdirectory",
+    "detail": "Antigravity moved Code.js, TechPWA.gs, DashboardAPI.gs to legacy_gas_archive/. This broke all clasp deployments because .clasp.json has skipSubdirectories: true. Files were immediately restored to repo root.",
+    "rule": "NEVER move .gs, .js, or .html files from the repo root. They must stay there for clasp to pick them up."
+  },
+  {
+    "date": "2026-04-21",
+    "session": 14,
+    "type": "data_corruption",
+    "title": "Antigravity freelanced on status values",
+    "detail": "Antigravity introduced 'open', 'pte_pending', 'approval_needed' status strings instead of using the canonical set. Status filter tabs broke — jobs disappeared from queue.",
+    "rule": "Status values are frozen: New | Ready to Schedule | PTE Required | Awaiting Approval | Scheduled | In Progress | Complete | Archived. Never invent new ones."
+  },
+  {
+    "date": "2026-04-23",
+    "session": 20,
+    "type": "protocol_violation",
+    "title": "Claude Code implemented API endpoints instead of speccing",
+    "detail": "Claude Code wrote new DashboardAPI.gs endpoint functions directly instead of writing a spec for Antigravity. This violated division of labor and wasted tokens on implementation instead of architecture.",
+    "rule": "Any new .gs function goes through Antigravity via a spec. Claude Code only writes CLAUDE.md, specs, and irreversible sheet operations."
+  },
+  {
+    "date": "2026-04-23",
+    "session": 20,
+    "type": "spec_gap",
+    "title": "Specs missing what NOT to change",
+    "detail": "Multiple specs described new features without explicitly listing adjacent files/functions to leave unchanged. Antigravity improved working components outside scope and caused regressions.",
+    "rule": "Every spec must include a 'What NOT to change' section listing exact files, components, and functions to leave untouched."
+  },
+  {
+    "date": "2026-04-24",
+    "session": 22",
+    "type": "entity_id_bug",
+    "title": "TechPWA.gs TR_COL had wrong ENTITY_ID index",
+    "detail": "TR_COL.ENTITY_ID was set to 16 (the Hourly Rate column). HOURLY_RATE and PUSH_SUB entries were missing. Read-only bug — no data was corrupted. DashboardAPI.gs had the correct mapping.",
+    "rule": "Always verify column constant objects against IDENTITY_PRIMARY.md column maps after any .gs edit."
+  },
+  {
+    "date": "2026-04-25",
+    "session": 24,
+    "type": "correction",
+    "title": "Scheduling spreadsheet was Tsegab's, not Keith's",
+    "detail": "Prior assumptions attributed the scheduling spreadsheet to Keith. Corrected: it was Tsegab's creation. Keith and Tsegab are not on the dispatch team. Robert runs dispatch.",
+    "rule": "Org structure: Robert=dispatcher, Keith=field/staffing decisions, Tsegab=President/client escalations, Ana=HR."
+  },
+  {
+    "date": "2026-04-26",
+    "session": 25",
+    "type": "architecture",
+    "title": "dailyScheduleSheetSync retired — CC2.0 is sole write source for scheduling",
+    "detail": "dailyScheduleSheetSync() in ScheduleMiner.js was killed (returns immediately). getWeekSchedule reads exclusively from DQ col 18. Old scheduling spreadsheet kept as historical reference only.",
+    "rule": "Do NOT re-enable dailyScheduleSheetSync. Do NOT add scheduling sheet tab fallback to getWeekSchedule. DQ col 18 is the only source of truth for scheduled dates."
+  }
+]

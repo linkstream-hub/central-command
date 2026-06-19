@@ -1,0 +1,49 @@
+◇ injected env (39) from .env.local // tip: ⌁ auth for agents [www.vestauth.com]
+--- GLOBAL SETUP START ---
+◇ injected env (1) from .env.local // tip: ◈ secrets for agents [www.dotenvx.com]
+Schema verified — skipping migration.
+Cleared rate-limit keys for badge=1 and badge=99.
+🌱 Seeding test fixtures...
+✅ Wiped test data.
+✅ Seeded 9 jobs and test messages.
+Warm-up: /live compiled.
+Warm-up: /login compiled.
+Warm-up: /schedule compiled.
+Warm-up: / compiled.
+--- GLOBAL SETUP COMPLETE ---
+
+Running 10 tests using 1 worker
+
+◇ injected env (0) from .env.local // tip: ◈ secrets for agents [www.dotenvx.com]
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+  ok  1 [chromium] › tests\e2e\scheduling.spec.ts:10:7 › Block 5 + 7 — Scheduling End-to-End › 5.1 Schedule page loads tech-row grid (5.2s)
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+  ok  2 [chromium] › tests\e2e\scheduling.spec.ts:15:7 › Block 5 + 7 — Scheduling End-to-End › 5.2 Lock and Send button is visible in schedule header (3.9s)
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+  ok  3 [chromium] › tests\e2e\scheduling.spec.ts:20:7 › Block 5 + 7 — Scheduling End-to-End › 7.1 Workorder Schedule page loads with pre-scheduled jobs (3.2s)
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+  ok  4 [chromium] › tests\e2e\scheduling.spec.ts:26:7 › Block 5 + 7 — Scheduling End-to-End › 7.2 Workorder Schedule shows correct tech assignment (1.9s)
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+  ok  5 [chromium] › tests\e2e\scheduling.spec.ts:31:7 › Block 5 + 7 — Scheduling End-to-End › 7.3 Scheduled jobs do NOT appear in coordination ALL feed (1.4s)
+◇ injected env (0) from .env.local // tip: ⌁ auth for agents [www.vestauth.com]
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+  ok  6 [mobile] › tests\e2e\scheduling.spec.ts:10:7 › Block 5 + 7 — Scheduling End-to-End › 5.1 Schedule page loads tech-row grid (2.5s)
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+  ok  7 [mobile] › tests\e2e\scheduling.spec.ts:15:7 › Block 5 + 7 — Scheduling End-to-End › 5.2 Lock and Send button is visible in schedule header (2.1s)
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+  ok  8 [mobile] › tests\e2e\scheduling.spec.ts:20:7 › Block 5 + 7 — Scheduling End-to-End › 7.1 Workorder Schedule page loads with pre-scheduled jobs (2.1s)
+[WebServer] [browser] Image with src "https://aptmaintenanceinc.com/wp-content/uploads/2024/05/apt-logo.webp" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+  ok  9 [mobile] › tests\e2e\scheduling.spec.ts:26:7 › Block 5 + 7 — Scheduling End-to-End › 7.2 Workorder Schedule shows correct tech assignment (2.3s)
+  ok 10 [mobile] › tests\e2e\scheduling.spec.ts:31:7 › Block 5 + 7 — Scheduling End-to-End › 7.3 Scheduled jobs do NOT appear in coordination ALL feed (1.6s)
+--- GLOBAL TEARDOWN START ---
+◇ injected env (0) from .env.local // tip: ⌘ suppress logs { quiet: true }
+🧹 Tearing down test fixtures...
+✅ Database cleared.
+--- GLOBAL TEARDOWN COMPLETE ---
+
+  10 passed (50.4s)
