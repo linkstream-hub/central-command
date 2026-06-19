@@ -161,9 +161,11 @@ export async function PATCH(
       if (resolvedStatus) updates.status = resolvedStatus;
     }
 
-    await db.update(jobs)
-      .set(updates)
-      .where(eq(jobs.jobId, jobId));
+    if (Object.keys(updates).length > 0) {
+      await db.update(jobs)
+        .set(updates)
+        .where(eq(jobs.jobId, jobId));
+    }
 
     // 2. Automation Triggers — skip when called via API key (backfill/programmatic context)
     let emailWarning: string | undefined;
