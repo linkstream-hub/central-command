@@ -1,0 +1,221 @@
+﻿{
+    "updatedAt":  "2026-06-20T00:52:42.709Z",
+    "createdAt":  "2026-06-20T00:52:42.709Z",
+    "id":  "fpwZXWR9u7nOmiDa",
+    "name":  "CC Event Bus Router",
+    "description":  null,
+    "active":  true,
+    "isArchived":  false,
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "POST",
+                                         "path":  "event-bus",
+                                         "responseMode":  "responseNode",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "eb100001-0000-0000-0000-000000000001",
+                      "name":  "Webhook: Event Bus",
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  1,
+                      "position":  [
+                                       0,
+                                       200
+                                   ],
+                      "webhookId":  "cc-event-bus-router-v2"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "// Log incoming event type for observability\nconst event = $input.first().json;\nconsole.log(\u0027[EventBus] Received:\u0027, event.type, \u0027id:\u0027, event.id);\n// Pass through\nreturn $input.all();"
+                                     },
+                      "id":  "eb100002-0000-0000-0000-000000000002",
+                      "name":  "Code: Log Event",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       240,
+                                       200
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "respondWith":  "json",
+                                         "responseBody":  "={{ JSON.stringify({ status: \u0027received\u0027, eventId: $json.id, type: $json.type }) }}",
+                                         "options":  {
+                                                         "responseCode":  200
+                                                     }
+                                     },
+                      "id":  "eb100003-0000-0000-0000-000000000003",
+                      "name":  "Respond: 200 OK",
+                      "type":  "n8n-nodes-base.respondToWebhook",
+                      "typeVersion":  1,
+                      "position":  [
+                                       480,
+                                       200
+                                   ]
+                  }
+              ],
+    "connections":  {
+                        "Webhook: Event Bus":  {
+                                                   "main":  [
+                                                                [
+                                                                    {
+                                                                        "node":  "Code: Log Event",
+                                                                        "type":  "main",
+                                                                        "index":  0
+                                                                    }
+                                                                ]
+                                                            ]
+                                               },
+                        "Code: Log Event":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Respond: 200 OK",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1"
+                 },
+    "staticData":  null,
+    "meta":  null,
+    "nodeGroups":  [
+
+                   ],
+    "pinData":  null,
+    "versionId":  "b2ef2ef3-0a5b-4deb-9b97-a10ef7f4c877",
+    "activeVersionId":  "b2ef2ef3-0a5b-4deb-9b97-a10ef7f4c877",
+    "versionCounter":  1,
+    "triggerCount":  1,
+    "sourceWorkflowId":  null,
+    "shared":  [
+                   {
+                       "updatedAt":  "2026-06-20T00:52:42.709Z",
+                       "createdAt":  "2026-06-20T00:52:42.709Z",
+                       "role":  "workflow:owner",
+                       "workflowId":  "fpwZXWR9u7nOmiDa",
+                       "projectId":  "wspLt3wn9d8AAbp9",
+                       "project":  {
+                                       "updatedAt":  "2026-04-25T22:35:53.225Z",
+                                       "createdAt":  "2026-04-25T22:31:00.607Z",
+                                       "id":  "wspLt3wn9d8AAbp9",
+                                       "name":  "Brandon Bittner \u003cbrandon@bgbcrbholdings.com\u003e",
+                                       "type":  "personal",
+                                       "icon":  null,
+                                       "description":  null,
+                                       "customTelemetryTags":  [
+
+                                                               ],
+                                       "creatorId":  "49b0b0b1-006b-4452-9ab5-0cf056607f23"
+                                   }
+                   }
+               ],
+    "tags":  [
+
+             ],
+    "activeVersion":  {
+                          "updatedAt":  "2026-06-20T00:52:42.709Z",
+                          "createdAt":  "2026-06-20T00:52:42.709Z",
+                          "versionId":  "b2ef2ef3-0a5b-4deb-9b97-a10ef7f4c877",
+                          "workflowId":  "fpwZXWR9u7nOmiDa",
+                          "nodes":  [
+                                        {
+                                            "parameters":  {
+                                                               "httpMethod":  "POST",
+                                                               "path":  "event-bus",
+                                                               "responseMode":  "responseNode",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "id":  "eb100001-0000-0000-0000-000000000001",
+                                            "name":  "Webhook: Event Bus",
+                                            "type":  "n8n-nodes-base.webhook",
+                                            "typeVersion":  1,
+                                            "position":  [
+                                                             0,
+                                                             200
+                                                         ],
+                                            "webhookId":  "cc-event-bus-router-v2"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "jsCode":  "// Log incoming event type for observability\nconst event = $input.first().json;\nconsole.log(\u0027[EventBus] Received:\u0027, event.type, \u0027id:\u0027, event.id);\n// Pass through\nreturn $input.all();"
+                                                           },
+                                            "id":  "eb100002-0000-0000-0000-000000000002",
+                                            "name":  "Code: Log Event",
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             240,
+                                                             200
+                                                         ]
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "respondWith":  "json",
+                                                               "responseBody":  "={{ JSON.stringify({ status: \u0027received\u0027, eventId: $json.id, type: $json.type }) }}",
+                                                               "options":  {
+                                                                               "responseCode":  200
+                                                                           }
+                                                           },
+                                            "id":  "eb100003-0000-0000-0000-000000000003",
+                                            "name":  "Respond: 200 OK",
+                                            "type":  "n8n-nodes-base.respondToWebhook",
+                                            "typeVersion":  1,
+                                            "position":  [
+                                                             480,
+                                                             200
+                                                         ]
+                                        }
+                                    ],
+                          "connections":  {
+                                              "Webhook: Event Bus":  {
+                                                                         "main":  [
+                                                                                      [
+                                                                                          {
+                                                                                              "node":  "Code: Log Event",
+                                                                                              "type":  "main",
+                                                                                              "index":  0
+                                                                                          }
+                                                                                      ]
+                                                                                  ]
+                                                                     },
+                                              "Code: Log Event":  {
+                                                                      "main":  [
+                                                                                   [
+                                                                                       {
+                                                                                           "node":  "Respond: 200 OK",
+                                                                                           "type":  "main",
+                                                                                           "index":  0
+                                                                                       }
+                                                                                   ]
+                                                                               ]
+                                                                  }
+                                          },
+                          "nodeGroups":  [
+
+                                         ],
+                          "authors":  "Brandon Bittner",
+                          "name":  null,
+                          "description":  null,
+                          "autosaved":  false,
+                          "workflowPublishHistory":  [
+                                                         {
+                                                             "createdAt":  "2026-06-20T00:52:42.939Z",
+                                                             "id":  33,
+                                                             "workflowId":  "fpwZXWR9u7nOmiDa",
+                                                             "versionId":  "b2ef2ef3-0a5b-4deb-9b97-a10ef7f4c877",
+                                                             "event":  "activated",
+                                                             "userId":  "49b0b0b1-006b-4452-9ab5-0cf056607f23"
+                                                         }
+                                                     ]
+                      }
+}
