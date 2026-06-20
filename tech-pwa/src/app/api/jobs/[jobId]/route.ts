@@ -4,12 +4,10 @@ import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { jobs } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
-import { sendTenantScheduledEmail, sendPteCoordinationEmail } from '@/lib/email';
-import type { JobStatus } from '@/lib/types';
 import { resolveJobStatus, resolveEmailTrigger } from '@/lib/job-transitions';
 import { mapNeonJobToJob } from '@/lib/job-mapper';
-import { createJobStateService, toJobId, toTechId } from '@/domain/job';
-import { makeJobStateDAL } from '@/lib/dal/job-state-dal';
+import { apply } from './job-update';
+import { EmailSideEffectExecutor } from '@/lib/side-effects/email-executor';
 
 export async function GET(
   req: Request,
@@ -48,165 +46,26 @@ export async function PATCH(
   try {
     const { jobId } = await params;
     const body = await req.json();
+    const result = await apply(jobId, body, { isApiKeyAuth }, new EmailSideEffectExecutor());
 
-    // 1. SELECT current job state for automation detection, auto-transition, and payload fallback
-    const currentJobs = await db.select({
-      status: jobs.status,
-      tech: jobs.tech,
-      scheduledDate: jobs.scheduledDate,
-      scheduledTime: jobs.scheduledTime,
-      tenantEmail: jobs.tenantEmail,
-      tenantName: jobs.tenantName,
-      address: jobs.address
-    })
-      .from(jobs)
-      .where(eq(jobs.jobId, jobId))
-      .limit(1);
-
-    const jobState = currentJobs[0];
-    if (!jobState) {
-      return NextResponse.json({ success: false, message: 'Job not found' }, { status: 404 });
+    if (!result.ok) {
+      const status = result.error.code === 'JOB_NOT_FOUND' ? 404 :
+                     result.error.code === 'SCHEDULE_INCOMPLETE' ? 422 :
+                     result.error.code === 'FSM_VIOLATION' ? 409 : 500;
+      return NextResponse.json({ success: false, message: result.error.code }, { status });
     }
 
-    const prevStatus = jobState.status;
-
-    // Map Job interface field names -> Neon column names
-    const updates: Partial<typeof jobs.$inferInsert> = {};
-
-    if (body.assignedTech !== undefined) updates.tech = body.assignedTech;
-    if (body.serviceCategory !== undefined) updates.category = body.serviceCategory;
-    if (body.estHours !== undefined) updates.estHours = body.estHours;
-    if (body.rmName !== undefined) updates.rmName = body.rmName;
-    if (body.rmEmail !== undefined) updates.rmEmail = body.rmEmail;
-    if (body.tenantName !== undefined) updates.tenantName = body.tenantName;
-    if (body.tenantPhone !== undefined) updates.tenantPhone = body.tenantPhone;
-    if (body.tenantEmail !== undefined) updates.tenantEmail = body.tenantEmail;
-    if (body.accessInfo !== undefined) updates.accessInfo = body.accessInfo;
-    if (body.scheduledDate !== undefined) updates.scheduledDate = body.scheduledDate;
-    if (body.scheduledTime !== undefined) updates.scheduledTime = body.scheduledTime;
-    if (body.status !== undefined) updates.status = body.status;
-    if (body.notes !== undefined) updates.notes = body.notes;
-    if (body.address !== undefined) updates.address = body.address;
-    if (body.unit !== undefined) updates.unit = body.unit;
-    if (body.description !== undefined) updates.description = body.description;
-    // Fields missing from original mapping — needed for full backfill coverage
-    if (body.priority !== undefined) updates.priority = body.priority;
-    if (body.emailType !== undefined) updates.emailType = body.emailType;
-    if (body.gmailMsgId !== undefined) updates.gmailMsgId = body.gmailMsgId;
-    if (body.pteGranted !== undefined) updates.pte = body.pteGranted;
-    if (body.timing !== undefined) updates.timing = body.timing;
-    if (body.tenantPref !== undefined) updates.tenantPref = body.tenantPref;
-    if (body.tenantPets !== undefined) updates.tenantPets = body.tenantPets;
-    if (body.wcCode !== undefined) updates.wcCode = body.wcCode;
-
-    if (Object.keys(updates).length === 0) {
+    if (result.value.type === 'NO_OP') {
       return NextResponse.json({ success: true, message: 'No updates provided' });
     }
 
-    // ── FSM gate: Ready to Schedule → Scheduled ──────────────────────────────────
-    // Fires when dispatcher assigns tech + date + time on an RtS job.
-    // The FSM validates, writes status via DAL, and declares SEND_CONFIRMATION side effect.
-    const willSchedule =
-      prevStatus === 'Ready to Schedule' &&
-      (updates.tech !== undefined || updates.scheduledDate !== undefined || updates.scheduledTime !== undefined);
-
-    if (willSchedule) {
-      const effectiveTech = updates.tech ?? jobState.tech;
-      const effectiveDate = updates.scheduledDate ?? jobState.scheduledDate;
-      const effectiveTime = updates.scheduledTime ?? jobState.scheduledTime;
-
-      if (!effectiveTech || !effectiveDate || !effectiveTime) {
-        return NextResponse.json(
-          { success: false, message: 'Cannot schedule: tech, date, and time all required' },
-          { status: 422 }
-        );
-      }
-
-      const window = effectiveTime === 'morning' || effectiveTime === 'afternoon' || effectiveTime === 'late_afternoon'
-        ? effectiveTime
-        : 'morning'; // fallback — scheduledTime values should already match ArrivalWindow
-
-      const svc = createJobStateService(makeJobStateDAL());
-      const fsmResult = await svc.transition({
-        type: 'SCHEDULE',
-        payload: {
-          jobId: toJobId(jobId),
-          techId: toTechId(effectiveTech),
-          scheduledDate: effectiveDate,
-          scheduledWindow: window,
-        },
-      });
-
-      if (!fsmResult.ok) {
-        return NextResponse.json(
-          { success: false, message: `Cannot schedule: ${fsmResult.error.code}` },
-          { status: 409 }
-        );
-      }
-
-      // FSM wrote status + assignedTechId + scheduledDate + scheduledWindow via DAL.
-      // Remove those from the direct-write `updates` to avoid double-write.
-      delete updates.status;
-      delete updates.tech;
-      delete updates.scheduledDate;
-      delete updates.scheduledTime;
-
-      // TODO Phase 21: execute fsmResult.value.sideEffects (SEND_CONFIRMATION) instead
-      // of resolveEmailTrigger. For now, the existing email block below handles it.
-    }
-
-    // Pre-FSM path: all other status changes (Phase 21 will replace)
-    if (!willSchedule) {
-      const resolvedStatus = resolveJobStatus({ prevStatus: prevStatus as JobStatus, updates, jobState });
-      if (resolvedStatus) updates.status = resolvedStatus;
-    }
-
-    if (Object.keys(updates).length > 0) {
-      await db.update(jobs)
-        .set(updates)
-        .where(eq(jobs.jobId, jobId));
-    }
-
-    // 2. Automation Triggers — skip when called via API key (backfill/programmatic context)
-    let emailWarning: string | undefined;
-    if (!isApiKeyAuth && body.status && body.status !== prevStatus) {
-      const email = body.tenantEmail || jobState.tenantEmail;
-      const name = body.tenantName || jobState.tenantName;
-      const addr = body.address || jobState.address;
-
-      if (email && email.includes('@')) {
-        try {
-          const trigger = resolveEmailTrigger(body.status, prevStatus);
-          if (trigger === 'scheduled') {
-            await sendTenantScheduledEmail(
-              email,
-              name || 'Resident',
-              addr || 'your property',
-              body.scheduledDate || '',
-              body.scheduledTime || ''
-            );
-          } else if (trigger === 'pte-required') {
-            await sendPteCoordinationEmail(
-              email,
-              name || 'Resident',
-              addr || 'your property'
-            );
-          }
-        } catch (emailErr) {
-          // Status update succeeded — don't revert. Surface warning so dispatcher knows.
-          console.error('[PATCH /api/jobs] Email send failed:', emailErr);
-          emailWarning = 'Status updated but tenant notification email failed to send.';
-        }
-      }
-    }
-
-    return NextResponse.json({ success: true, ...(emailWarning ? { warning: emailWarning } : {}) });
+    return NextResponse.json({
+      success: true,
+      ...(result.value.warning ? { warning: result.value.warning } : {}),
+    });
   } catch (error: unknown) {
     console.error('[PATCH /api/jobs] Error:', error);
     const message = error instanceof Error ? error.message : 'Internal Server Error';
-    return NextResponse.json({ 
-      success: false, 
-      message 
-    }, { status: 500 });
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
