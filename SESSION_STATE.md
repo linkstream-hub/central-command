@@ -3,7 +3,7 @@
 
 ---
 
-## SESSION: S153 (ACTIVE → 2026-06-18)
+## SESSION: S155 (carries forward from S154 — 2026-06-19)
 
 ---
 
@@ -21,35 +21,95 @@ sandbox:    http://localhost:4141 (Docker — dev Neon branch)
 ## GIT STATE
 
 ```yaml
-branch:  main (fix/dashboard-stats-semantics merged PR #2670 → main)
-active:  main
-vercel:  BLOCKED — White-Jesus GitHub account flagged
-         RESOLUTION: Linkstream infra restructure (new GitHub + Vercel under Linkstream entity)
-         interim workaround: vercel deploy CLI (answer NO to env pull prompt)
+branch:  main (local — switch to feat/phase-17-job-state-machine for Phase 17 work)
+active-feature: feat/phase-17-job-state-machine (pushed to origin)
+
+vercel:
+  status: COMPLETE — Linkstream Vercel LIVE (2026-06-19)
+          project: linkstream-hub/central-command → dispatch.aptmaintenanceinc.com
+          deploy:  vercel deploy --prod from tech-pwa/ (VPN OFF required)
+          auto-deploy: NOT wired — GitHub App not installed on linkstream-hub org yet
+          warn:   VPN must be OFF for all CLI sessions (Paris IP caused prior account flags)
+          env-secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, NEXTAUTH_SECRET set manually
+                       (vercel env pull gives empty strings for encrypted secrets — always)
+
+github:
+  repo:   linkstream-hub/central-command
+  branch-protection: ON (require PR, no required reviewer — Claude Code is the reviewer)
+  PAT:    in Brandon's possession
+  NOTE:   gh CLI authenticated as White-Jesus personal account — NOT a member of linkstream-hub
+          workaround: open PRs via browser at github.com/linkstream-hub/central-command
 ```
 
 ---
 
-## INFRA RESTRUCTURE — NEXT IMMEDIATE ACTION
+## INFRA RESTRUCTURE — STATUS: COMPLETE
 
 ```yaml
-entity:   Linkstream (formed 2026-06-18)
-status:   NOT YET STARTED — execute before Phase 17
+entity:    Linkstream (formed 2026-06-18)
+completed: 2026-06-19
 
-sequence:
-  1. GitHub: new account + org under Linkstream → transfer central-command repo
-  2. Neon:   new free account under Linkstream (sentinel pattern removed = free tier OK)
-  3. Railway: new account → redeploy n8n only
-              export: tools/n8n/workflows/ (already done)
-              re-create 5 credentials: Gmail, Neon Postgres, Gemini API Key, Resend, CC API Key
-              update N8N_API_URL in: Vercel env, ~/.claude.json MCP, .env.local, n8n memory
-  4. Vercel: new account under Linkstream → connect new GitHub org → restore auto-deploy
-  5. Brandon action: APT GCP project → Gemini API key → swap n8n credential (zero code changes)
+github:   DONE — linkstream-hub/central-command, branch protection ON
+neon:     DONE — ep-jolly-morning-a6xlf4ke.us-west-2.aws.neon.tech (Linkstream account)
+          old: lively-cell-80446221 — safe to delete (data fully migrated)
+railway:  DONE — workspace renamed to "LinkStream's Projects"
+vercel:   DONE — Linkstream Hub account, project live, domain connected, auth working
 
-resource-controls (before any Railway deploy):
-  - 600MB hard memory limit per service
-  - n8n errorWorkflow wired before first workflow activation
-  - No 24/7 DB polling — max hourly, business hours only
+cleanup-pending:
+  - Remove-Item C:\Users\Aldrick\aptcc3_dump.dump
+  - Remove-Item C:\PTOW\1_APT_Central_Command\tech-pwa\.env.new-neon
+  - Remove-Item C:\PTOW\1_APT_Central_Command\tech-pwa\drizzle.migrate-new.config.ts
+
+auto-deploy-pending:
+  - Install Vercel GitHub App on linkstream-hub org → enables push-triggered deploys
+  - Until then: vercel deploy --prod from tech-pwa/ (VPN OFF)
+```
+
+---
+
+## PHASE 17 STATUS — AWAITING AG
+
+```yaml
+branch:   feat/phase-17-job-state-machine (pushed to origin)
+
+completed-this-session:
+  - feat/phase-17-job-state-machine branch created + pushed
+  - domain/job/job-state.ts + job-state.test.ts committed (18/18 GREEN)
+  - vercel.json cron fix committed to both branches + merged to main via PR
+
+spec-written-for-AG:
+  Task 1:  branch verify
+  Task 2:  ESLint boundary rule (ADR-014) — no-restricted-imports in eslint.config.mjs
+  Task 3:  domain/job/index.ts narrow public API
+  Task 4:  lib/dal/job-state-dal.ts — DAL adapter (makeJobStateDAL)
+  Task 5:  Refactor POST /api/field/clock-in/route.ts → CLOCK_IN transition
+  Task 6:  Refactor POST /api/field/job/complete/route.ts → COMPLETE transition
+  Task 7:  Refactor PATCH /api/jobs/[jobId]/route.ts → SCHEDULE transition (RtS→Scheduled)
+  Task 8:  tsc --noEmit → git diff → artifacts/ag_diff.txt → STOP (Claude Code reviews)
+  Task 9:  test sprint → artifacts/ag_test_results.txt → STOP (Claude Code reviews)
+  Task 10: merge only after Claude Code clear
+
+key-decisions-in-spec:
+  - No eslint-plugin-import needed — built-in no-restricted-imports covers ADR-014
+  - DAL maps jobs schema → JobStateRecord with pragmatic defaults for missing columns
+    (missingFields=[], schedulingTokenExpiresAt=null, tenantProposedDate=null, etc.)
+  - PATCH route: only RtS→Scheduled wired through FSM in Phase 17; other status changes
+    keep old path explicitly marked TODO Phase 21
+  - clock-in: FSM fires CLOCK_IN, side effect START_TIME_RECORD executes timeRecord insert
+  - job/complete: FSM fires COMPLETE, reads job separately for performance history fields
+```
+
+---
+
+## VPN — OPERATIONAL RULE
+
+```yaml
+rule:     VPN OFF before any CLI session (git, vercel, gh, node, claude, AG, omp, Codex)
+reason:   Paris IP (62.210.189.6 / 195.154.166.20) caused GitHub account flag + Vercel block
+          VPN Unlimited split tunnel does NOT work on Windows for CLI processes
+          DNS Firewall override was the culprit — disabling helps but doesn't fully fix
+fix:      Toggle VPN off → do CLI work → toggle back on
+permanent: WireGuard protocol + DNS Firewall OFF is best available config but still imperfect
 ```
 
 ---
@@ -57,48 +117,31 @@ resource-controls (before any Railway deploy):
 ## PHASE SEQUENCE — LOCKED 2026-06-18
 
 ```yaml
-# Architectural decisions from S153 grilling session. Non-negotiable.
-
-pre-phase-17:
-  - design-an-interface on JobStateService  (parallel subagents, before any code)
-  - codebase-design on domain/job/ module   (deep-module principle, narrow index.ts API)
-  - request-refactor-plan for GAS exit      (files GitHub issue, tiny commits, replaces Phase 21 monolith)
-  - install eslint-plugin-import            (needed for ADR-014 domain boundary rule)
-
-phase-17:  Job State Machine Seam (TDD-first)
-  branch:   feat/phase-17-job-state-machine
+phase-17:  Job State Machine Seam (TDD-first) — AWAITING AG
   adr:      ADR-010 + ADR-014
-  approach: RED-GREEN-REFACTOR — job-state.test.ts written before job-state.ts exists
-  location: tech-pwa/src/domain/job/job-state.ts  (ADR-014 domain boundary)
-  port:     open-fsm VALID_TRANSITIONS map + test suite (do not rebuild from scratch)
-  patterns: Beveren FSM — typed transition events, Result<T,E>, DAL injection, test fixtures
-  tasks:
-    1. eslint-plugin-import + domain boundary rule (ADR-014)
-    2. domain/job/ directory + index.ts narrow API
-    3. RED: write job-state.test.ts from ADR-010 transition table spec
-    4. GREEN: implement job-state.ts (port open-fsm)
-    5. REFACTOR: wire 3 API routes to seam (PATCH /jobs/:id, POST /clock-in, POST /job/complete)
-    6. tsc --noEmit → diff → post to Claude Code → STOP
-    7. test sprint → post results → STOP
-    8. merge only after Claude Code clear
+  location: tech-pwa/src/domain/job/job-state.ts
+  tests:    tech-pwa/src/domain/job/__tests__/job-state.test.ts — 18/18 GREEN
 
 phase-18:  Event Publishing Seam (TDD-first)
   adr:      ADR-011
   approach: TDD — outbox tests before outbox implementation
-  ref:      inbox-zero intake architecture (email dedup + routing patterns)
 
 phase-19:  Observability
   tasks:    n8n errorWorkflow → Discord #n8n-execution
             Sentry tracesSampleRate → 0.5 + source maps on deploy
-            Discord server structure (see infra restructure plan)
 
 phase-20:  Auth Lint Rule
   tasks:    ESLint rule blocking useSession() in /app/jobs/** paths
             ESLint rule blocking getSession() in /app/live/** paths
 
 phase-21:  GAS Cutover
-  approach: request-refactor-plan GitHub issue (tiny commits, not monolithic sprint)
+  approach: request-refactor-plan GitHub issue (tiny commits)
             shadow-writes → shadow-reads → cutover → 30-day archive → delete
+
+post-phase-17 (add to backlog):
+  - GitHub Actions CI: tsc + vitest on every PR (now that linkstream-hub repo is clean)
+  - Playwright E2E: badge login → clock in → complete job (golden path)
+  - Install Vercel GitHub App on linkstream-hub org → auto-deploy
 ```
 
 ---
@@ -116,23 +159,8 @@ discriminated-u: JobState discriminated union — invalid states unrepresentable
 zod-boundaries:  all API route inputs validated with Zod schemas
 tdd-standard:    every phase from 17 onward ships tests-first — non-negotiable
 adrs:            ADR-010 amended (domain/ location), ADR-014 added (boundary rule)
-```
-
----
-
-## POCOCK SKILLS — INSTALLED + READY
-
-```yaml
-installed:  2026-06-18 via npx skills@latest add mattpocock/skills (34 skills, 71 agents)
-use-before-phase-17:
-  - design-an-interface  → JobStateService interface (parallel subagents)
-  - codebase-design      → domain/job/ module shape
-  - request-refactor-plan → GAS exit GitHub issue
-use-per-phase:
-  - tdd                  → red-green-refactor each phase
-  - domain-modeling      → ADR + glossary as we go
-  - grilling             → stress-test plans before building
-  - setup-pre-commit     → Husky + lint-staged + tsc hook
+fsm:             JOB_STATE_MACHINE (8 arcs) + createJobStateService factory
+                 guards are pure functions — side effects declared, not executed
 ```
 
 ---
@@ -146,22 +174,11 @@ DashboardAPI.gs: v43
 migration:
   phase-15: MERGED c33f74c PR #2635
   phase-16: MERGED af1a359 PR #2651 — prod LIVE
-  phase-17: JOB STATE MACHINE SEAM (TDD-first) — see phase sequence above
-            PREVIOUS scope (TechPWA.gs cutover) → moved to Phase 21 via request-refactor-plan
+  phase-17: JOB STATE MACHINE SEAM — AWAITING AG
 catalog:   docs/GAS_MIGRATION_SCOPE.md
 hard-blockers:
   - Gmail OAuth for workorder@ in GCP (Brandon action) — gates Code.js email polling
   - TOM redesign (separate project) — gates time-off functions in TechPWA.gs
-```
-
----
-
-## VERCEL DEPLOY
-
-```yaml
-interim:  vercel deploy CLI — answer NO to env pull (wipes .env.local with prod values)
-fix:      Linkstream GitHub → Linkstream Vercel → auto-deploy restored
-warning:  NEVER answer Yes to env pull prompt
 ```
 
 ---
@@ -179,6 +196,8 @@ env-local:  DATABASE_URL:              neon dev POOLED — ep-holy-waterfall-akw
             N8N_COMPLIANCE_WEBHOOK_URL: set in Vercel Prod+Preview
             N8N_FLAG_GATE_WEBHOOK_URL:  set
             DASHBOARD_API_KEY:         verify matches GAS Script Properties
+neon-prod:  ep-jolly-morning-a6xlf4ke.us-west-2.aws.neon.tech (Linkstream account)
+            32 employees, 2391 jobs, 4 shifts
 ```
 
 ---
@@ -187,12 +206,15 @@ env-local:  DATABASE_URL:              neon dev POOLED — ep-holy-waterfall-akw
 
 ```yaml
 neon-write-path:   WRITE_PATH_NEON_ONLY=true | Sheets = read-only archive
-auth-tech:         badge + SHA-256 PIN → UUID session_token in Neon | 26 active techs have pinHash
+auth-tech:         badge + SHA-256 PIN → UUID session_token in Neon | 32 employees in DB
 auth-staff:        Google OAuth next-auth v5 (@aptmaintenanceinc.com only)
-neon-project:      lively-cell-80446221 (moving to Linkstream account)
+                   env vars: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, NEXTAUTH_SECRET
+neon-project:      ep-jolly-morning-a6xlf4ke.us-west-2.aws.neon.tech (Linkstream)
 neon-dev-branch:   br-muddy-flower-ak85a9jc | compute: ep-holy-waterfall-akwxx49b
 playwright:        globalSetup uses DATABASE_URL (not DATABASE_URL_TEST); rate-limit bypass in NODE_ENV=test
 team:              Claude Code (lead/gate) → AG (co-lead builder, GSD) → omp (jr dev, bounded tasks) → Codex
-shadow-sync:       clock events + job status already sync to Neon — Phase 17 does NOT flip (now Job State Machine)
+shadow-sync:       clock events + job status already sync to Neon — Phase 17 = seam, not flip
 graphify:          graphify update . → pipx binary (0.8.38) → graphify-out/ — 20,660 nodes current
+gh-cli:            authenticated as White-Jesus — NOT linkstream-hub member
+                   workaround: use browser for PRs at github.com/linkstream-hub/central-command
 ```
