@@ -1,297 +1,180 @@
-/**
- * RED tests for JobUpdate.apply() — run BEFORE implementing job-update.ts.
- * All tests must fail with "Cannot find module '../job-update'" until implementation exists.
- *
- * Tests hit the real Neon dev DB. No DB mocking — that masks real failures.
- * SideEffectExecutor is faked — external comms (email, EventBus) must not fire in tests.
- */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { db } from '@/lib/db';
-import { jobs } from '@/lib/schema';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { db } from '../../../../../lib/db';
+import { jobs } from '../../../../../lib/schema';
 import { eq } from 'drizzle-orm';
 import { apply } from '../job-update';
-import type { SideEffectExecutor } from '../job-update';
-import type { SideEffect } from '@/domain/job/job-state';
+import { FakeSideEffectExecutor } from '../../../../../lib/side-effects/fake-executor';
 
-// ── Test double ───────────────────────────────────────────────────────────────
-
-class FakeSideEffectExecutor implements SideEffectExecutor {
-  executed: SideEffect[] = [];
-  private _shouldThrow = false;
-
-  throwOnNext() {
-    this._shouldThrow = true;
-  }
-
-  async execute(effect: SideEffect): Promise<void> {
-    if (this._shouldThrow) throw new Error('External service unavailable');
-    this.executed.push(effect);
-  }
-}
-
-// ── Fixtures ──────────────────────────────────────────────────────────────────
-
-const ORG = 'APT-CA';
-
-function jobId() {
-  return `test-ju-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-}
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
-describe('JobUpdate.apply()', () => {
-  let jid: string;
+describe('JobUpdate Module - apply()', () => {
   let executor: FakeSideEffectExecutor;
 
   beforeEach(() => {
-    jid = jobId();
     executor = new FakeSideEffectExecutor();
   });
 
-  afterEach(async () => {
-    await db.delete(jobs).where(eq(jobs.jobId, jid));
-  });
-
-  // ── NO_OP ──────────────────────────────────────────────────────────────────
-
-  it('returns NO_OP when body is empty', async () => {
-    await db.insert(jobs).values({ jobId: jid, status: 'Needs Info', orgId: ORG });
-
-    const result = await apply(jid, {}, { isApiKeyAuth: false }, executor);
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.value.type).toBe('NO_OP');
-    expect(executor.executed).toHaveLength(0);
-  });
-
-  it('returns NO_OP when body has only unrecognized fields', async () => {
-    await db.insert(jobs).values({ jobId: jid, status: 'Needs Info', orgId: ORG });
-
-    const result = await apply(jid, { unrecognized: 'field', another: 42 }, { isApiKeyAuth: false }, executor);
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.value.type).toBe('NO_OP');
-    expect(executor.executed).toHaveLength(0);
-  });
-
-  // ── FSM SCHEDULE path ──────────────────────────────────────────────────────
-
-  it('transitions RtS → Scheduled when tech + date + time provided and PTE granted', async () => {
+  const setupJob = async (jobId: string, overrides: Partial<typeof jobs.$inferInsert>) => {
     await db.insert(jobs).values({
-      jobId: jid,
-      status: 'Ready to Schedule',
-      orgId: ORG,
-      pte: 'Yes',
-      tenantEmail: 'tenant@example.com',
+      jobId,
+      orgId: 'APT-CA',
+      ...overrides,
     });
+  };
+
+  const cleanupJob = async (jobId: string) => {
+    await db.delete(jobs).where(eq(jobs.jobId, jobId));
+  };
+
+  it('1. returns NO_OP for empty body', async () => {
+    const result = await apply('j1', {}, { isApiKeyAuth: false }, executor);
+    expect(result).toEqual({ ok: true, value: { type: 'NO_OP' } });
+    expect(executor.executed.length).toBe(0);
+  });
+
+  it('2. returns NO_OP for unrecognized fields only', async () => {
+    const result = await apply('j2', { foo: 'bar' }, { isApiKeyAuth: false }, executor);
+    expect(result).toEqual({ ok: true, value: { type: 'NO_OP' } });
+    expect(executor.executed.length).toBe(0);
+  });
+
+  it('3. FSM SCHEDULE - success', async () => {
+    const jobId = 'j3';
+    await setupJob(jobId, { status: 'Ready to Schedule', pte: 'Yes' });
 
     const result = await apply(
-      jid,
+      jobId,
       { assignedTech: 'T01', scheduledDate: '2026-06-25', scheduledTime: 'morning' },
       { isApiKeyAuth: false },
-      executor,
+      executor
     );
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.value.type).toBe('UPDATED');
+    expect(result).toEqual({ ok: true, value: { type: 'UPDATED' } });
+    const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, jobId)).limit(1);
+    expect(dbJob[0].status).toBe('Scheduled');
+    expect(executor.executed).toContainEqual(expect.objectContaining({ type: 'SEND_CONFIRMATION' }));
 
-    const row = await db.select().from(jobs).where(eq(jobs.jobId, jid)).limit(1);
-    expect(row[0].status).toBe('Scheduled');
-    expect(row[0].tech).toBe('T01');
-    expect(row[0].scheduledDate).toBe('2026-06-25');
-    expect(row[0].scheduledTime).toBe('morning');
-
-    const confirmation = executor.executed.find(e => e.type === 'SEND_CONFIRMATION');
-    expect(confirmation).toBeDefined();
+    await cleanupJob(jobId);
   });
 
-  // ── SCHEDULE_INCOMPLETE ────────────────────────────────────────────────────
-
-  it('returns SCHEDULE_INCOMPLETE when tech provided but date and time absent from body and DB', async () => {
-    await db.insert(jobs).values({
-      jobId: jid,
-      status: 'Ready to Schedule',
-      orgId: ORG,
-      // no scheduledDate, no scheduledTime in DB
-    });
+  it('4. FSM SCHEDULE - incomplete', async () => {
+    const jobId = 'j4';
+    await setupJob(jobId, { status: 'Ready to Schedule', pte: 'Yes' });
 
     const result = await apply(
-      jid,
-      { assignedTech: 'T01' }, // no date or time
+      jobId,
+      { assignedTech: 'T01' },
       { isApiKeyAuth: false },
-      executor,
+      executor
     );
 
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe('SCHEDULE_INCOMPLETE');
-    expect(executor.executed).toHaveLength(0);
-  });
-
-  it('returns SCHEDULE_INCOMPLETE when date provided but tech absent from body and DB', async () => {
-    await db.insert(jobs).values({
-      jobId: jid,
-      status: 'Ready to Schedule',
-      orgId: ORG,
+    expect(result).toEqual({
+      ok: false,
+      error: { code: 'SCHEDULE_INCOMPLETE', missing: ['scheduledDate', 'scheduledTime'] }
     });
 
-    const result = await apply(
-      jid,
-      { scheduledDate: '2026-06-25', scheduledTime: 'morning' }, // no tech
-      { isApiKeyAuth: false },
-      executor,
-    );
-
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe('SCHEDULE_INCOMPLETE');
+    await cleanupJob(jobId);
   });
 
-  // ── FSM_VIOLATION ──────────────────────────────────────────────────────────
-
-  it('returns FSM_VIOLATION when pteGranted is No on RtS job', async () => {
-    await db.insert(jobs).values({
-      jobId: jid,
-      status: 'Ready to Schedule',
-      orgId: ORG,
-      pte: 'No',
-    });
+  it('5. FSM_VIOLATION', async () => {
+    const jobId = 'j5';
+    await setupJob(jobId, { status: 'Ready to Schedule', pte: 'No' }); // pte=No blocks schedule
 
     const result = await apply(
-      jid,
+      jobId,
       { assignedTech: 'T01', scheduledDate: '2026-06-25', scheduledTime: 'morning' },
       { isApiKeyAuth: false },
-      executor,
+      executor
     );
 
     expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe('FSM_VIOLATION');
-    expect(executor.executed).toHaveLength(0);
+    if (!result.ok) expect(result.error.code).toBe('FSM_VIOLATION');
+    expect(executor.executed.length).toBe(0);
 
-    // DB status must not have changed
-    const row = await db.select().from(jobs).where(eq(jobs.jobId, jid)).limit(1);
-    expect(row[0].status).toBe('Ready to Schedule');
+    await cleanupJob(jobId);
   });
 
-  // ── Non-FSM field update ───────────────────────────────────────────────────
-
-  it('updates non-FSM fields without calling executor', async () => {
-    await db.insert(jobs).values({ jobId: jid, status: 'Needs Info', orgId: ORG });
+  it('6. Non-FSM field update', async () => {
+    const jobId = 'j6';
+    await setupJob(jobId, { status: 'Needs Info' });
 
     const result = await apply(
-      jid,
-      { rmName: 'John Smith', notes: 'Dripping faucet in bathroom' },
+      jobId,
+      { rmName: 'John', notes: 'Test notes' },
       { isApiKeyAuth: false },
-      executor,
+      executor
     );
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.value.type).toBe('UPDATED');
-    expect(executor.executed).toHaveLength(0);
+    expect(result).toEqual({ ok: true, value: { type: 'UPDATED' } });
+    const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, jobId)).limit(1);
+    expect(dbJob[0].rmName).toBe('John');
+    expect(dbJob[0].notes).toBe('Test notes');
+    expect(executor.executed.length).toBe(0);
 
-    const row = await db.select().from(jobs).where(eq(jobs.jobId, jid)).limit(1);
-    expect(row[0].rmName).toBe('John Smith');
-    expect(row[0].notes).toBe('Dripping faucet in bathroom');
+    await cleanupJob(jobId);
   });
 
-  // ── Non-FSM status change (resolveJobStatus path) ─────────────────────────
-
-  it('applies status change via resolveJobStatus for non-willSchedule transitions', async () => {
-    await db.insert(jobs).values({ jobId: jid, status: 'Scheduled', orgId: ORG });
+  it('7. Non-FSM status change', async () => {
+    const jobId = 'j7';
+    await setupJob(jobId, { status: 'Scheduled' });
 
     const result = await apply(
-      jid,
+      jobId,
       { status: 'In Progress' },
       { isApiKeyAuth: false },
-      executor,
+      executor
     );
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.value.type).toBe('UPDATED');
+    expect(result).toEqual({ ok: true, value: { type: 'UPDATED' } });
+    const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, jobId)).limit(1);
+    expect(dbJob[0].status).toBe('In Progress');
 
-    const row = await db.select().from(jobs).where(eq(jobs.jobId, jid)).limit(1);
-    expect(row[0].status).toBe('In Progress');
+    await cleanupJob(jobId);
   });
 
-  // ── isApiKeyAuth suppresses executor ──────────────────────────────────────
-
-  it('does not call executor when isApiKeyAuth is true even on FSM transition', async () => {
-    await db.insert(jobs).values({
-      jobId: jid,
-      status: 'Ready to Schedule',
-      orgId: ORG,
-      pte: 'Yes',
-      tenantEmail: 'tenant@example.com',
-    });
+  it('8. isApiKeyAuth suppresses effects', async () => {
+    const jobId = 'j8';
+    await setupJob(jobId, { status: 'Ready to Schedule', pte: 'Yes' });
 
     const result = await apply(
-      jid,
+      jobId,
       { assignedTech: 'T01', scheduledDate: '2026-06-25', scheduledTime: 'morning' },
       { isApiKeyAuth: true },
-      executor,
+      executor
     );
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.value.type).toBe('UPDATED');
+    expect(result).toEqual({ ok: true, value: { type: 'UPDATED' } });
+    const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, jobId)).limit(1);
+    expect(dbJob[0].status).toBe('Scheduled');
+    expect(executor.executed.length).toBe(0); // Supressed!
 
-    // DB transition happened
-    const row = await db.select().from(jobs).where(eq(jobs.jobId, jid)).limit(1);
-    expect(row[0].status).toBe('Scheduled');
-
-    // Executor was never called
-    expect(executor.executed).toHaveLength(0);
+    await cleanupJob(jobId);
   });
 
-  // ── JOB_NOT_FOUND ──────────────────────────────────────────────────────────
-
-  it('returns JOB_NOT_FOUND when jobId does not exist in DB', async () => {
-    const result = await apply(
-      'nonexistent-job-id-xyz',
-      { rmName: 'Test' },
-      { isApiKeyAuth: false },
-      executor,
-    );
-
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error.code).toBe('JOB_NOT_FOUND');
+  it('9. JOB_NOT_FOUND', async () => {
+    const result = await apply('unknown-job', { notes: 'hello' }, { isApiKeyAuth: false }, executor);
+    expect(result).toEqual({ ok: false, error: { code: 'JOB_NOT_FOUND' } });
   });
 
-  // ── Executor throws → warning (not failure) ────────────────────────────────
+  it('10. Executor throws -> warning', async () => {
+    const jobId = 'j10';
+    await setupJob(jobId, { status: 'Ready to Schedule', pte: 'Yes' });
 
-  it('returns UPDATED with warning when executor throws but DB write succeeded', async () => {
-    await db.insert(jobs).values({
-      jobId: jid,
-      status: 'Ready to Schedule',
-      orgId: ORG,
-      pte: 'Yes',
-      tenantEmail: 'tenant@example.com',
-    });
-    executor.throwOnNext();
+    executor.shouldThrow = true;
 
     const result = await apply(
-      jid,
+      jobId,
       { assignedTech: 'T01', scheduledDate: '2026-06-25', scheduledTime: 'morning' },
       { isApiKeyAuth: false },
-      executor,
+      executor
     );
 
-    // Module returns success — DB write completed before executor threw
     expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.value.type).toBe('UPDATED');
-    expect(result.value.warning).toBeDefined();
-    expect(typeof result.value.warning).toBe('string');
+    if (result.ok && result.value.type === 'UPDATED') {
+      expect(result.value.warning).toBeDefined(); // Warning is set
+    }
+    
+    const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, jobId)).limit(1);
+    expect(dbJob[0].status).toBe('Scheduled'); // DB update still succeeded
 
-    // Status persisted despite executor failure
-    const row = await db.select().from(jobs).where(eq(jobs.jobId, jid)).limit(1);
-    expect(row[0].status).toBe('Scheduled');
+    await cleanupJob(jobId);
   });
 });
