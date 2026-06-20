@@ -14,9 +14,8 @@ All must be true before Task 1:
 - [x] New Neon account provisioned — new `DATABASE_URL` set in Vercel env vars (jolly-morning)
 - [x] n8n Event Bus Router workflow live — `N8N_EVENT_BUS_URL = https://n8n-production-4f36b.up.railway.app/webhook/event-bus`
 - [x] n8n Outbox Poller workflow created (INACTIVE — activate after Task 2 migration)
-- [ ] `N8N_EVENT_BUS_URL` added to `.env.local` (Brandon — manual)
-- [ ] `N8N_EVENT_BUS_URL` added to Vercel env vars (Brandon — Vercel dashboard)
-- [ ] Discord `#n8n-execution` webhook URL available (Brandon — confirm channel + webhook)
+- [x] `N8N_EVENT_BUS_URL` added to `.env.local` (confirmed 2026-06-19)
+- [x] `N8N_EVENT_BUS_URL` added to Vercel env vars (confirmed 2026-06-19)
 - [ ] Drizzle migration tooling confirmed working (`npx drizzle-kit push` or `migrate`)
 
 If any prerequisite is false: **STOP. Do not start this sprint.**
@@ -147,7 +146,7 @@ Implement `publish(event: WorkOrderEvent): Promise<Result<{ eventId: string }, B
 3. Attempt immediate `fetch(N8N_EVENT_BUS_URL, { method: 'POST', body: envelope })`
 4. On 2xx: `UPDATE workflow_events SET status = 'delivered', delivered_at = now()`
 5. On failure: leave `status = 'pending'` — log structured error — return `{ ok: { eventId } }`
-6. On DB write failure: return `{ err: { code: 'DB_WRITE_FAILED' } }` + POST to Discord `#n8n-execution` webhook
+6. On DB write failure: return `{ err: { code: 'DB_WRITE_FAILED' } }` + send Resend email to brandon@aptmaintenanceinc.com
 
 `N8N_EVENT_BUS_URL` must be validated at startup (`if (!process.env.N8N_EVENT_BUS_URL) throw new Error(...)`).
 
