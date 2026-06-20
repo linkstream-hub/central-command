@@ -8,6 +8,9 @@ build
 
 *.log
 .DS_Store
+# Prevent accidental HTML exports from being committed
+tech-pwa/html.txt
+tech-pwa/*.html.txt
 dist
 # Python
 *.pyc
