@@ -1,16 +1,14 @@
-import { House, Briefcase, ChatCircle, User } from '@phosphor-icons/react';
+import { Briefcase, Clock } from '@phosphor-icons/react';
 import Link from 'next/link';
 
 interface BottomNavProps {
-  activeTab?: 'home' | 'jobs' | 'messages' | 'profile';
+  activeTab?: 'jobs' | 'hours';
 }
 
 export default function BottomNav({ activeTab = 'jobs' }: BottomNavProps) {
   const navItems = [
-    { id: 'home', label: 'Home', icon: House, href: '/jobs' },
     { id: 'jobs', label: 'Jobs', icon: Briefcase, href: '/jobs' },
-    { id: 'messages', label: 'Messages', icon: ChatCircle, href: '/jobs' },
-    { id: 'profile', label: 'Profile', icon: User, href: '/jobs' },
+    { id: 'hours', label: 'Hours', icon: Clock, href: '/hours' },
   ] as const;
 
   return (

@@ -52,6 +52,11 @@ agents/scout_files/
 logs/
 .codegraph/
 .agents/skills/
+.agents/skills_archive/
+.github/skills_archive/
+.github/agents_archive/
+.github/hooks_archive/
+.github/scripts_archive/
 # Stray binaries
 *.exe
 
@@ -81,3 +86,5 @@ gsd-core/
 fix_tavily_pkg.js
 ROSTER_PROOF.txt
 
+
+.vercel
