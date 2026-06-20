@@ -124,7 +124,35 @@ Claude Code is the merge gate. No agent merges without explicit "Clear to merge.
 
 ---
 
-## 10. NEVER
+## 10. CODEX DESIGN BRIEF
+
+Codex owns all frontend. Before any UI work, read these in order:
+
+```
+1. .impeccable/design.json   — design system: navy palette, amber accent, 9 component specs, 4 rules
+2. PRODUCT.md                — product north star ("The Dispatch Room"), voice, users
+3. DESIGN.md                 — visual direction, layout principles
+```
+
+**Active rules from design.json (enforce these, no exceptions):**
+- Alert Signal Rule: amber `#f5b900` only for actionable alerts (never decorative)
+- Semantic Six Rule: 6 status colors map to WO states — no arbitrary color additions
+- Mono-for-Data Rule: Geist Mono for job IDs, timestamps, badge numbers
+- Flat-By-Default Rule: no box shadows on cards (navy overlapping planes create depth)
+
+**Skills available (installed in .codex/skills/):**
+- `taste-skill` — anti-slop frontend; read before any new component work
+- `extract-design` — extract design language from reference sites when needed
+
+**Anti-slop checklist (mandatory before any UI commit):**
+- [ ] No default Tailwind card grids with uniform spacing
+- [ ] No generic hero with centered headline + gradient blob
+- [ ] No Inter + slate-900 default stack (use Geist Sans/Mono from design.json)
+- [ ] Hover/focus/active states feel designed, not browser-default
+
+---
+
+## 11. NEVER
 
 - No new GAS code — all new functionality goes to Next.js or n8n
 - No Discord URLs hardcoded anywhere
