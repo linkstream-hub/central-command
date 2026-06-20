@@ -3,7 +3,7 @@
 
 ---
 
-## SESSION: S156 (carries forward from S155 — 2026-06-20)
+## SESSION: S157 (carries forward from S156 — 2026-06-20)
 
 ---
 
@@ -23,6 +23,7 @@ sandbox:    http://localhost:4141 (Docker — dev Neon branch)
 ```yaml
 branch:  main
 active-feature: refactor/c1-job-update-module (pushed — PR #3 open, awaiting merge)
+lean-agent-stack: chore/lean-agent-stack (pushed — PR #4 open)
 
 vercel:
   status: COMPLETE — Linkstream Vercel LIVE (2026-06-19)
@@ -81,6 +82,26 @@ delivered:
   - PATCH /api/jobs/[jobId] SCHEDULE transition wired
   - POST /api/field/clock-in CLOCK_IN transition wired
   - POST /api/field/job/complete COMPLETE transition wired
+```
+
+---
+
+## LEAN AGENT STACK — PR #4 OPEN
+
+```yaml
+branch:   chore/lean-agent-stack
+pr:       https://github.com/linkstream-hub/central-command/pull/4
+status:   AWAITING MERGE
+
+delivered:
+  - Remove 33 GSD agent .md files from .claude/agents/
+  - Remove 67 GSD slash commands from .claude/commands/gsd/
+  - Purge .github/skills/ archived skills (caveman, ecc, impeccable, gsd-*)
+  - Fix BottomNav: 4 dead tabs → 2 real tabs (Jobs/Hours)
+  - CLAUDE.md, AGENTS.md, AG.md: lean stack, frontend/backend boundaries
+  - Codex design brief added to AGENTS.md (section 10)
+  - taste-skill installed: .claude/skills/ + .codex/skills/ (gitignored, local)
+  - designlang (design-extract) installed: claude plugin + .codex/skills/ (local)
 ```
 
 ---
