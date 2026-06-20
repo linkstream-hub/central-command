@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { db } from '../../../../lib/db';
 import { jobs } from '../../../../lib/schema';
 import { eq } from 'drizzle-orm';
-import { PATCH } from '../route';
+import { PATCH } from '../[jobId]/route';
 
 describe('PATCH /api/jobs/[jobId]', () => {
   const TEST_API_KEY = 'test-dashboard-key';
