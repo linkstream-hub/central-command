@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm';
 import { resolveJobStatus, resolveEmailTrigger } from '@/lib/job-transitions';
 import { mapNeonJobToJob } from '@/lib/job-mapper';
 import { apply } from './job-update';
-import { EmailSideEffectExecutor } from '@/lib/side-effects/email-executor';
+import { EventBusSideEffectExecutor } from '@/lib/side-effects/event-bus-executor';
 
 export async function GET(
   req: Request,
@@ -46,7 +46,7 @@ export async function PATCH(
   try {
     const { jobId } = await params;
     const body = await req.json();
-    const result = await apply(jobId, body, { isApiKeyAuth }, new EmailSideEffectExecutor());
+    const result = await apply(jobId, body, { isApiKeyAuth }, new EventBusSideEffectExecutor());
 
     if (!result.ok) {
       const status = result.error.code === 'JOB_NOT_FOUND' ? 404 :

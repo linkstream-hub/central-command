@@ -1,5 +1,5 @@
 import { sendTenantScheduledEmail, sendPteCoordinationEmail } from '@/lib/email';
-import type { SideEffectExecutor } from '@/app/api/jobs/[jobId]/job-update';
+import type { SideEffectExecutor } from '@/lib/side-effects';
 import type { SideEffect } from '@/domain/job';
 
 export class EmailSideEffectExecutor implements SideEffectExecutor {
