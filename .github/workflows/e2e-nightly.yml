@@ -18,9 +18,9 @@ jobs:
         working-directory: tech-pwa
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -44,10 +44,10 @@ jobs:
           GOOGLE_CLIENT_ID: dummy-id
           GOOGLE_CLIENT_SECRET: dummy-secret
           PLAYWRIGHT_BASE_URL: http://localhost:3010
-          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Upload test results
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-nightly-results

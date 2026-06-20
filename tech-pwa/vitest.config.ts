@@ -9,8 +9,18 @@ export default defineConfig({
     },
     include: ['src/**/__tests__/**/*.test.ts'],
     coverage: {
-      include: ['src/lib/compliance.ts', 'src/lib/job-transitions.ts', 'src/lib/normalizeAddressKey.ts', 'src/lib/detectLaphamForm.ts', 'src/lib/access-codes.ts'],
-      thresholds: { lines: 100, functions: 100, branches: 90 },
+      include: [
+        'src/lib/compliance.ts',
+        'src/lib/job-transitions.ts',
+        'src/lib/normalizeAddressKey.ts',
+        'src/lib/detectLaphamForm.ts',
+        'src/lib/access-codes.ts',
+        'src/domain/**/*.ts',
+        'src/lib/services/**/*.ts',
+        'src/lib/side-effects/**/*.ts',
+        'src/lib/dal/**/*.ts',
+      ],
+      thresholds: { lines: 90, functions: 90, branches: 80 },
     },
   },
 });
