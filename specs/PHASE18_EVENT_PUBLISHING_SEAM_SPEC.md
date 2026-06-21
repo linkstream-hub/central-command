@@ -11,9 +11,11 @@
 
 All must be true before Task 1:
 
-- [ ] New Neon account provisioned — new `DATABASE_URL` set in Vercel env vars
-- [ ] New Railway n8n deployed — `N8N_EVENT_BUS_URL` set in Vercel env vars
-- [ ] Discord `#n8n-execution` webhook URL available
+- [x] New Neon account provisioned — new `DATABASE_URL` set in Vercel env vars (jolly-morning)
+- [x] n8n Event Bus Router workflow live — `N8N_EVENT_BUS_URL = https://n8n-production-4f36b.up.railway.app/webhook/event-bus`
+- [x] n8n Outbox Poller workflow created (INACTIVE — activate after Task 2 migration)
+- [x] `N8N_EVENT_BUS_URL` added to `.env.local` (confirmed 2026-06-19)
+- [x] `N8N_EVENT_BUS_URL` added to Vercel env vars (confirmed 2026-06-19)
 - [ ] Drizzle migration tooling confirmed working (`npx drizzle-kit push` or `migrate`)
 
 If any prerequisite is false: **STOP. Do not start this sprint.**
@@ -108,7 +110,32 @@ Evidence: file created, `npx tsc --noEmit` exits 0.
 
 ---
 
-### Task 4 — Create `EventBus`
+### Task 4a — Write `event-bus.test.ts` RED first (TDD)
+
+**File:** `tech-pwa/src/lib/services/__tests__/event-bus.test.ts` (new file — write BEFORE implementation)
+
+Write tests using vi.mock for Drizzle db and global fetch. Tests must FAIL before Task 4b.
+
+Required test cases:
+```ts
+// Mock setup: mock db.insert, db.update, global fetch
+describe('EventBus.publish', () => {
+  it('inserts pending row into workflow_events', async () => { ... })
+  it('attempts immediate delivery via fetch to N8N_EVENT_BUS_URL', async () => { ... })
+  it('marks delivered when fetch returns 2xx', async () => { ... })
+  it('leaves status pending when fetch fails (outbox handles retry)', async () => { ... })
+  it('returns ok.eventId even when fetch fails', async () => { ... })
+  it('returns err.DB_WRITE_FAILED when db insert throws', async () => { ... })
+})
+```
+
+Run: `npx vitest run src/lib/services/__tests__/event-bus.test.ts`
+
+Evidence: all 6 tests FAIL (red) — paste output showing failures.
+
+---
+
+### Task 4b — Implement `EventBus` GREEN
 
 **File:** `tech-pwa/src/lib/services/event-bus.ts` (new file)
 
@@ -119,51 +146,49 @@ Implement `publish(event: WorkOrderEvent): Promise<Result<{ eventId: string }, B
 3. Attempt immediate `fetch(N8N_EVENT_BUS_URL, { method: 'POST', body: envelope })`
 4. On 2xx: `UPDATE workflow_events SET status = 'delivered', delivered_at = now()`
 5. On failure: leave `status = 'pending'` — log structured error — return `{ ok: { eventId } }`
-6. On DB write failure: return `{ err: { code: 'DB_WRITE_FAILED' } }` + POST to Discord `#n8n-execution` webhook
+6. On DB write failure: return `{ err: { code: 'DB_WRITE_FAILED' } }` + send Resend email to brandon@aptmaintenanceinc.com
 
 `N8N_EVENT_BUS_URL` must be validated at startup (`if (!process.env.N8N_EVENT_BUS_URL) throw new Error(...)`).
 
-Evidence: file created, `npx tsc --noEmit` exits 0.
+Run: `npx vitest run src/lib/services/__tests__/event-bus.test.ts`
+
+Evidence: all 6 tests PASS (green) — paste output. Then `npx tsc --noEmit` exits 0.
 
 ---
 
-### Task 5 — Wire n8n unified webhook workflow
+### Task 5 — Verify n8n unified webhook workflow (DONE — Claude Code pre-built)
 
-In n8n UI (new Railway instance):
+Workflow `CC Event Bus Router` (ID: fpwZXWR9u7nOmiDa) is ACTIVE.
+URL: `https://n8n-production-4f36b.up.railway.app/webhook/event-bus`
+JSON: `tools/n8n/workflows/cc-event-bus-router.json` (already committed)
 
-1. Create workflow: `CC Event Bus Router`
-2. Trigger: Webhook node, path `/event-bus`, method POST
-3. Switch node on `{{ $json.type }}`:
-   - `AttestationSigned` → existing CA Break Compliance logic (migrate from old workflow)
-   - `WorkOrderScheduled` → Resend node: email tenant + PM using `payload.tenantEmail`, `payload.pmEmail`, `payload.propertyAddress`, `payload.scheduledDate`, `payload.scheduledTime`
-   - `PteRequired` → Resend node: email PM coordination using `payload.pmEmail`, `payload.propertyAddress`
-   - `DispatchSent` → existing lock-and-send downstream logic (migrate)
-   - `StaleJobDetected` → Discord node → `#work-orders`
-   - `WcCodeMissing` → Discord node → `#work-orders`
-   - Default → Discord node → `#n8n-execution` (unknown event type alert)
-4. Export workflow JSON → `tools/n8n/workflows/cc-event-bus-router.json`
-5. Commit
+Confirm with:
+```bash
+curl -s -X POST https://n8n-production-4f36b.up.railway.app/webhook/event-bus \
+  -H "Content-Type: application/json" \
+  -d '{"id":"test","type":"AttestationSigned","occurredAt":"2026-06-20T00:00:00Z","payload":{}}'
+# must return {"status":"received",...}
+```
 
-Evidence: workflow active in n8n, `tools/n8n/workflows/cc-event-bus-router.json` committed, paste workflow ID.
+Consumer branch routing (email via Resend, Discord alerts) = follow-on Phase 18 iteration.
+
+Evidence: curl returns 200 + JSON body — paste output.
 
 ---
 
-### Task 6 — Wire n8n outbox poller workflow
+### Task 6 — Activate n8n outbox poller (after Task 2 migration)
 
-In n8n UI:
+Workflow `CC Event Bus Outbox Poller` (ID: dshTB3lODDYy0FTP) is already created — INACTIVE.
+JSON: `tools/n8n/workflows/cc-event-bus-outbox-poller.json` (already committed)
 
-1. Create workflow: `CC Event Bus Outbox Poller`
-2. Trigger: Schedule, every 5 minutes, Mon–Fri 06:00–22:00 PT
-3. Neon node: `SELECT id, type, payload FROM workflow_events WHERE status = 'pending' AND attempts < 3 ORDER BY occurred_at ASC LIMIT 50`
-4. Loop over results → for each: process via same Switch node routing as Task 5
-5. On success: `UPDATE workflow_events SET status = 'delivered', delivered_at = now() WHERE id = $id`
-6. On failure: `UPDATE workflow_events SET status = 'failed', attempts = attempts + 1, error = $err WHERE id = $id` + Discord `#n8n-execution` alert if attempts = 3
-7. Export → `tools/n8n/workflows/cc-event-bus-outbox-poller.json`
-8. Commit
+After Task 2 (drizzle migration) creates `workflow_events` table:
+1. Open n8n → Workflows → CC Event Bus Outbox Poller
+2. Toggle to ACTIVE
+3. Confirm schedule shows "Every 5 minutes"
 
-Set Railway memory limit for n8n service: 600MB hard cap before activating poller.
+Do NOT activate before Task 2 — table doesn't exist yet.
 
-Evidence: workflow active, JSON committed, paste workflow ID, confirm memory cap set.
+Evidence: workflow ACTIVE in n8n — paste confirmation.
 
 ---
 

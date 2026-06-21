@@ -1,5 +1,5 @@
 import type { SideEffect } from '@/domain/job';
-import type { SideEffectExecutor } from '@/app/api/jobs/[jobId]/job-update';
+import type { SideEffectExecutor } from '@/lib/side-effects';
 
 export class FakeSideEffectExecutor implements SideEffectExecutor {
   public executed: SideEffect[] = [];

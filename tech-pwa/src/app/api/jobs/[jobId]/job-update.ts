@@ -7,9 +7,7 @@ import { makeJobStateDAL } from '@/lib/dal/job-state-dal';
 import type { SideEffect, Result } from '@/domain/job';
 import type { JobStatus } from '@/lib/types';
 
-export interface SideEffectExecutor {
-  execute(effect: SideEffect): Promise<void>;
-}
+import type { SideEffectExecutor } from '@/lib/side-effects';
 
 export type JobUpdateError =
   | { code: 'JOB_NOT_FOUND' }
