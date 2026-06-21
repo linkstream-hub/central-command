@@ -6,9 +6,17 @@ import { eq } from 'drizzle-orm';
 
 const originalFetch = global.fetch;
 
+const mockEmailSend = vi.fn().mockResolvedValue({ id: 'mock-email-id' });
+vi.mock('resend', () => ({
+  Resend: vi.fn().mockImplementation(function() {
+    return {
+      emails: { send: mockEmailSend },
+    };
+  }),
+}));
+
 describe('EventBus.publish()', () => {
   const MOCK_WEBHOOK_URL = 'https://n8n.example.com/webhook/test';
-  const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/test';
   
   const testEvent: WorkOrderEvent = {
     type: 'WcCodeMissing',
@@ -19,7 +27,6 @@ describe('EventBus.publish()', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     process.env.N8N_EVENT_BUS_URL = MOCK_WEBHOOK_URL;
-    process.env.DISCORD_N8N_WEBHOOK = DISCORD_WEBHOOK_URL;
     // Fix fetch mock to passthrough neon db queries
     global.fetch = vi.fn().mockImplementation((...args) => {
       const url = args[0]?.toString() || '';
@@ -94,8 +101,6 @@ describe('EventBus.publish()', () => {
       throw new Error('Fake DB Error');
     });
 
-    (global.fetch as any).mockResolvedValueOnce({ ok: true }); // For discord webhook
-
     try {
       const result = await EventBus.publish(testEvent);
 
@@ -105,12 +110,11 @@ describe('EventBus.publish()', () => {
       expect(result.error.code).toBe('DB_WRITE_FAILED');
       expect(result.error.error).toContain('Fake DB Error');
 
-      // Verify Discord webhook was called
-      expect(global.fetch).toHaveBeenCalledWith(
-        DISCORD_WEBHOOK_URL,
+      // Verify Resend email was called
+      expect(mockEmailSend).toHaveBeenCalledWith(
         expect.objectContaining({
-          method: 'POST',
-          body: expect.stringContaining('DB_WRITE_FAILED: WcCodeMissing — Fake DB Error'),
+          to: 'brandon@aptmaintenanceinc.com',
+          subject: expect.stringContaining('DB_WRITE_FAILED: WcCodeMissing'),
         })
       );
     } finally {

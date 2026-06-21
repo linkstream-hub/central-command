@@ -2,6 +2,9 @@ import { db } from '@/lib/db';
 import { workflowEvents } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import type { Result } from '@/domain/job';
+import { Resend } from 'resend';
+
+const getResend = () => new Resend(process.env.RESEND_API_KEY || 're_placeholder');
 
 export type WorkOrderEvent =
   | { type: 'AttestationSigned'; jobId: string; techId: string; mealCompliant: boolean; restCompliant: boolean; shiftDurationMinutes: number }
@@ -30,15 +33,13 @@ export class EventBus {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      // Post to Discord on DB failure
-      const webhook = process.env.DISCORD_N8N_WEBHOOK;
-      if (webhook) {
-        fetch(webhook, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `[EventBus] DB_WRITE_FAILED: ${event.type} — ${msg}` }),
-        }).catch(() => {});
-      }
+      // Fallback to Resend on DB failure
+      getResend().emails.send({
+        from: 'noreply@aptmaintenanceinc.com',
+        to: 'brandon@aptmaintenanceinc.com',
+        subject: `[EventBus] DB_WRITE_FAILED: ${event.type}`,
+        text: `EventBus failed to write ${event.type} to outbox: ${msg}`,
+      }).catch(() => {});
       return { ok: false, error: { code: 'DB_WRITE_FAILED', error: msg } };
     }
 
