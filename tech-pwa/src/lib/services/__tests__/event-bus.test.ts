@@ -30,7 +30,7 @@ describe('EventBus.publish()', () => {
     // Fix fetch mock to passthrough neon db queries
     global.fetch = vi.fn().mockImplementation((...args) => {
       const url = args[0]?.toString() || '';
-      if (url.includes('n8n.example.com') || url.includes('discord.com')) {
+      if (url.includes('n8n.example.com')) {
         return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
       }
       return (originalFetch as any)(...args);
@@ -74,7 +74,7 @@ describe('EventBus.publish()', () => {
   it('inserts row with status=pending (not error) when webhook fails — delivery eventual', async () => {
     (global.fetch as any).mockImplementation(async (...args: any[]) => {
       const url = args[0]?.toString() || '';
-      if (url.includes('n8n.example.com') || url.includes('discord.com')) {
+      if (url.includes('n8n.example.com')) {
         throw new Error('Network error');
       }
       return (originalFetch as any)(...args);
