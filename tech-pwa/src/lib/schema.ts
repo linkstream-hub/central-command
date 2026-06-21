@@ -482,3 +482,17 @@ export const invoiceLineItems = pgTable('invoice_line_items', {
   lineType: text('line_type').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+// --- 8. Domain 8 — Automation & Events ---
+
+export const workflowEvents = pgTable('workflow_events', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  type: text('type').notNull(),
+  payload: text('payload').notNull(), // JSON string
+  occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
+  status: text('status').notNull().default('pending'), // pending | delivered | failed
+  attempts: integer('attempts').notNull().default(0),
+  lastAttemptedAt: timestamp('last_attempted_at', { withTimezone: true }),
+  deliveredAt: timestamp('delivered_at', { withTimezone: true }),
+  error: text('error'),
+});

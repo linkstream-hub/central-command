@@ -1,0 +1,266 @@
+{
+    "updatedAt":  "2026-06-20T00:56:59.818Z",
+    "createdAt":  "2026-06-20T00:56:59.818Z",
+    "id":  "dshTB3lODDYy0FTP",
+    "name":  "CC Event Bus Outbox Poller",
+    "description":  null,
+    "active":  false,
+    "isArchived":  false,
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       {
+                                                                           "field":  "minutes",
+                                                                           "minutesInterval":  5
+                                                                       }
+                                                                   ]
+                                                  }
+                                     },
+                      "id":  "ob100001-0000-0000-0000-000000000001",
+                      "name":  "Schedule: Every 5 Min",
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "typeVersion":  1,
+                      "position":  [
+                                       0,
+                                       200
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT id, type, payload, attempts FROM workflow_events WHERE status = \u0027pending\u0027 AND attempts \u003c 3 ORDER BY occurred_at ASC LIMIT 50",
+                                         "additionalFields":  {
+
+                                                              }
+                                     },
+                      "id":  "ob100002-0000-0000-0000-000000000002",
+                      "name":  "Neon: Query Pending",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2,
+                      "position":  [
+                                       240,
+                                       200
+                                   ],
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "name":  "Neon Postgres"
+                                                       }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "batchSize":  1,
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "ob100003-0000-0000-0000-000000000003",
+                      "name":  "Loop: Each Event",
+                      "type":  "n8n-nodes-base.splitInBatches",
+                      "typeVersion":  3,
+                      "position":  [
+                                       480,
+                                       200
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://n8n-production-4f36b.up.railway.app/webhook/event-bus",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "Content-Type",
+                                                                                         "value":  "application/json"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "string",
+                                         "body":  "={{ JSON.stringify({ id: $json.id, type: $json.type, occurredAt: new Date().toISOString(), payload: typeof $json.payload === \u0027string\u0027 ? JSON.parse($json.payload) : $json.payload }) }}",
+                                         "options":  {
+                                                         "timeout":  10000
+                                                     }
+                                     },
+                      "id":  "ob100004-0000-0000-0000-000000000004",
+                      "name":  "HTTP: Redeliver Event",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4,
+                      "position":  [
+                                       720,
+                                       200
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "UPDATE workflow_events SET status = \u0027delivered\u0027, delivered_at = NOW(), attempts = attempts + 1, last_attempted_at = NOW() WHERE id = \u0027{{ $(\u0027Loop: Each Event\u0027).item.json.id }}\u0027",
+                                         "additionalFields":  {
+
+                                                              }
+                                     },
+                      "id":  "ob100005-0000-0000-0000-000000000005",
+                      "name":  "Neon: Mark Delivered",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2,
+                      "position":  [
+                                       960,
+                                       100
+                                   ],
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "name":  "Neon Postgres"
+                                                       }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "UPDATE workflow_events SET attempts = attempts + 1, last_attempted_at = NOW(), error = \u0027{{ $json.message.replace(/\u0027/g, \"\u0027\u0027\") }}\u0027, status = CASE WHEN attempts + 1 \u003e= 3 THEN \u0027failed\u0027 ELSE \u0027pending\u0027 END WHERE id = \u0027{{ $(\u0027Loop: Each Event\u0027).item.json.id }}\u0027",
+                                         "additionalFields":  {
+
+                                                              }
+                                     },
+                      "id":  "ob100006-0000-0000-0000-000000000006",
+                      "name":  "Neon: Mark Failed",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2,
+                      "position":  [
+                                       960,
+                                       320
+                                   ],
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "name":  "Neon Postgres"
+                                                       }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "resumeUrl":  "={{ $execution.resumeUrl }}"
+                                     },
+                      "id":  "ob100007-0000-0000-0000-000000000007",
+                      "name":  "Loop: Back",
+                      "type":  "n8n-nodes-base.splitInBatches",
+                      "typeVersion":  3,
+                      "position":  [
+                                       1200,
+                                       200
+                                   ]
+                  }
+              ],
+    "connections":  {
+                        "Schedule: Every 5 Min":  {
+                                                      "main":  [
+                                                                   [
+                                                                       {
+                                                                           "node":  "Neon: Query Pending",
+                                                                           "type":  "main",
+                                                                           "index":  0
+                                                                       }
+                                                                   ]
+                                                               ]
+                                                  },
+                        "Neon: Query Pending":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Loop: Each Event",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Loop: Each Event":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "HTTP: Redeliver Event",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ],
+                                                              [
+
+                                                              ]
+                                                          ]
+                                             },
+                        "HTTP: Redeliver Event":  {
+                                                      "main":  [
+                                                                   [
+                                                                       {
+                                                                           "node":  "Neon: Mark Delivered",
+                                                                           "type":  "main",
+                                                                           "index":  0
+                                                                       }
+                                                                   ]
+                                                               ]
+                                                  },
+                        "Neon: Mark Delivered":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "Loop: Back",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 },
+                        "Neon: Mark Failed":  {
+                                                  "main":  [
+                                                               [
+                                                                   {
+                                                                       "node":  "Loop: Back",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ]
+                                                           ]
+                                              }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1"
+                 },
+    "staticData":  null,
+    "meta":  null,
+    "nodeGroups":  [
+
+                   ],
+    "pinData":  null,
+    "versionId":  "0774ab78-6483-43a2-9bdf-960edb5d782c",
+    "activeVersionId":  null,
+    "versionCounter":  1,
+    "triggerCount":  0,
+    "sourceWorkflowId":  null,
+    "shared":  [
+                   {
+                       "updatedAt":  "2026-06-20T00:56:59.818Z",
+                       "createdAt":  "2026-06-20T00:56:59.818Z",
+                       "role":  "workflow:owner",
+                       "workflowId":  "dshTB3lODDYy0FTP",
+                       "projectId":  "wspLt3wn9d8AAbp9",
+                       "project":  {
+                                       "updatedAt":  "2026-04-25T22:35:53.225Z",
+                                       "createdAt":  "2026-04-25T22:31:00.607Z",
+                                       "id":  "wspLt3wn9d8AAbp9",
+                                       "name":  "Brandon Bittner \u003cbrandon@bgbcrbholdings.com\u003e",
+                                       "type":  "personal",
+                                       "icon":  null,
+                                       "description":  null,
+                                       "customTelemetryTags":  [
+
+                                                               ],
+                                       "creatorId":  "49b0b0b1-006b-4452-9ab5-0cf056607f23"
+                                   }
+                   }
+               ],
+    "tags":  [
+
+             ],
+    "activeVersion":  null
+}

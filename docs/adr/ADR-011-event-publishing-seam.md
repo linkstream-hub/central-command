@@ -54,7 +54,7 @@ publish(event: WorkOrderEvent): Promise<Result<{ eventId: string }, BusError>>
 3. Attempt immediate delivery to `N8N_EVENT_BUS_URL` (single unified webhook)
 4. On 2xx: update `status = 'delivered'`, `delivered_at = now()` — return `{ ok: { eventId } }`
 5. On failure: leave `status = 'pending'` — outbox poller handles retry — return `{ ok: { eventId } }` (publish succeeds if DB write succeeds; delivery is eventual)
-6. On DB write failure: return `{ err: { code: 'DB_WRITE_FAILED' } }` + post to Discord `#n8n-execution`
+6. On DB write failure: return `{ err: { code: 'DB_WRITE_FAILED' } }` + Resend email to brandon@aptmaintenanceinc.com
 
 ### Outbox Table
 
@@ -85,7 +85,7 @@ Drizzle migration: `tech-pwa/drizzle/migrations/XXXX_add_workflow_events.sql`
 - For each event: process inline via Switch node routing (same logic as immediate delivery path)
 - On success: `UPDATE workflow_events SET status = 'delivered', delivered_at = now()`
 - On failure: `UPDATE workflow_events SET status = 'failed', attempts = attempts + 1, error = $err`
-- After 3 failures: `status = 'failed'` permanently → post to Discord `#n8n-execution` with event details
+- After 3 failures: `status = 'failed'` permanently → Resend email to brandon@aptmaintenanceinc.com with event details
 
 Resource cost: n8n workflow, not a Railway service. Zero additional memory billing.
 
@@ -101,8 +101,8 @@ Webhook trigger (POST /event-bus)
        ├─ PteRequired        → Email: PM coordination (Resend node)
        ├─ DispatchSent       → existing lock-and-send downstream logic
        ├─ WorkOrderCompleted → (future: financial trigger placeholder)
-       ├─ StaleJobDetected   → Discord #work-orders alert
-       └─ WcCodeMissing      → Discord #work-orders alert
+       ├─ StaleJobDetected   → Resend email alert (stale job)
+       └─ WcCodeMissing      → Resend email alert (missing WC code)
 ```
 
 Idempotency: n8n Switch node checks `workflow_events.id` — if already `delivered`, skip processing.
@@ -141,7 +141,7 @@ Mapping lives in the API route — seam stays pure, no bus dependency in `job-st
 1. Infra restructure: new Neon account provisioned
 2. Infra restructure: new Railway n8n deployed with credentials re-created
 3. `N8N_EVENT_BUS_URL` set in Vercel env vars
-4. Discord `#n8n-execution` channel + webhook configured
+4. Resend: RESEND_API_KEY set in n8n env (already done)
 5. Drizzle migration run on new Neon account
 
 ---
@@ -155,7 +155,7 @@ Mapping lives in the API route — seam stays pure, no bus dependency in `job-st
 ## Consequences
 
 **Positive:**
-- 52-day silent failure pattern impossible — all delivery failures post to Discord
+- 52-day silent failure pattern impossible — all delivery failures send Resend email alert
 - Single `N8N_EVENT_BUS_URL` replaces multiple webhook env vars
 - Adding new event type = add row to `WorkOrderEvent` union + add Switch branch in n8n. Zero API route changes
 - Outbox guarantees events survive n8n downtime without losing data
