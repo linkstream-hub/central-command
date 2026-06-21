@@ -10,8 +10,6 @@ describe('EventBus.publish()', () => {
   const MOCK_WEBHOOK_URL = 'https://n8n.example.com/webhook/test';
   const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/test';
   
-  console.log("DB URL: ", process.env.DATABASE_URL);
-  
   const testEvent: WorkOrderEvent = {
     type: 'WcCodeMissing',
     jobId: 'TEST-123',
