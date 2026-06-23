@@ -13,7 +13,7 @@ import JobAssignmentModal from "./JobAssignmentModal";
 
 interface DispatchTimelineBoardProps {
   jobs: Job[];
-  roster?: { techName: string; badge?: string | null }[];
+  roster?: { techName: string; name?: string; badge?: string | null; skills?: Record<string, number | null> }[];
   searchQuery?: string;
   onJobClick?: (job: Job) => void;
   onJobUpdated?: (updatedJob: Job) => void;

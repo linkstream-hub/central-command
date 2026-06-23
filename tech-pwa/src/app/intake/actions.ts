@@ -20,7 +20,6 @@ export async function submitIntakeForm(data: unknown) {
     if (destination === 'jobs') {
       await db.insert(jobs).values(dbPayload);
     } else {
-      // @ts-expect-error - Drizzle infer issues with optional fields sometimes
       await db.insert(newContactQueue).values(dbPayload);
     }
 
