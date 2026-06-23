@@ -44,6 +44,53 @@ const eslintConfig = defineConfig([
       }],
     },
   },
+  // Phase 20: Auth Lint Rule 1 - Tech routes must not import next-auth or @/auth
+  {
+    files: [
+      'src/app/job/**/*.tsx', 'src/app/job/**/*.ts',
+      'src/app/jobs/**/*.tsx', 'src/app/jobs/**/*.ts',
+      'src/app/clock/**/*.tsx', 'src/app/clock/**/*.ts',
+      'src/app/change-pin/**/*.tsx', 'src/app/change-pin/**/*.ts',
+      'src/app/hours/**/*.tsx', 'src/app/hours/**/*.ts',
+      'src/app/time-off/**/*.tsx', 'src/app/time-off/**/*.ts',
+      'src/app/api/field/**/*.ts',
+    ],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          { group: ['next-auth', 'next-auth/*'], message: 'Tech routes must use @/lib/auth (Badge+PIN), not next-auth — Phase 20' },
+          { group: ['@/auth', '*/auth'], message: 'Tech routes must use @/lib/auth (Badge+PIN), not next-auth — Phase 20' },
+        ],
+      }],
+    },
+  },
+  // Phase 20: Auth Lint Rule 2 - Office routes must not import @/lib/auth (which is tech session)
+  {
+    files: [
+      'src/app/billing/**/*.tsx', 'src/app/billing/**/*.ts',
+      'src/app/calendar/**/*.tsx', 'src/app/calendar/**/*.ts',
+      'src/app/compliance/**/*.tsx', 'src/app/compliance/**/*.ts',
+      'src/app/feedback/**/*.tsx', 'src/app/feedback/**/*.ts',
+      'src/app/hr/**/*.tsx', 'src/app/hr/**/*.ts',
+      'src/app/intake/**/*.tsx', 'src/app/intake/**/*.ts',
+      'src/app/intel/**/*.tsx', 'src/app/intel/**/*.ts',
+      'src/app/live/**/*.tsx', 'src/app/live/**/*.ts',
+      'src/app/team/**/*.tsx', 'src/app/team/**/*.ts',
+      'src/app/track/**/*.tsx', 'src/app/track/**/*.ts',
+      'src/app/weekly-schedule/**/*.tsx', 'src/app/weekly-schedule/**/*.ts',
+      'src/components/dashboard/**/*.tsx', 'src/components/dashboard/**/*.ts',
+      'src/app/api/admin/**/*.ts', 'src/app/api/comms/**/*.ts',
+      'src/app/api/dashboard/**/*.ts', 'src/app/api/intake/**/*.ts',
+      'src/app/api/schedule/**/*.ts'
+    ],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          { group: ['@/lib/auth', '*/lib/auth'], message: 'Office routes must use next-auth (Google SSO), not @/lib/auth — Phase 20' },
+        ],
+      }],
+    },
+  },
 ]);
 
 export default eslintConfig;
