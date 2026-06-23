@@ -10,7 +10,7 @@ interface JobAssignmentModalProps {
   job: Job | null;
   primaryTech: string;
   startTime: string;
-  roster: { techName: string; badge?: string | null }[];
+  roster: { techName: string; name: string; badge?: string | null }[];
 }
 
 export default function JobAssignmentModal({ isOpen, onClose, onConfirm, job, primaryTech, startTime, roster }: JobAssignmentModalProps) {

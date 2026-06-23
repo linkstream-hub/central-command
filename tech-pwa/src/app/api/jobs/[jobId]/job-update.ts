@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { resolveJobStatus, resolveEmailTrigger } from '@/lib/job-transitions';
 import { createJobStateService, toJobId, toTechId } from '@/domain/job';
 import { makeJobStateDAL } from '@/lib/dal/job-state-dal';
-import type { SideEffect, Result } from '@/domain/job';
+import type { SideEffect, Result, ArrivalWindow } from '@/domain/job';
 import type { JobStatus } from '@/lib/types';
 
 import type { SideEffectExecutor } from '@/lib/side-effects';
@@ -24,7 +24,7 @@ type JobUpdateBody = {
   tenantEmail?: string; accessInfo?: string; scheduledDate?: string;
   scheduledTime?: string; status?: string; notes?: string; address?: string;
   unit?: string; description?: string; priority?: string; emailType?: string;
-  gmailMsgId?: string; pteGranted?: boolean; timing?: string; tenantPref?: string;
+  gmailMsgId?: string; pteGranted?: string; timing?: string; tenantPref?: string;
   tenantPets?: string; wcCode?: string;
 };
 
@@ -161,7 +161,7 @@ export async function apply(
               jobId: toJobId(jobId),
               tenantEmail: email,
               scheduledDate: b.scheduledDate || jobState.scheduledDate || '',
-              scheduledWindow: b.scheduledTime || jobState.scheduledTime || 'morning'
+              scheduledWindow: (b.scheduledTime || jobState.scheduledTime || 'morning') as ArrivalWindow
             });
           } else if (trigger === 'pte-required') {
             // Note: In Phase 21 this will be real token and jobId, currently mapped to Outreach effect

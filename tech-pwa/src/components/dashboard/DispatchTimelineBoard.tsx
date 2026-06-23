@@ -151,11 +151,11 @@ export default function DispatchTimelineBoard({ jobs, roster = [], searchQuery =
   const scheduledJobs = visibleJobs.filter(j => j.scheduledTime || j.status === 'Scheduled' || j.status === 'In Progress');
 
   const techs = useMemo(() => {
-    const map = new Map<string, { name: string; skills: string; load: 0 }>();
+    const map = new Map<string, { name: string; techName: string; skills: string; load: 0 }>();
     roster.forEach(t => {
       const techName = t.techName || t.name;
       if (techName && techName !== 'Unassigned') {
-        map.set(techName, { name: techName, skills: t.skills ? Object.keys(t.skills).join(', ') : 'General', load: 0 });
+        map.set(techName, { name: techName, techName, skills: t.skills ? Object.keys(t.skills).join(', ') : 'General', load: 0 });
       }
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
