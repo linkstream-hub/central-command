@@ -34,18 +34,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'jobId (Lead ID) is required' }, { status: 400 });
     }
 
-    // Upsert job using jobId as natural key
+    // Upsert: exclude auto-managed columns from ON CONFLICT SET
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id: _id, createdAt: _ca, jobId: _jobId, ...updateSet } = jobData;
     const result = await db.insert(jobs)
       .values(jobData)
       .onConflictDoUpdate({
         target: jobs.jobId,
-        set: jobData
+        set: updateSet,
       })
       .returning();
 
     return NextResponse.json({ success: true, data: result[0] });
   } catch (error: unknown) {
     console.error('Job sync error:', error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
+    const cause = error instanceof Error && error.cause instanceof Error
+      ? error.cause.message
+      : undefined;
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      ...(cause && { cause }),
+    }, { status: 500 });
   }
 }
