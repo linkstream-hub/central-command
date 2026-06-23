@@ -6,9 +6,8 @@ import { db } from '@/lib/db';
 import { jobs, newContactQueue } from '@/lib/schema';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function submitIntakeForm(data: unknown) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   try {
     const parsed = intakeSchema.safeParse(data);
     
