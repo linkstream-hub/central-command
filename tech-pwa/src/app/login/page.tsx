@@ -34,6 +34,7 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (searchParams?.get('tech') === '1') setMode('tech');
   }, [searchParams]);
 

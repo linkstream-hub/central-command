@@ -6,14 +6,14 @@ import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, useSensor, useSensors, useDroppable, useDraggable
 } from "@dnd-kit/core";
-import { Job } from "@/lib/types";
+import { Job, JobStatus } from "@/lib/types";
 import { dashboardRequest } from "@/lib/dashboard-api";
 import { AlertTriangle, Navigation } from "lucide-react";
 import JobAssignmentModal from "./JobAssignmentModal";
 
 interface DispatchTimelineBoardProps {
   jobs: Job[];
-  roster?: any[];
+  roster?: { techName: string; name?: string; badge?: string | null; skills?: Record<string, number | null> }[];
   searchQuery?: string;
   onJobClick?: (job: Job) => void;
   onJobUpdated?: (updatedJob: Job) => void;
@@ -151,11 +151,11 @@ export default function DispatchTimelineBoard({ jobs, roster = [], searchQuery =
   const scheduledJobs = visibleJobs.filter(j => j.scheduledTime || j.status === 'Scheduled' || j.status === 'In Progress');
 
   const techs = useMemo(() => {
-    const map = new Map<string, { name: string; skills: string; load: 0 }>();
+    const map = new Map<string, { name: string; techName: string; skills: string; load: 0 }>();
     roster.forEach(t => {
       const techName = t.techName || t.name;
       if (techName && techName !== 'Unassigned') {
-        map.set(techName, { name: techName, skills: t.skills ? Object.keys(t.skills).join(', ') : 'General', load: 0 });
+        map.set(techName, { name: techName, techName, skills: t.skills ? Object.keys(t.skills).join(', ') : 'General', load: 0 });
       }
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
@@ -177,7 +177,7 @@ export default function DispatchTimelineBoard({ jobs, roster = [], searchQuery =
     let newHour = '';
 
     if (overId === 'UNASSIGNED') {
-      const updatedJob = { ...job, assignedTech: '', status: 'Ready to Dispatch' as any, scheduledTime: '' };
+      const updatedJob = { ...job, assignedTech: '', status: 'Ready to Schedule' as JobStatus, scheduledTime: '' };
       onJobUpdated?.(updatedJob);
       await dashboardRequest('updateJob', { job: updatedJob });
       return;
@@ -198,7 +198,7 @@ export default function DispatchTimelineBoard({ jobs, roster = [], searchQuery =
     if (!pendingDrop) return;
     const { job, hour } = pendingDrop;
     const techString = assignedTechs.join('; ');
-    const updatedJob = { ...job, assignedTech: techString, status: 'Scheduled' as any, scheduledTime: hour, estimatedHours: hours };
+    const updatedJob = { ...job, assignedTech: techString, status: 'Scheduled' as JobStatus, scheduledTime: hour, estimatedHours: hours };
     onJobUpdated?.(updatedJob);
     setPendingDrop(null);
     await dashboardRequest('updateJob', { job: updatedJob });

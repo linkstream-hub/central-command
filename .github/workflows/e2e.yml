@@ -2,10 +2,6 @@ name: E2E Test Suite
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'tech-pwa/**'
 
 concurrency:
   group: e2e-${{ github.ref }}
