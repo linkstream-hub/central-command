@@ -49,7 +49,7 @@ export async function GET() {
 
     for (const job of allJobs) {
       if (!job.tech) continue;
-      let cleanName = normalizeName(job.tech);
+      const cleanName = normalizeName(job.tech);
       if (cleanName !== job.tech) {
         jobsToUpdate.push({ id: job.id, newTech: cleanName });
       }
@@ -91,7 +91,7 @@ export async function GET() {
       updatedJobs,
       deletedMessyEmployees: commaEmployees.length
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
 }

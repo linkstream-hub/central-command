@@ -10,7 +10,7 @@ interface JobAssignmentModalProps {
   job: Job | null;
   primaryTech: string;
   startTime: string;
-  roster: any[];
+  roster: { techName: string; name: string; badge?: string | null }[];
 }
 
 export default function JobAssignmentModal({ isOpen, onClose, onConfirm, job, primaryTech, startTime, roster }: JobAssignmentModalProps) {
@@ -19,7 +19,9 @@ export default function JobAssignmentModal({ isOpen, onClose, onConfirm, job, pr
 
   useEffect(() => {
     if (isOpen && job) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHours(job.estimatedHours || 2);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedTechs([primaryTech]);
     }
   }, [isOpen, job, primaryTech]);
