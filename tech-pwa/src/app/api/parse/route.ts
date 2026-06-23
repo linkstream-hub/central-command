@@ -19,6 +19,7 @@ export async function POST(req: Request) {
     const isLaphamSender = sender.includes('website@laphamcompany.com');
     const isFormBody = textBody?.includes('Submitted values are:') || textBody?.includes('Webform submission from: Maintenance Request');
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let parsedData: any = null;
 
     if (isLaphamSender && isFormBody) {
@@ -100,9 +101,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, jobId, data: parsedData });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Parsing Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
 

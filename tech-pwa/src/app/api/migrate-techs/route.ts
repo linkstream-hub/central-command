@@ -35,7 +35,7 @@ export async function GET() {
       if (emp) inserted.push(emp);
     }
     return NextResponse.json({ success: true, migrated: inserted.length, techs: inserted });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
 }

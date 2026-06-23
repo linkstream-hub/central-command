@@ -120,7 +120,7 @@ export default function TechCard({ tech, todayJobs, index, onClick }: TechCardPr
       {/* Today's Timeline Inline */}
       <div className="flex-1 bg-black/20 rounded-xl p-3 border border-white/5 mb-4">
         <h4 className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2 flex items-center justify-between">
-          <span>Today's Schedule</span>
+          <span>Today&apos;s Schedule</span>
           <span>{todayJobs.length} Jobs</span>
         </h4>
         <div className="space-y-2">

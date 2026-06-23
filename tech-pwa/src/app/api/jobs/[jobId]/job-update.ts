@@ -20,7 +20,7 @@ export type JobUpdateSuccess =
 
 export async function apply(
   jobId: string,
-  body: any,
+  body: Record<string, unknown>,
   ctx: { isApiKeyAuth: boolean },
   executor: SideEffectExecutor
 ): Promise<Result<JobUpdateSuccess, JobUpdateError>> {
@@ -158,7 +158,8 @@ export async function apply(
               type: 'SEND_SCHEDULING_OUTREACH',
               jobId: toJobId(jobId),
               tenantEmail: email,
-              token: 'legacy-token' as any // Dummy for type safety as email-executor doesn't use it
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            token: 'legacy-token' as any // Phase 21 will replace with real token
             });
           }
         } catch (e) {

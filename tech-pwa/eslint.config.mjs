@@ -14,6 +14,17 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "scratch/**",
     "scripts/**",
+    // Root utility/migration scripts — not app code
+    "check-dupes.js",
+    "check-jobs.js",
+    "check-statuses.js",
+    "check-time-records.js",
+    "get-all-gids.js",
+    "get-gids.js",
+    "smoke.ts",
+    // Generated output directories
+    "coverage/**",
+    "graphify-out/**",
   ]),
   // ADR-014 Block 1: domain/ must not import infrastructure
   {

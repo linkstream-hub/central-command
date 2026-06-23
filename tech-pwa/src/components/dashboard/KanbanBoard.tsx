@@ -4,7 +4,7 @@ import { useState } from "react";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, useDroppable, useDraggable } from "@dnd-kit/core";
 import { Job, JobStatus } from "@/lib/types";
 import { dashboardRequest } from "@/lib/dashboard-api";
-import { Clock, AlertTriangle, ListChecks, Calendar, CheckCircle2 } from "lucide-react";
+import { Clock, AlertTriangle, ListChecks, Calendar, CheckCircle2, type LucideIcon } from "lucide-react";
 
 interface KanbanBoardProps {
   jobs: Job[];
@@ -28,7 +28,7 @@ const PRIORITY_LABEL: Record<string, string> = {
 };
 
 // Define our fixed columns
-const KANBAN_COLUMNS: { id: JobStatus; title: string; icon: any; color: string }[] = [
+const KANBAN_COLUMNS: { id: JobStatus; title: string; icon: LucideIcon; color: string }[] = [
   { id: 'Needs Review', title: 'Needs Review', icon: AlertTriangle, color: 'text-red-400' },
   { id: 'PTE Required', title: 'PTE / Blocked', icon: Clock, color: 'text-amber-400' },
   { id: 'Ready to Schedule', title: 'Ready to Dispatch', icon: ListChecks, color: 'text-[var(--accent)]' },
