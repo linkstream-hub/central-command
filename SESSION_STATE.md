@@ -3,7 +3,7 @@
 
 ---
 
-## SESSION: S163 CLOSED (2026-06-24)
+## SESSION: S164 (2026-06-24)
 
 ---
 
@@ -21,19 +21,19 @@ sandbox:    http://localhost:4141 (Docker — dev Neon branch)
 ## GIT STATE
 
 ```yaml
-branch:  main (clean)
-head:    e5eae6e fix(intake): use gemini-2.5-flash — 2.0 deprecated, 1.5 not on v1beta
+branch:  main (Phase 24 + PR #14 merged + deployed)
+head:    PR #14 squash merge
 
 commits-this-session:
-  8799e77: fix(intake): remove stale Gemini 2.5 comment
-  5c0e55f: fix(n8n): rewire phase-19 workflow — bypass old Gemini path, route email directly to Vercel webhook
-  555dc30: fix(intake): use gemini-2.0-flash (intermediate, superseded)
-  e5eae6e: fix(intake): use gemini-2.5-flash (FINAL — working)
+  924eadc: feat(ui): phase 22 surgical fixes (Codex — merged PR #12)
+  43807eb: feat(intake): phase 23 lapham + access merge (PR #11 merged)
+  PR #13:  Phase 24 — /api/techs/import rewrite + 178 tests + fileParallelism fix
+  PR #14:  fix/intake-parse-and-comms — 4 intake bugs + n8n comms refs + C4 mapper dedup
 
 production:
   deployed: 2026-06-24 via vercel deploy --prod from repo root
-  includes: all commits through e5eae6e
-  WOs visible in dispatch (confirmed)
+  includes: Phase 22 + 23 + 24 + PR #14 all LIVE
+  backfill: 32 techs pin_hash + skills confirmed
 ```
 
 ---
@@ -83,23 +83,29 @@ railway:   n8n-production-4f36b.up.railway.app — v2.59.2
 ```yaml
 status:  LIVE — end-to-end verified 2026-06-24
 model:   gemini-2.5-flash (@ai-sdk/google v3.0.80)
-         gemini-1.5-flash = not found on v1beta
-         gemini-2.0-flash = deprecated "no longer available"
-         gemini-2.5-flash = WORKING
 
 n8n flow:
   Gmail → Code: Skip Filter → IF: Skip?
-  [false] → HTTP: POST Vercel Webhook (dispatcch.aptmaintenanceinc.com/api/webhooks/n8n/gmail)
-  [success] → IF: Comms Enabled? (dormant — INTAKE_COMMS_ENABLED off)
+  [false] → HTTP: POST Vercel Webhook (dispatch.aptmaintenanceinc.com/api/webhooks/n8n/gmail)
+  [success] → IF: Comms Enabled? (dormant — INTAKE_COMMS_ENABLED=false)
   [error]   → Execute Workflow (NUH0krzQiSrBmyfv error handler)
 
-orphaned nodes (cleanup Phase 23):
-  IF: Lapham Form?, Code: Build Gemini Payload, HTTP Request: Gemini API,
-  Code: Parse Gemini Response, Code: Normalize Address Key, Neon: Property Lookup,
-  Code: Merge Property Data, IF: Access Info Changed?, HTTP: POST access-sync
+route.ts (PR #14 — MERGED):
+  detectLaphamForm() wired — Lapham emails skip Gemini
+  computeAccessMerge() wired — new access codes update properties table
+  pte column written (Lapham pteGranted + Gemini pteGranted)
+  rmEmail captured from sender header when property not matched
+  parsed metadata returned: { isLaphamForm, senderType, senderEmail }
 
-comms issue: IF: Send Auto-Reply? refs $('Code: Merge Property Data') — stale
-  safe: INTAKE_COMMS_ENABLED=false until Phase 23 fixes refs
+n8n wif9XlVbK3M6a1C8 (PR #14 — MERGED, JSON in repo):
+  9 orphaned nodes removed
+  comms refs updated: Code: Merge Property Data => job.* / parsed.*
+  !! PENDING: JSON not yet re-imported to Railway — live instance still has old code
+
+INTAKE_COMMS_ENABLED:
+  current:  false (safe)
+  unblock:  re-import tools/n8n/workflows/phase-19-email-polling.json to Railway n8n
+  then:     set INTAKE_COMMS_ENABLED=true in Vercel env
 ```
 
 ---
@@ -107,24 +113,27 @@ comms issue: IF: Send Auto-Reply? refs $('Code: Merge Property Data') — stale
 ## PHASE SEQUENCE
 
 ```yaml
-Phase 22: UI Surgical Fixes (Codex) — READY NOW
-          spec: docs/PHASE22_UI_SPEC.md
-          LockSendButton removal, date nav, Kanban scope, WO card 6 fixes
+Phase 22: MERGED PR #12 — 5d0ae0d (LockSendButton, date nav, Kanban, modal fixes)
+Phase 23: MERGED PR #11 — Lapham Form + Access Code Merge
+Phase 24: MERGED PR #13 + DEPLOYED 2026-06-24
+          /api/techs/import rewritten (POST, auth, pin_hash, 7 skills, staff-safe)
+          32 techs backfilled in prod Neon — pin_hash + skills LIVE
+          Tech PWA login: UNBLOCKED
 
-Phase 23: n8n Stub Porting (AG) — UNBLOCKED (B3 confirmed)
-          Port Lapham extraction + property merge INTO Vercel webhook route.ts
-          Clean orphaned nodes from wif9XlVbK3M6a1C8 via n8n REST API
-          Fix comms node data refs ($('Code: Merge Property Data') → webhook response)
+PR #14:   MERGED 2026-06-24 — fix/intake-parse-and-comms
+          4 intake parse bugs fixed
+          n8n comms chain refs fixed (all job.*/parsed.* — was orphaned node refs)
+          C4 mapper dedup: lib/job-mapper.ts deleted, 3 call sites => mapJob
+          194/194 tests GREEN
 
-Phase 24: Tech Roster Seed (AG) — after Phase 23
+Graphify:  DONE 2026-06-24 — 1941 nodes, 13931 edges, 125 communities
 
 Phase B:  Schema migration (ADR-004 columns) — deferred
 Phase C:  DB cleanup SQL — after 3+ confirmed real email parses
-          SELECT COUNT(*) FROM jobs WHERE gmail_msg_id IS NOT NULL AND description IS NULL;
-          DELETE + CREATE UNIQUE INDEX after cleanup
-
+Phase C1: Extract JobUpdate module from jobs/[jobId]/route.ts (own branch, next sprint)
+          Run /grilling on design first
+Phase C2: Delete lib/job-transitions.ts — after C1
 Phase 21: GAS Cutover — complex, later
-C2 (deferred): delete lib/job-transitions.ts — blocked until Phase 21
 ```
 
 ---
@@ -158,12 +167,14 @@ ag-process: AG must use PR branches — direct push to main happened twice S163 
 
 ```yaml
 hook-bug:   continuous-learning-v2/hooks/observe.sh PostToolUse reverts Edit tool changes
-            workaround: use Bash sed for string replacements → git add → git commit
+            workaround: use Bash sed for string replacements then git add then git commit
             affected: tech-pwa/src/app/api/webhooks/n8n/gmail/route.ts confirmed
 
-vercel-mcp: runtime logs → always 403 Forbidden — surface errors in API response body
+vercel-mcp: runtime logs -> always 403 Forbidden — surface errors in API response body
 lsp:        TypeScript LSP broken on Windows (uv_spawn .cmd wrapper) — ignore
-n8n-key:    N8N_API_KEY expires ~2026-07-10
+n8n-key:    N8N_API_KEY expires ~2026-07-10 — rotate before then
+n8n-import: phase-19-email-polling.json has fixed comms refs but NOT yet imported to Railway
+            INTAKE_COMMS_ENABLED must stay false until import done
 ```
 
 ---
@@ -181,18 +192,19 @@ reason:   Paris IP caused GitHub account flag + Vercel block
 
 ```yaml
 domain-layer:    tech-pwa/src/domain/ — pure business logic, no Next.js imports
-dal-injection:   domain/ accepts DAL interface → unit-testable
+dal-injection:   domain/ accepts DAL interface — unit-testable
 result-type:     Result<T,E> — no throws in domain logic
 branded-ids:     JobId, TechId, PropertyId
 discriminated-u: JobState discriminated union
 zod-boundaries:  all API route inputs validated with Zod schemas
 tdd-standard:    every phase from 17 onward ships tests-first — non-negotiable
 fsm:             JOB_STATE_MACHINE (8 arcs) + createJobStateService factory
-event-bus:       EventBus.publish() → workflow_events outbox → n8n router
-auth-tech:       badge + SHA-256 PIN → UUID session_token in Neon (tech routes)
+event-bus:       EventBus.publish() => workflow_events outbox => n8n router
+auth-tech:       badge + SHA-256 PIN => UUID session_token in Neon (tech routes)
 auth-staff:      Google OAuth next-auth v5 (office routes)
 eslint-boundary: no-restricted-imports in eslint.config.mjs (ADR-001)
                  blocks useSession/getSession outside /app/ (staff-only hooks)
+mapper:          single source of truth => lib/dal/mappers.ts:mapJob (job-mapper.ts DELETED)
 ```
 
 ---
@@ -205,8 +217,8 @@ neon-dev-branch: br-muddy-flower-ak85a9jc | compute: ep-holy-waterfall-akwxx49b
 gh-cli:          authenticated as linkstream-hub (member of org)
                  GITHUB_TOKEN cleared — always run unset GITHUB_TOKEN before gh commands
 playwright:      globalSetup uses DATABASE_URL (not DATABASE_URL_TEST)
-team:            Brandon (manager) → Claude Code (lead/gate) → AG (builder, Gemini) → Codex (frontend)
-graphify:        graphify update . → pipx binary (0.8.38) → graphify-out/
+team:            Brandon (manager) => Claude Code (lead/gate) => AG (builder, Gemini) => Codex (frontend)
+graphify:        graphify update . => pipx binary (0.8.38) => graphify-out/
 vercel-logs:     MCP returns 403 Forbidden — surface errors in API response body
 webhook-auth:    DASHBOARD_API_KEY header OR Authorization: Bearer <key>
 ```
@@ -232,6 +244,9 @@ phase-17:  MERGED PR #2
 phase-18:  MERGED PR #6 — EventBus outbox
 phase-19:  MERGED PR #7 — Observability + CI fix
 phase-20:  MERGED PR #9 — ESLint auth boundary rule
+phase-23:  MERGED PR #11 — Lapham Form + Access Code Merge
+phase-24:  MERGED PR #13 — /api/techs/import rewrite + 178 tests + prod backfill (32 techs)
 fix-pr8:   MERGED PR #8 — jobs/sync error surface + upsert fix
 fix-pr10:  MERGED PR #10 — email intake 4 bugs + tests
+fix-pr14:  MERGED PR #14 — intake parse quality + n8n comms refs + C4 mapper dedup (194 tests)
 ```
