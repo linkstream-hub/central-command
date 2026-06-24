@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     console.log('[Webhook] Running Gemini 1.5 Flash parsing on email...');
 
-    // Call Gemini 2.5 Flash to parse the raw email
+    // Call Gemini to parse the raw email
     const { object } = await generateObject({
       model: google('gemini-1.5-flash'),
       schema: jobSchema,
