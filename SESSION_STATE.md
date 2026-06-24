@@ -106,12 +106,33 @@ V4 clock DNS:   NOT YET CHECKED
 ## PHASE SEQUENCE
 
 ```yaml
+# ── HOTFIX (IMMEDIATE — blocks all dispatch) ──────────────────────────────────
+Phase A: Email Intake Fix (AG) — spec at docs/PHASE_A_EMAIL_INTAKE_FIX.md
+         Fix 4 bugs in /api/webhooks/n8n/gmail/route.ts + wire n8n to correct route
+         Bugs: auth header, dedup (gmailMsgId), addressKey normalization, Gemini model
+         TDD-first. Gate: WO with real description + rmName confirmed in DB from email
+         UNBLOCKS: Phase 23
+
+# ── PARALLEL (can start now, Phase A independent) ────────────────────────────
 Phase 22: UI Surgical Fixes (Codex) — spec at docs/PHASE22_UI_SPEC.md
           LockSendButton removal, date nav, Kanban scope, WO card 6 fixes
-          can start now
+          can start now (no dependency on Phase A)
+
+# ── SEQUENTIAL (after Phase A gate) ─────────────────────────────────────────
+Phase B: Schema + FSM Migration (AG) — after Phase A gate
+         Drizzle migration: add woType, missingFields, scheduledWindow, tenantProposedDate,
+         tenantProposedWindow, schedulingToken, schedulingTokenExpiresAt to jobs table
+         Data migration: 'Needs Review' → 'Needs Info' for all existing rows
+         Wire intake route to JobStateService for auto initial-state evaluation
+
+Phase C: DB Cleanup (Claude Code executes) — after Phase A confirmed 3+ real emails
+         Delete phantom WOs (gmailMsgId IS NOT NULL AND description IS NULL AND rm_name IS NULL)
+         Add partial unique index on gmail_msg_id
+         Verify row count before DELETE
 
 Phase 23: n8n Stub Node Porting (AG) — Lapham extraction + property merge
-          BLOCKED until B3 email intake confirmed working
+          UNBLOCKED by Phase A
+          after Phase A gate
 
 Phase 24: Tech Roster Seed (AG)
           after Phase 23
