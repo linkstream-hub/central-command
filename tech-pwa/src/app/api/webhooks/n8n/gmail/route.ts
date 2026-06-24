@@ -58,11 +58,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[Webhook] Running Gemini 2.0 Flash parsing on email...');
+    console.log('[Webhook] Running Gemini 2.5 Flash parsing on email...');
 
     // Call Gemini to parse the raw email
     const { object } = await generateObject({
-      model: google('gemini-2.0-flash'),
+      model: google('gemini-2.5-flash'),
       schema: jobSchema,
       prompt: `You are an expert maintenance dispatcher.
         Analyze the following email and extract the structured data for a Work Order.
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
       try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GOOGLE_GENERATIVE_AI_API_KEY}`);
         const data = await res.json();
-        availableModels = data.models ? data.models.map((m: any) => m.name).join(', ') : JSON.stringify(data);
+        availableModels = data.models ? data.models.map((m: { name: string }) => m.name).join(', ') : JSON.stringify(data);
       } catch (e) {
         availableModels = String(e);
       }
