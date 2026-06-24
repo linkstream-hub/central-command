@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { jobs, employees } from '@/lib/schema';
 import { and, eq, inArray, ne } from 'drizzle-orm';
-import { mapNeonJobToJob } from '@/lib/job-mapper';
+import { mapJob } from '@/lib/dal/mappers';
 import type { Job } from '@/lib/types';
 
 function buildWeekDates(weekStart?: string): string[] {
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     techRows.forEach(t => { byTech[t.name] = {}; });
 
     jobRows.forEach(row => {
-      const job = mapNeonJobToJob(row);
+      const job = mapJob(row);
       if (!row.scheduledDate) return;
       if (!row.tech) { unassigned.push(job); return; }
       const names = row.tech.includes(',')

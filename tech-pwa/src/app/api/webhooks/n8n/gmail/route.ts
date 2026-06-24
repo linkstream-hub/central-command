@@ -21,8 +21,15 @@ const jobSchema = z.object({
   tenantPhone: z.string().optional(),
   tenantEmail: z.string().optional(),
   emailType: z.string().optional().describe('Type of email. E.g., inspection, adhoc_workorder, turnover.'),
+  pteGranted: z.string().optional().describe("Permission to enter status. MUST be exactly one of: 'Yes', 'No', 'Not Applicable'. Use 'Not Applicable' for turnovers/inspections."),
+  senderType: z.string().optional().describe("Who sent this email. MUST be exactly one of: 'Resident Manager', 'PM Office Staff', 'APT Internal', 'Unknown'."),
   notes: z.string().optional().describe('Any additional notes to append, such as extracted Google Drive links.'),
 });
+
+function extractEmailFromSender(raw: string): string {
+  const match = raw.match(/<([^>]+)>/);
+  return match ? match[1].toLowerCase().trim() : '';
+}
 
 export async function POST(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,7 +70,10 @@ export async function POST(request: NextRequest) {
     let object: z.infer<typeof jobSchema>;
     let inboundAccessInfo = '';
 
+    const senderEmail = extractEmailFromSender(sender ?? '');
     const laphamResult = detectLaphamForm(sender ?? '', subject ?? '', bodyText ?? '');
+    const isLaphamForm = !!laphamResult;
+
     if (laphamResult) {
       console.log('[Webhook] Lapham form detected. Skipping Gemini.');
       const priority = laphamResult.pteGranted === 'Yes' ? '3-PTE' : '4-STANDARD';
@@ -79,7 +89,9 @@ export async function POST(request: NextRequest) {
         tenantPhone: laphamResult.tenantPhone,
         tenantEmail: laphamResult.tenantEmail,
         emailType: laphamResult.emailType,
-        notes: `PTE Granted: ${laphamResult.pteGranted}\nPTE Notes: ${laphamResult.pteNotes}\nPets: ${laphamResult.tenantHasPets}\nPreferred Contact: ${laphamResult.tenantPreferredContact}`,
+        pteGranted: laphamResult.pteGranted,
+        senderType: 'PM Office Staff',
+        notes: `PTE Notes: ${laphamResult.pteNotes}\nPets: ${laphamResult.tenantHasPets}\nPreferred Contact: ${laphamResult.tenantPreferredContact}`,
       };
 
       inboundAccessInfo = laphamResult.pteNotes;
@@ -92,11 +104,19 @@ export async function POST(request: NextRequest) {
         prompt: `You are an expert maintenance dispatcher.
           Analyze the following email and extract the structured data for a Work Order.
 
+          FROM: ${sender || 'Unknown'}
+          APT Internal senders: brandon@, keith@, tsegab@, bemenet@ aptmaintenanceinc.com — set senderType='APT Internal', emailType='internal_forward'
+          Lapham senders: maintenance@laphamcompany.com, website@laphamcompany.com, turnovers.lapham@gmail.com — set senderType='PM Office Staff'
+          All other senders: set senderType='Resident Manager' if they manage a property, otherwise 'Unknown'
+
           CRITICAL INSTRUCTIONS FOR INSPECTION EMAILS:
           If the email is from Sam Cooney, SSC Inspections, or mentions an "Inspection Summary" / "Annual Inspections":
           1. Set the category strictly to "Inspection Repair".
           2. Set the emailType strictly to "inspection".
-          3. If there is a Google Drive link (https://drive.google.com/...) in the body, extract that link and place it in the "notes" field exactly as: "Inspection Report Link: [link]".
+          3. Set pteGranted to "Not Applicable".
+          4. If there is a Google Drive link (https://drive.google.com/...) in the body, extract that link and place it in the "notes" field exactly as: "Inspection Report Link: [link]".
+
+          PERMISSION TO ENTER: Extract from email body. Set pteGranted to 'Yes' if tenant gives explicit permission, 'No' if denied, 'Not Applicable' for turnovers/inspections/no tenant involved.
 
           Email Subject: ${subject || 'No Subject'}
 
@@ -107,17 +127,19 @@ export async function POST(request: NextRequest) {
       object = geminiObject;
     }
 
-    const { 
-      address, 
-      unit, 
-      description, 
-      category, 
-      priority, 
-      timing, 
-      tenantName, 
-      tenantPhone, 
+    const {
+      address,
+      unit,
+      description,
+      category,
+      priority,
+      timing,
+      tenantName,
+      tenantPhone,
       tenantEmail,
       emailType,
+      pteGranted,
+      senderType,
       notes,
     } = object;
 
@@ -157,6 +179,9 @@ export async function POST(request: NextRequest) {
       const match = sender.match(/^"?(.+?)"?\s*<.+>$/) ?? sender.match(/^([^<@]+)/);
       rmName = match?.[1]?.trim() || '';
     }
+    if (!rmEmail && senderEmail) {
+      rmEmail = senderEmail;
+    }
 
     const newJobId = `EMAIL-${gmailMsgId}`;
 
@@ -171,6 +196,7 @@ export async function POST(request: NextRequest) {
       tenantName: tenantName || '',
       tenantPhone: tenantPhone || '',
       tenantEmail: tenantEmail || '',
+      pte: pteGranted || null,
       rmName,
       rmEmail,
       accessInfo,
@@ -189,7 +215,15 @@ export async function POST(request: NextRequest) {
 
     console.log('[Webhook] Successfully processed and inserted WO:', newJobId);
 
-    return NextResponse.json({ success: true, job: newJob });
+    return NextResponse.json({
+      success: true,
+      job: newJob,
+      parsed: {
+        isLaphamForm,
+        senderType: senderType || 'Unknown',
+        senderEmail,
+      },
+    });
   } catch (error) {
     console.error('[Webhook] Failed to process n8n payload via Gemini:', error);
     
