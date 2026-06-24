@@ -40,6 +40,7 @@ describe('POST /api/webhooks/n8n/gmail', () => {
   });
 
   afterEach(async () => {
+    vi.clearAllMocks();
     if (createdJobIds.length > 0) {
       await db.delete(jobs).where(inArray(jobs.jobId, createdJobIds));
       createdJobIds = [];
@@ -162,5 +163,99 @@ describe('POST /api/webhooks/n8n/gmail', () => {
 
     const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, `EMAIL-${msgId}`)).limit(1);
     expect(dbJob[0].rmName).toBe('Joy Gim');
+  });
+
+  describe('Phase 23: Lapham Integration', () => {
+    it('Lapham email skips Gemini and maps fields directly', async () => {
+      // Test 1: Lapham email skips Gemini
+      const { generateObject } = await import('ai');
+      const msgId = `msg-lapham-${Date.now()}`;
+      const laphamBody = `Submitted values are:
+Name: John Doe
+Property: 123 Main St
+Unit: 4B
+Description: Leaking sink`;
+      const req = makeRequest(
+        { gmailMsgId: msgId, sender: 'website@laphamcompany.com', subject: 'New Request', bodyText: laphamBody },
+        { 'DASHBOARD_API_KEY': TEST_API_KEY }
+      );
+      
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      createdJobIds.push(`EMAIL-${msgId}`);
+
+      expect(generateObject).not.toHaveBeenCalled();
+
+      const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, `EMAIL-${msgId}`)).limit(1);
+      expect(dbJob[0].description).toBe('Leaking sink');
+      expect(dbJob[0].address).toBe('123 Main St');
+    });
+
+    it('Lapham email sets emailType correctly based on keywords', async () => {
+      // Test 2: Lapham email sets emailType correctly
+      const msgId = `msg-lapham-type-${Date.now()}`;
+      const laphamBody = `Submitted values are:
+Property: 456 Elm St
+Description: Tenant move out turnover needs painting`;
+      const req = makeRequest(
+        { gmailMsgId: msgId, sender: 'website@laphamcompany.com', subject: 'turnover', bodyText: laphamBody },
+        { 'DASHBOARD_API_KEY': TEST_API_KEY }
+      );
+      
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      createdJobIds.push(`EMAIL-${msgId}`);
+
+      const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, `EMAIL-${msgId}`)).limit(1);
+      expect(dbJob[0].emailType).toBe('turnover');
+    });
+
+    it('Lapham email with property match merges access codes', async () => {
+      // Test 3: Lapham email with property match merges access codes
+      const msgId = `msg-lapham-access-${Date.now()}`;
+      
+      const [prop] = await db.insert(properties).values({
+        address: '789 Pine St',
+        unit: '',
+        addressKey: '789 pine st||',
+        city: 'Oakland',
+        state: 'CA',
+        orgId: 'APT-CA',
+        accessInfo: '1234',
+      }).returning();
+      createdPropIds.push(prop.id);
+
+      const laphamBody = `Submitted values are:
+Property: 789 Pine St
+Permission to Enter: 5678 is the lockbox code`;
+      const req = makeRequest(
+        { gmailMsgId: msgId, sender: 'website@laphamcompany.com', subject: 'Maint', bodyText: laphamBody },
+        { 'DASHBOARD_API_KEY': TEST_API_KEY }
+      );
+      
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      createdJobIds.push(`EMAIL-${msgId}`);
+
+      const updatedProp = await db.select().from(properties).where(eq(properties.id, prop.id)).limit(1);
+      expect(updatedProp[0].accessInfo).toContain('1234');
+      expect(updatedProp[0].accessInfo).toContain('5678');
+    });
+
+    it('Non-Lapham email still uses Gemini', async () => {
+      // Test 4: Non-Lapham email still uses Gemini
+      const { generateObject } = await import('ai');
+      const msgId = `msg-gemini-${Date.now()}`;
+      const req = makeRequest(
+        { gmailMsgId: msgId, sender: 'tenant@example.com', subject: 'Fix my toilet', bodyText: 'It is broken' },
+        { 'DASHBOARD_API_KEY': TEST_API_KEY }
+      );
+      
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      createdJobIds.push(`EMAIL-${msgId}`);
+
+      expect(generateObject).toHaveBeenCalled();
+    });
   });
 });
