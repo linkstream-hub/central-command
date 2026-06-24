@@ -6,6 +6,8 @@ import { generateObject } from 'ai';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { normalizeAddressKey } from '@/lib/normalizeAddressKey';
+import { detectLaphamForm } from '@/lib/detectLaphamForm';
+import { computeAccessMerge } from '@/lib/access-codes';
 
 const jobSchema = z.object({
   address: z.string().describe('The street address of the property.'),
@@ -58,27 +60,53 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[Webhook] Running Gemini 2.5 Flash parsing on email...');
+    let object: any = {};
+    let inboundAccessInfo = '';
 
-    // Call Gemini to parse the raw email
-    const { object } = await generateObject({
-      model: google('gemini-2.5-flash'),
-      schema: jobSchema,
-      prompt: `You are an expert maintenance dispatcher.
-        Analyze the following email and extract the structured data for a Work Order.
-        
-        CRITICAL INSTRUCTIONS FOR INSPECTION EMAILS:
-        If the email is from Sam Cooney, SSC Inspections, or mentions an "Inspection Summary" / "Annual Inspections":
-        1. Set the category strictly to "Inspection Repair".
-        2. Set the emailType strictly to "inspection".
-        3. If there is a Google Drive link (https://drive.google.com/...) in the body, extract that link and place it in the "notes" field exactly as: "Inspection Report Link: [link]".
-        
-        Email Subject: ${subject || 'No Subject'}
-        
-        Email Body:
-        ${bodyText || 'No Body'}
-      `,
-    });
+    const laphamResult = detectLaphamForm(sender ?? '', subject ?? '', bodyText ?? '');
+    if (laphamResult) {
+      console.log('[Webhook] Lapham form detected. Skipping Gemini.');
+      const priority = laphamResult.pteGranted === 'Yes' ? '3-PTE' : '4-STANDARD';
+      
+      object = {
+        address: laphamResult.address,
+        unit: laphamResult.unit,
+        description: laphamResult.description,
+        category: laphamResult.serviceCategory === 'Unknown' ? 'General Repair' : laphamResult.serviceCategory,
+        priority,
+        timing: '',
+        tenantName: laphamResult.tenantName,
+        tenantPhone: laphamResult.tenantPhone,
+        tenantEmail: laphamResult.tenantEmail,
+        emailType: laphamResult.emailType,
+        notes: `PTE Granted: ${laphamResult.pteGranted}\nPTE Notes: ${laphamResult.pteNotes}\nPets: ${laphamResult.tenantHasPets}\nPreferred Contact: ${laphamResult.tenantPreferredContact}`,
+      };
+      
+      inboundAccessInfo = laphamResult.pteNotes;
+    } else {
+      console.log('[Webhook] Running Gemini 2.5 Flash parsing on email...');
+
+      // Call Gemini to parse the raw email
+      const { object: geminiObject } = await generateObject({
+        model: google('gemini-2.5-flash'),
+        schema: jobSchema,
+        prompt: `You are an expert maintenance dispatcher.
+          Analyze the following email and extract the structured data for a Work Order.
+          
+          CRITICAL INSTRUCTIONS FOR INSPECTION EMAILS:
+          If the email is from Sam Cooney, SSC Inspections, or mentions an "Inspection Summary" / "Annual Inspections":
+          1. Set the category strictly to "Inspection Repair".
+          2. Set the emailType strictly to "inspection".
+          3. If there is a Google Drive link (https://drive.google.com/...) in the body, extract that link and place it in the "notes" field exactly as: "Inspection Report Link: [link]".
+          
+          Email Subject: ${subject || 'No Subject'}
+          
+          Email Body:
+          ${bodyText || 'No Body'}
+        `,
+      });
+      object = geminiObject;
+    }
 
     const { 
       address, 
@@ -100,7 +128,7 @@ export async function POST(request: NextRequest) {
     let rmEmail = '';
     let accessInfo = '';
     
-    if (address) {
+    if (address && address !== 'LOOKUP_BY_SENDER') {
       const addressKey = normalizeAddressKey(address, unit);
       const matchedProp = await db.select().from(properties).where(and(
         eq(properties.orgId, 'APT-CA'),
@@ -112,6 +140,17 @@ export async function POST(request: NextRequest) {
         rmName = matchedProp[0].rmName || '';
         rmEmail = matchedProp[0].rmEmail || '';
         accessInfo = matchedProp[0].accessInfo || '';
+
+        if (inboundAccessInfo) {
+          const mergeResult = computeAccessMerge(accessInfo, inboundAccessInfo);
+          if (mergeResult.updated && mergeResult.merged) {
+            accessInfo = mergeResult.merged;
+            await db.update(properties)
+              .set({ accessInfo })
+              .where(eq(properties.id, propId));
+            console.log(`[Webhook] Updated access info for property ${propId}`);
+          }
+        }
       }
     }
     
