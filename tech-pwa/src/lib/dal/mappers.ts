@@ -46,7 +46,7 @@ export function mapJob(raw: Record<string, unknown>): Job {
     pteGranted:       (raw.pteGranted as Job['pteGranted'])  || (raw.pte as Job['pteGranted']) || undefined,
     tenantPrefContact: (raw.tenantPrefContact as string) || (raw.tenant_pref as string) || '',
     tenantHasPets:    (raw.tenantHasPets as string) || (raw.tenant_pets as string) || '',
-    timestamp:        (raw.timestamp as string)   || '',
+    timestamp:        (raw.timestamp instanceof Date) ? raw.timestamp.toISOString() : ((raw.timestamp as string) || ''),
     clockedInAt:      (raw.clockedInAt as string)   || null,
     activeRecordId:   (raw.activeRecordId as string) || null,
   };

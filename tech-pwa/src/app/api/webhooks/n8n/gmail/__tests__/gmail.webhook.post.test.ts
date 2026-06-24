@@ -19,6 +19,8 @@ vi.mock('ai', () => ({
       tenantPhone: '510-555-1234',
       tenantEmail: 'jane@example.com',
       emailType: 'adhoc_workorder',
+      pteGranted: 'Yes',
+      senderType: 'Resident Manager',
       notes: '',
     }
   })
@@ -250,12 +252,96 @@ Permission to Enter: 5678 is the lockbox code`;
         { gmailMsgId: msgId, sender: 'tenant@example.com', subject: 'Fix my toilet', bodyText: 'It is broken' },
         { 'DASHBOARD_API_KEY': TEST_API_KEY }
       );
-      
+
       const res = await POST(req);
       expect(res.status).toBe(200);
       createdJobIds.push(`EMAIL-${msgId}`);
 
       expect(generateObject).toHaveBeenCalled();
+    });
+  });
+
+  describe('Parse quality fixes', () => {
+    it('captures rmEmail from sender header when property not found', async () => {
+      const msgId = `msg-rmemail-${Date.now()}`;
+      const req = makeRequest(
+        { gmailMsgId: msgId, sender: '"Joy Gim" <maintenance@laphamcompany.com>', subject: 'sub', bodyText: 'text' },
+        { 'DASHBOARD_API_KEY': TEST_API_KEY }
+      );
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      createdJobIds.push(`EMAIL-${msgId}`);
+
+      const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, `EMAIL-${msgId}`)).limit(1);
+      expect(dbJob[0].rmEmail).toBe('maintenance@laphamcompany.com');
+    });
+
+    it('stores pte column from Lapham pteGranted field', async () => {
+      const msgId = `msg-lapham-pte-${Date.now()}`;
+      const laphamBody = `Submitted values are:
+Name: Jane Smith
+Property: 321 Oak Ave
+Unit: 2A
+Permission to Enter: Permission to enter my dwelling while I am not there
+Description: Leaking pipe`;
+      const req = makeRequest(
+        { gmailMsgId: msgId, sender: 'website@laphamcompany.com', subject: 'Maint Request', bodyText: laphamBody },
+        { 'DASHBOARD_API_KEY': TEST_API_KEY }
+      );
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      createdJobIds.push(`EMAIL-${msgId}`);
+
+      const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, `EMAIL-${msgId}`)).limit(1);
+      expect(dbJob[0].pte).toBe('Yes');
+    });
+
+    it('stores pte column from Gemini pteGranted field', async () => {
+      const msgId = `msg-gemini-pte-${Date.now()}`;
+      const req = makeRequest(
+        { gmailMsgId: msgId, sender: 'rm@example.com', subject: 'Fix sink', bodyText: 'tenant gave permission' },
+        { 'DASHBOARD_API_KEY': TEST_API_KEY }
+      );
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      createdJobIds.push(`EMAIL-${msgId}`);
+
+      const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, `EMAIL-${msgId}`)).limit(1);
+      expect(dbJob[0].pte).toBe('Yes'); // mock returns pteGranted: 'Yes'
+    });
+
+    it('returns parsed metadata alongside job in response', async () => {
+      const msgId = `msg-parsed-${Date.now()}`;
+      const req = makeRequest(
+        { gmailMsgId: msgId, sender: '"Alice" <alice@pm.com>', subject: 'sub', bodyText: 'text' },
+        { 'DASHBOARD_API_KEY': TEST_API_KEY }
+      );
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      createdJobIds.push(`EMAIL-${msgId}`);
+
+      const json = await res.json();
+      expect(json.parsed).toBeDefined();
+      expect(json.parsed.senderEmail).toBe('alice@pm.com');
+      expect(typeof json.parsed.isLaphamForm).toBe('boolean');
+      expect(json.parsed.senderType).toBeDefined();
+    });
+
+    it('returns parsed.isLaphamForm=true for Lapham emails', async () => {
+      const msgId = `msg-lapham-parsed-${Date.now()}`;
+      const laphamBody = `Submitted values are:
+Property: 100 Test St
+Description: Broken door`;
+      const req = makeRequest(
+        { gmailMsgId: msgId, sender: 'website@laphamcompany.com', subject: 'Maint', bodyText: laphamBody },
+        { 'DASHBOARD_API_KEY': TEST_API_KEY }
+      );
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      createdJobIds.push(`EMAIL-${msgId}`);
+
+      const json = await res.json();
+      expect(json.parsed.isLaphamForm).toBe(true);
     });
   });
 });

@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { jobs } from '@/lib/schema';
 import { and, eq, ne } from 'drizzle-orm';
-import { mapNeonJobToJob } from '@/lib/job-mapper';
+import { mapJob } from '@/lib/dal/mappers';
 import type { Job } from '@/lib/types';
 
 export async function GET(req: Request) {
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     const unassigned: Job[] = [];
 
     rows.forEach(row => {
-      const job = mapNeonJobToJob(row);
+      const job = mapJob(row);
       if (!row.tech) { unassigned.push(job); return; }
       const names = row.tech.includes(',')
         ? row.tech.split(',').map(n => n.trim()).filter(Boolean)

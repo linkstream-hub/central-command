@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import { jobs } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { resolveJobStatus, resolveEmailTrigger } from '@/lib/job-transitions';
-import { mapNeonJobToJob } from '@/lib/job-mapper';
+import { mapJob } from '@/lib/dal/mappers';
 import { apply } from './job-update';
 import { EventBusSideEffectExecutor } from '@/lib/side-effects/event-bus-executor';
 
@@ -25,7 +25,7 @@ export async function GET(
     if (!results[0]) {
       return NextResponse.json({ success: false, error: 'JOB_NOT_FOUND' }, { status: 404 });
     }
-    return NextResponse.json({ success: true, source: 'neon', job: mapNeonJobToJob(results[0]) });
+    return NextResponse.json({ success: true, source: 'neon', job: mapJob(results[0]) });
   } catch (error) {
     console.error('[GET /api/jobs/[jobId]] Error:', error);
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
