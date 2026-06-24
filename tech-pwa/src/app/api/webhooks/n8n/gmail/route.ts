@@ -159,13 +159,22 @@ export async function POST(request: NextRequest) {
     try {
       const newJobId = `EMAIL-${payload.gmailMsgId || Date.now()}`;
       
+      let availableModels = 'Unknown';
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GOOGLE_GENERATIVE_AI_API_KEY}`);
+        const data = await res.json();
+        availableModels = data.models ? data.models.map((m: any) => m.name).join(', ') : JSON.stringify(data);
+      } catch (e) {
+        availableModels = String(e);
+      }
+
       const updateSet = {
         propertyId: null,
         address: 'Needs Manual Triage',
         unit: '',
         category: 'Unknown',
         priority: '4-STANDARD',
-        description: `[AI PARSING FAILED] Subject: ${payload.subject}\n\nBody: ${payload.bodyText}\n\nError: ${error instanceof Error ? error.message : String(error)}`,
+        description: `[AI PARSING FAILED] Subject: ${payload.subject}\n\nBody: ${payload.bodyText}\n\nError: ${error instanceof Error ? error.message : String(error)}\n\nModels: ${availableModels}`,
         status: 'Needs Review',
         emailType: 'adhoc_workorder',
         gmailMsgId: payload.gmailMsgId || '',
