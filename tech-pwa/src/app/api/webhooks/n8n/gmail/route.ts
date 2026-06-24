@@ -5,6 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { generateObject } from 'ai';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod';
+import { normalizeAddressKey } from '@/lib/normalizeAddressKey';
 
 const jobSchema = z.object({
   address: z.string().describe('The street address of the property.'),
@@ -28,8 +29,8 @@ export async function POST(request: NextRequest) {
     payload = await request.json();
     
     // Auth Check
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.DASHBOARD_API_KEY}`) {
+    const apiKey = request.headers.get('DASHBOARD_API_KEY');
+    if (apiKey !== process.env.DASHBOARD_API_KEY) {
       console.warn('Unauthorized webhook attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -40,7 +41,11 @@ export async function POST(request: NextRequest) {
     }
 
     // We now expect raw email components from n8n instead of pre-parsed data
-    const { subject, bodyText, gmailMsgId } = payload;
+    const { subject, bodyText, gmailMsgId, sender } = payload;
+    
+    if (!gmailMsgId) {
+      return NextResponse.json({ error: 'Missing gmailMsgId' }, { status: 400 });
+    }
 
     if (!subject && !bodyText) {
       // Fallback for old payloads (while migrating)
@@ -54,9 +59,9 @@ export async function POST(request: NextRequest) {
 
     console.log('[Webhook] Running Gemini 1.5 Flash parsing on email...');
 
-    // Call Gemini 1.5 Flash to parse the raw email
+    // Call Gemini 2.5 Flash to parse the raw email
     const { object } = await generateObject({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-2.5-flash'),
       schema: jobSchema,
       prompt: `You are an expert maintenance dispatcher.
         Analyze the following email and extract the structured data for a Work Order.
@@ -77,7 +82,6 @@ export async function POST(request: NextRequest) {
     const { 
       address, 
       unit, 
-      city, 
       description, 
       category, 
       priority, 
@@ -96,7 +100,7 @@ export async function POST(request: NextRequest) {
     let accessInfo = '';
     
     if (address) {
-      const addressKey = `${address.toLowerCase()}-${(unit || '').toLowerCase()}-${(city || 'Oakland').toLowerCase()}`;
+      const addressKey = normalizeAddressKey(address, unit);
       const matchedProp = await db.select().from(properties).where(and(
         eq(properties.orgId, 'APT-CA'),
         eq(properties.addressKey, addressKey)
@@ -109,13 +113,16 @@ export async function POST(request: NextRequest) {
         accessInfo = matchedProp[0].accessInfo || '';
       }
     }
+    
+    if (!rmName && sender) {
+      const match = sender.match(/^"?(.+?)"?\s*<.+>$/) ?? sender.match(/^([^<@]+)/);
+      rmName = match?.[1]?.trim() || '';
+    }
 
-    const newJobId = `APT-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newJobId = `EMAIL-${gmailMsgId}`;
 
-    const [newJob] = await db.insert(jobs).values({
-      orgId: 'APT-CA',
+    const updateSet = {
       propertyId: propId,
-      jobId: newJobId,
       address: address || 'Unknown Address',
       unit: unit || '',
       category: category || 'General Repair',
@@ -133,7 +140,13 @@ export async function POST(request: NextRequest) {
       gmailMsgId: gmailMsgId || '',
       status: 'Needs Review',
       timestamp: new Date(),
-    }).returning();
+    };
+
+    const insertData = { ...updateSet, jobId: newJobId, orgId: 'APT-CA' };
+    const [newJob] = await db.insert(jobs)
+      .values(insertData)
+      .onConflictDoUpdate({ target: jobs.jobId, set: updateSet })
+      .returning();
 
     console.log('[Webhook] Successfully processed and inserted WO:', newJobId);
 
@@ -143,11 +156,10 @@ export async function POST(request: NextRequest) {
     
     // FALLBACK: If AI parsing fails, insert the raw email as a Work Order so it's not lost
     try {
-      const newJobId = `APT-${Math.floor(Math.random() * 90000) + 10000}`;
-      const [fallbackJob] = await db.insert(jobs).values({
-        orgId: 'APT-CA',
+      const newJobId = `EMAIL-${payload.gmailMsgId || Date.now()}`;
+      
+      const updateSet = {
         propertyId: null,
-        jobId: newJobId,
         address: 'Needs Manual Triage',
         unit: '',
         category: 'Unknown',
@@ -157,7 +169,13 @@ export async function POST(request: NextRequest) {
         emailType: 'adhoc_workorder',
         gmailMsgId: payload.gmailMsgId || '',
         timestamp: new Date(),
-      }).returning();
+      };
+      
+      const insertData = { ...updateSet, jobId: newJobId, orgId: 'APT-CA' };
+      const [fallbackJob] = await db.insert(jobs)
+        .values(insertData)
+        .onConflictDoUpdate({ target: jobs.jobId, set: updateSet })
+        .returning();
       console.log('[Webhook] Inserted FALLBACK WO:', newJobId);
       return NextResponse.json({ success: true, job: fallbackJob, note: 'Fallback used due to AI error' });
     } catch (fallbackErr) {
