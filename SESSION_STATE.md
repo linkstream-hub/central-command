@@ -3,7 +3,7 @@
 
 ---
 
-## SESSION: S163 START (2026-06-24)
+## SESSION: S163 CLOSED (2026-06-24)
 
 ---
 
@@ -21,23 +21,19 @@ sandbox:    http://localhost:4141 (Docker — dev Neon branch)
 ## GIT STATE
 
 ```yaml
-branch:  main (clean — PR #8 + PR #9 merged and deleted)
+branch:  main (clean)
+head:    e5eae6e fix(intake): use gemini-2.5-flash — 2.0 deprecated, 1.5 not on v1beta
 
-merged-this-session:
-  PR #9: feat/phase-20-auth-lint
-         ESLint no-restricted-imports auth boundary rule
-         Fixed 41 lint errors, vitest ESM (next-auth inline), tsc cross-file mismatches
-         E2E trigger changed to workflow_dispatch only
-
-  PR #8: fix/jobs-sync-expose-cause
-         Exposed error.cause.message in /api/jobs/sync 500 response
-         Cleaned Drizzle upsert SET clause (removed id/createdAt auto-managed cols)
-         Rebased onto main to pick up Phase 20 CI fixes
+commits-this-session:
+  8799e77: fix(intake): remove stale Gemini 2.5 comment
+  5c0e55f: fix(n8n): rewire phase-19 workflow — bypass old Gemini path, route email directly to Vercel webhook
+  555dc30: fix(intake): use gemini-2.0-flash (intermediate, superseded)
+  e5eae6e: fix(intake): use gemini-2.5-flash (FINAL — working)
 
 production:
-  deployed: 2026-06-23 via vercel deploy --prod from repo root
-  includes: Phase 17 + Phase 18 + Phase 19 + Phase 20 + PR #8 fix
-  WOs visible in dispatch (confirmed by Brandon)
+  deployed: 2026-06-24 via vercel deploy --prod from repo root
+  includes: all commits through e5eae6e
+  WOs visible in dispatch (confirmed)
 ```
 
 ---
@@ -53,8 +49,6 @@ built-by: Emergent (AI builder) — reviewed + stripped 2026-06-23
 pages:   / (login) · /dashboard · /wo/[jobId]
 auth:    localStorage portal_user — mock only
 data:    lib/mock-data.js — 12 WOs, 2 PMs
-         sarah.kim@laphamcompany.com (8 WOs, 4 Oakland addresses)
-         mark.torres@laphamcompany.com (4 WOs, 2 addresses)
 
 next-steps (AG — post operational-core gate):
   1. Migrate JS → TypeScript
@@ -74,31 +68,38 @@ migration-0007:  APPLIED (workflow_events table created)
 vercel:
   account:    Linkstream Hub (team_om3dVTnIzZPcYUgDnCiIh7C3)
   project:    central-command (prj_VEXiuqZgEKIU1OJZ4Fen0q55zcQL)
-  domains:    dispatch.aptmaintenanceinc.com — LIVE, Valid Configuration Production
-              clock.aptmaintenanceinc.com — added, DNS change authorized (2026-06-23)
-              central-command-rho.vercel.app — alias, Valid Configuration Production
-  github:     linkstream-hub/central-command connected (Connected Jun 19)
-  auto-deploy: should work via GitHub App — VERIFY next push to main triggers build
-  cli-deploy: vercel deploy --prod from C:\PTOW\1_APT_Central_Command (REPO ROOT, not tech-pwa/)
-              answer NO to env pull prompt — wipes .env.local
-  old-project: aptmaintenanceincs-projects/central-command (prj_2R8XCDwt1GDCXk6RZ2pEdqIesR5B)
-               domains migrated away — abandon
+  domains:    dispatch.aptmaintenanceinc.com — LIVE
+              clock.aptmaintenanceinc.com — LIVE
+  auto-deploy: BROKEN — always use `vercel deploy --prod` from C:\PTOW\1_APT_Central_Command
+  env-pull:   ALWAYS answer NO — wipes .env.local
 
-railway:   n8n-production-4f36b.up.railway.app — v2.59.2 (latest)
+railway:   n8n-production-4f36b.up.railway.app — v2.59.2
 ```
 
 ---
 
-## S163 VERIFICATION RESULTS (2026-06-24)
+## B3 EMAIL INTAKE — CONFIRMED LIVE
 
 ```yaml
-V1 auth:        CONFIRMED — /live redirects to /login → Google OAuth button
-V2 B3 intake:   CONFIRMED — exec 1171 (01:00 UTC) processed real web form email
-                            "[Web Form] General Repair — 121 Main Unit 121"
-                            succeeded after PR #8 deploy; pipeline LIVE
-                            errors in exec 1136+1147 were pre-deploy (expected)
-V3 auto-deploy: TESTING — this commit to main is the test; watch Vercel dashboard
-V4 clock DNS:   NOT YET CHECKED
+status:  LIVE — end-to-end verified 2026-06-24
+model:   gemini-2.5-flash (@ai-sdk/google v3.0.80)
+         gemini-1.5-flash = not found on v1beta
+         gemini-2.0-flash = deprecated "no longer available"
+         gemini-2.5-flash = WORKING
+
+n8n flow:
+  Gmail → Code: Skip Filter → IF: Skip?
+  [false] → HTTP: POST Vercel Webhook (dispatcch.aptmaintenanceinc.com/api/webhooks/n8n/gmail)
+  [success] → IF: Comms Enabled? (dormant — INTAKE_COMMS_ENABLED off)
+  [error]   → Execute Workflow (NUH0krzQiSrBmyfv error handler)
+
+orphaned nodes (cleanup Phase 23):
+  IF: Lapham Form?, Code: Build Gemini Payload, HTTP Request: Gemini API,
+  Code: Parse Gemini Response, Code: Normalize Address Key, Neon: Property Lookup,
+  Code: Merge Property Data, IF: Access Info Changed?, HTTP: POST access-sync
+
+comms issue: IF: Send Auto-Reply? refs $('Code: Merge Property Data') — stale
+  safe: INTAKE_COMMS_ENABLED=false until Phase 23 fixes refs
 ```
 
 ---
@@ -106,15 +107,21 @@ V4 clock DNS:   NOT YET CHECKED
 ## PHASE SEQUENCE
 
 ```yaml
-Phase 22: UI Surgical Fixes (Codex) — spec at docs/PHASE22_UI_SPEC.md
+Phase 22: UI Surgical Fixes (Codex) — READY NOW
+          spec: docs/PHASE22_UI_SPEC.md
           LockSendButton removal, date nav, Kanban scope, WO card 6 fixes
-          can start now
 
-Phase 23: n8n Stub Node Porting (AG) — Lapham extraction + property merge
-          BLOCKED until B3 email intake confirmed working
+Phase 23: n8n Stub Porting (AG) — UNBLOCKED (B3 confirmed)
+          Port Lapham extraction + property merge INTO Vercel webhook route.ts
+          Clean orphaned nodes from wif9XlVbK3M6a1C8 via n8n REST API
+          Fix comms node data refs ($('Code: Merge Property Data') → webhook response)
 
-Phase 24: Tech Roster Seed (AG)
-          after Phase 23
+Phase 24: Tech Roster Seed (AG) — after Phase 23
+
+Phase B:  Schema migration (ADR-004 columns) — deferred
+Phase C:  DB cleanup SQL — after 3+ confirmed real email parses
+          SELECT COUNT(*) FROM jobs WHERE gmail_msg_id IS NOT NULL AND description IS NULL;
+          DELETE + CREATE UNIQUE INDEX after cleanup
 
 Phase 21: GAS Cutover — complex, later
 C2 (deferred): delete lib/job-transitions.ts — blocked until Phase 21
@@ -126,12 +133,12 @@ C2 (deferred): delete lib/job-transitions.ts — blocked until Phase 21
 
 ```yaml
 active:
+  wif9XlVbK3M6a1C8: Phase 19 — Email Polling & WO Intake (REWIRED S163)
   fpwZXWR9u7nOmiDa: CC Event Bus Router
-  wif9XlVbK3M6a1C8: Phase 19 — Email Polling & WO Intake
   NUH0krzQiSrBmyfv: PTOW Error Handler (error workflow for all)
   0V9YLwpiTBJ84InU: FLAG Gate Notification
   Wiuvox8VOZNtVoDN: CA Break Compliance Monitor
-  dshTB3lODDYy0FTP: CC Event Bus Outbox Poller (active)
+  dshTB3lODDYy0FTP: CC Event Bus Outbox Poller
 ```
 
 ---
@@ -141,9 +148,22 @@ active:
 ```yaml
 ci-check:   "TypeScript + Lint + Build" — required pass before merge
 e2e:        workflow_dispatch only — run manually before major merges
-            saves ~22 min per push (no longer auto-triggers on PR)
 tsc-rule:   always run tsc from C:\PTOW\1_APT_Central_Command (REPO ROOT)
-            not from tech-pwa/ — subdirectory misses cross-file errors
+ag-process: AG must use PR branches — direct push to main happened twice S163 (violation)
+```
+
+---
+
+## KNOWN ISSUES
+
+```yaml
+hook-bug:   continuous-learning-v2/hooks/observe.sh PostToolUse reverts Edit tool changes
+            workaround: use Bash sed for string replacements → git add → git commit
+            affected: tech-pwa/src/app/api/webhooks/n8n/gmail/route.ts confirmed
+
+vercel-mcp: runtime logs → always 403 Forbidden — surface errors in API response body
+lsp:        TypeScript LSP broken on Windows (uv_spawn .cmd wrapper) — ignore
+n8n-key:    N8N_API_KEY expires ~2026-07-10
 ```
 
 ---
@@ -188,6 +208,7 @@ playwright:      globalSetup uses DATABASE_URL (not DATABASE_URL_TEST)
 team:            Brandon (manager) → Claude Code (lead/gate) → AG (builder, Gemini) → Codex (frontend)
 graphify:        graphify update . → pipx binary (0.8.38) → graphify-out/
 vercel-logs:     MCP returns 403 Forbidden — surface errors in API response body
+webhook-auth:    DASHBOARD_API_KEY header OR Authorization: Bearer <key>
 ```
 
 ---
@@ -212,4 +233,5 @@ phase-18:  MERGED PR #6 — EventBus outbox
 phase-19:  MERGED PR #7 — Observability + CI fix
 phase-20:  MERGED PR #9 — ESLint auth boundary rule
 fix-pr8:   MERGED PR #8 — jobs/sync error surface + upsert fix
+fix-pr10:  MERGED PR #10 — email intake 4 bugs + tests
 ```
