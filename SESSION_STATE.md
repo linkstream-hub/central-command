@@ -3,7 +3,7 @@
 
 ---
 
-## SESSION: S157 CLOSE (2026-06-20)
+## SESSION: S163 START (2026-06-24)
 
 ---
 
@@ -21,123 +21,129 @@ sandbox:    http://localhost:4141 (Docker — dev Neon branch)
 ## GIT STATE
 
 ```yaml
-branch:  main (all PRs merged — clean)
-active-feature: none
+branch:  main (clean — PR #8 + PR #9 merged and deleted)
 
 merged-this-session:
-  PR #3: refactor/c1-job-update-module — C1 JobUpdate deep module
-  PR #4: chore/lean-agent-stack — GSD purge, skill installs, BottomNav fix
-  PR #5: fix/remove-leaked-html-file — html.txt removed + gitignored
+  PR #9: feat/phase-20-auth-lint
+         ESLint no-restricted-imports auth boundary rule
+         Fixed 41 lint errors, vitest ESM (next-auth inline), tsc cross-file mismatches
+         E2E trigger changed to workflow_dispatch only
 
-history-rewrite: COMPLETE
-  - git filter-repo purged tech-pwa/html.txt from all 1019 commits
-  - force pushed to main (force push re-locked after)
-  - secret scanning alerts will auto-close within 24h
+  PR #8: fix/jobs-sync-expose-cause
+         Exposed error.cause.message in /api/jobs/sync 500 response
+         Cleaned Drizzle upsert SET clause (removed id/createdAt auto-managed cols)
+         Rebased onto main to pick up Phase 20 CI fixes
+
+production:
+  deployed: 2026-06-23 via vercel deploy --prod from repo root
+  includes: Phase 17 + Phase 18 + Phase 19 + Phase 20 + PR #8 fix
+  WOs visible in dispatch (confirmed by Brandon)
+```
+
+---
+
+## APT PORTAL (separate repo)
+
+```yaml
+repo:    linkstream-hub/apt-portal
+local:   C:\PTOW\apt-portal
+status:  DRAFT PROTOTYPE — mock data only, no backend
+stack:   Next.js 15 App Router, JavaScript (not TS), Tailwind, shadcn/ui
+built-by: Emergent (AI builder) — reviewed + stripped 2026-06-23
+pages:   / (login) · /dashboard · /wo/[jobId]
+auth:    localStorage portal_user — mock only
+data:    lib/mock-data.js — 12 WOs, 2 PMs
+         sarah.kim@laphamcompany.com (8 WOs, 4 Oakland addresses)
+         mark.torres@laphamcompany.com (4 WOs, 2 addresses)
+
+next-steps (AG — post operational-core gate):
+  1. Migrate JS → TypeScript
+  2. Add /api/portal/wo route scoped by rmEmail → Neon
+  3. Replace mock auth with magic link or PM token
+  4. Add notification_contacts to clients table (schema migration needed)
+```
+
+---
+
+## INFRA STATE
+
+```yaml
+neon-prod:  ep-jolly-morning-a6xlf4ke.us-west-2.aws.neon.tech (Linkstream account)
+migration-0007:  APPLIED (workflow_events table created)
 
 vercel:
-  status: COMPLETE — Linkstream Vercel LIVE (2026-06-19)
-          project: linkstream-hub/central-command → dispatch.aptmaintenanceinc.com
-          deploy:  vercel deploy --prod from tech-pwa/ (VPN OFF required)
-          auto-deploy: NOT wired — GitHub App not installed on linkstream-hub org yet
-          warn:   VPN must be OFF for all CLI sessions (Paris IP caused prior account flags)
-          env-secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, NEXTAUTH_SECRET set manually
-                       (vercel env pull gives empty strings for encrypted secrets — always)
+  account:    Linkstream Hub (team_om3dVTnIzZPcYUgDnCiIh7C3)
+  project:    central-command (prj_VEXiuqZgEKIU1OJZ4Fen0q55zcQL)
+  domains:    dispatch.aptmaintenanceinc.com — LIVE, Valid Configuration Production
+              clock.aptmaintenanceinc.com — added, DNS change authorized (2026-06-23)
+              central-command-rho.vercel.app — alias, Valid Configuration Production
+  github:     linkstream-hub/central-command connected (Connected Jun 19)
+  auto-deploy: should work via GitHub App — VERIFY next push to main triggers build
+  cli-deploy: vercel deploy --prod from C:\PTOW\1_APT_Central_Command (REPO ROOT, not tech-pwa/)
+              answer NO to env pull prompt — wipes .env.local
+  old-project: aptmaintenanceincs-projects/central-command (prj_2R8XCDwt1GDCXk6RZ2pEdqIesR5B)
+               domains migrated away — abandon
 
-github:
-  repo:   linkstream-hub/central-command
-  branch-protection:
-    require-pr:            ON
-    require-status-checks: OFF — pending first CI run
-    require-linear-history: ON
-    allow-force-pushes:    OFF (re-locked)
-    allow-deletions:       OFF
-  DATABASE_URL: added to GitHub Actions secrets (Neon dev pooled)
-  CI-status-check: add "CI" to required checks AFTER first Actions run on a PR
-  PAT:    in Brandon's possession
-  NOTE:   gh CLI authenticated as White-Jesus — NOT a member of linkstream-hub
-          workaround: PRs created via Node.js + git credential fill token
+railway:   n8n-production-4f36b.up.railway.app — v2.59.2 (latest)
 ```
 
 ---
 
-## INFRA RESTRUCTURE — STATUS: COMPLETE
+## S163 VERIFICATION RESULTS (2026-06-24)
 
 ```yaml
-entity:    Linkstream (formed 2026-06-18)
-completed: 2026-06-19
-
-github:   DONE — linkstream-hub/central-command, branch protection ON
-neon:     DONE — ep-jolly-morning-a6xlf4ke.us-west-2.aws.neon.tech (Linkstream account)
-          old: lively-cell-80446221 — safe to delete (data fully migrated)
-railway:  DONE — workspace renamed to "LinkStream's Projects"
-vercel:   DONE — Linkstream Hub account, project live, domain connected, auth working
-
-cleanup-pending (Brandon):
-  - Remove-Item C:\Users\Aldrick\aptcc3_dump.dump
-  - Remove-Item C:\PTOW\1_APT_Central_Command\tech-pwa\.env.new-neon
-  - Remove-Item C:\PTOW\1_APT_Central_Command\tech-pwa\drizzle.migrate-new.config.ts
-
-auto-deploy-pending:
-  - Install Vercel GitHub App on linkstream-hub org → enables push-triggered deploys
-  - Until then: vercel deploy --prod from tech-pwa/ (VPN OFF)
+V1 auth:        CONFIRMED — /live redirects to /login → Google OAuth button
+V2 B3 intake:   CONFIRMED — exec 1171 (01:00 UTC) processed real web form email
+                            "[Web Form] General Repair — 121 Main Unit 121"
+                            succeeded after PR #8 deploy; pipeline LIVE
+                            errors in exec 1136+1147 were pre-deploy (expected)
+V3 auto-deploy: TESTING — this commit to main is the test; watch Vercel dashboard
+V4 clock DNS:   NOT YET CHECKED
 ```
 
 ---
 
-## NEXT SESSION PRIORITIES
+## PHASE SEQUENCE
 
 ```yaml
-1. NEXT-PR: Phase 18 — EventBusSideEffectExecutor (AG task)
-   spec:     ADR-011 (Event Publishing Seam)
-   approach: TDD-first — outbox tests before implementation
-   file:     lib/side-effects/event-bus-executor.ts
-   note:     zero changes to job-update.ts — port already designed for this swap
+Phase 22: UI Surgical Fixes (Codex) — spec at docs/PHASE22_UI_SPEC.md
+          LockSendButton removal, date nav, Kanban scope, WO card 6 fixes
+          can start now
 
-2. CI-GATE: After Phase 18 PR opens, first CI run fires
-   action:   go to branch protection → add "CI" status check → save
-   then:     enable "Require status checks to pass before merging"
+Phase 23: n8n Stub Node Porting (AG) — Lapham extraction + property merge
+          BLOCKED until B3 email intake confirmed working
 
-3. C2 (deferred): delete lib/job-transitions.ts
-   blocked:  resolveJobStatus() still called in legacy path — unblock in Phase 21
+Phase 24: Tech Roster Seed (AG)
+          after Phase 23
 
-4. Vercel auto-deploy: install GitHub App on linkstream-hub org
+Phase 21: GAS Cutover — complex, later
+C2 (deferred): delete lib/job-transitions.ts — blocked until Phase 21
 ```
 
 ---
 
-## PHASE 17 — MERGED
+## N8N WORKFLOW REGISTRY
 
 ```yaml
-branch:   feat/phase-17-job-state-machine
-pr:       #2 — MERGED
-
-delivered:
-  - domain/job/job-state.ts — pure FSM, 18/18 tests GREEN
-  - ESLint boundary rule (ADR-014) — no-restricted-imports
-  - domain/job/index.ts narrow public API
-  - lib/dal/job-state-dal.ts DAL adapter
-  - PATCH /api/jobs/[jobId] SCHEDULE transition wired
-  - POST /api/field/clock-in CLOCK_IN transition wired
-  - POST /api/field/job/complete COMPLETE transition wired
+active:
+  fpwZXWR9u7nOmiDa: CC Event Bus Router
+  wif9XlVbK3M6a1C8: Phase 19 — Email Polling & WO Intake
+  NUH0krzQiSrBmyfv: PTOW Error Handler (error workflow for all)
+  0V9YLwpiTBJ84InU: FLAG Gate Notification
+  Wiuvox8VOZNtVoDN: CA Break Compliance Monitor
+  dshTB3lODDYy0FTP: CC Event Bus Outbox Poller (active)
 ```
 
 ---
 
-## C1 ARCHITECTURE REFACTOR — MERGED
+## CI / WORKFLOW GATES
 
 ```yaml
-branch:   refactor/c1-job-update-module
-pr:       #3 — MERGED
-
-delivered:
-  - job-update.ts — deep module, 6 files changed
-  - route.ts PATCH shrinks 212L → 26L
-  - 10 integration tests (real Neon DB)
-  - SideEffectExecutor port wired (email-executor + fake-executor)
-
-deferred-flags:
-  F1 (Phase 18): Extract SideEffectExecutor interface to lib/side-effects/index.ts
-  F2 (Phase 21): Add tenantName/address to SEND_CONFIRMATION effect type
+ci-check:   "TypeScript + Lint + Build" — required pass before merge
+e2e:        workflow_dispatch only — run manually before major merges
+            saves ~22 min per push (no longer auto-triggers on PR)
+tsc-rule:   always run tsc from C:\PTOW\1_APT_Central_Command (REPO ROOT)
+            not from tech-pwa/ — subdirectory misses cross-file errors
 ```
 
 ---
@@ -145,23 +151,8 @@ deferred-flags:
 ## VPN — OPERATIONAL RULE
 
 ```yaml
-rule:     VPN OFF before any CLI session (git, vercel, gh, node, claude, AG, omp, Codex)
+rule:     VPN OFF before any CLI session (git, vercel, gh, node, claude, AG, Codex)
 reason:   Paris IP caused GitHub account flag + Vercel block
-fix:      Toggle VPN off → do CLI work → toggle back on
-```
-
----
-
-## PHASE SEQUENCE — LOCKED
-
-```yaml
-phase-17:  MERGED PR #2
-phase-18:  Event Publishing Seam (TDD-first) — NEXT
-  adr:      ADR-011
-  approach: TDD — outbox tests before outbox implementation
-phase-19:  Observability — n8n errorWorkflow → Discord, Sentry tracesSampleRate
-phase-20:  Auth Lint Rule — ESLint blocking useSession()/getSession() in wrong paths
-phase-21:  GAS Cutover — shadow-writes → shadow-reads → cutover → archive → delete
 ```
 
 ---
@@ -170,7 +161,6 @@ phase-21:  GAS Cutover — shadow-writes → shadow-reads → cutover → archiv
 
 ```yaml
 domain-layer:    tech-pwa/src/domain/ — pure business logic, no Next.js imports
-                 enforced by ESLint (ADR-014)
 dal-injection:   domain/ accepts DAL interface → unit-testable
 result-type:     Result<T,E> — no throws in domain logic
 branded-ids:     JobId, TechId, PropertyId
@@ -178,43 +168,11 @@ discriminated-u: JobState discriminated union
 zod-boundaries:  all API route inputs validated with Zod schemas
 tdd-standard:    every phase from 17 onward ships tests-first — non-negotiable
 fsm:             JOB_STATE_MACHINE (8 arcs) + createJobStateService factory
-```
-
----
-
-## GAS STATE
-
-```yaml
-Code.js:         v96
-TechPWA.gs:      v102 (handleLogin DEPRECATED | handleChangePin still active)
-DashboardAPI.gs: v43
-migration:
-  phase-15: MERGED
-  phase-16: MERGED — prod LIVE
-  phase-17: MERGED
-catalog:   docs/GAS_MIGRATION_SCOPE.md
-hard-blockers:
-  - Gmail OAuth for workorder@ in GCP (Brandon action) — gates Code.js email polling
-  - TOM redesign (separate project) — gates time-off functions in TechPWA.gs
-```
-
----
-
-## LOCAL DEV STATE
-
-```yaml
-sandbox:    Docker at localhost:4141 — working
-env-local:  DATABASE_URL:              neon dev POOLED — ep-holy-waterfall-akwxx49b
-            DATABASE_URL_UNPOOLED:     neon dev UNPOOLED — ep-holy-waterfall-akwxx49b
-            DATABASE_URL_PREVIEW:      neon preview POOLED — ep-holy-glade-aktl2mly
-            AUTH_SECRET:               locally generated (dev only)
-            NEXTAUTH_URL:              http://localhost:4141
-            NEXT_PUBLIC_SANDBOX_MODE:  false (.env.local) / true (.env.sandbox)
-            N8N_COMPLIANCE_WEBHOOK_URL: set in Vercel Prod+Preview
-            N8N_FLAG_GATE_WEBHOOK_URL:  set
-            DASHBOARD_API_KEY:         verify matches GAS Script Properties
-neon-prod:  ep-jolly-morning-a6xlf4ke.us-west-2.aws.neon.tech (Linkstream account)
-            32 employees, 2391 jobs, 4 shifts
+event-bus:       EventBus.publish() → workflow_events outbox → n8n router
+auth-tech:       badge + SHA-256 PIN → UUID session_token in Neon (tech routes)
+auth-staff:      Google OAuth next-auth v5 (office routes)
+eslint-boundary: no-restricted-imports in eslint.config.mjs (ADR-001)
+                 blocks useSession/getSession outside /app/ (staff-only hooks)
 ```
 
 ---
@@ -222,15 +180,36 @@ neon-prod:  ep-jolly-morning-a6xlf4ke.us-west-2.aws.neon.tech (Linkstream accoun
 ## KEY ARCHITECTURAL FACTS
 
 ```yaml
-neon-write-path:   WRITE_PATH_NEON_ONLY=true | Sheets = read-only archive
-auth-tech:         badge + SHA-256 PIN → UUID session_token in Neon | 32 employees in DB
-auth-staff:        Google OAuth next-auth v5 (@aptmaintenanceinc.com only)
-neon-project:      ep-jolly-morning-a6xlf4ke.us-west-2.aws.neon.tech (Linkstream)
-neon-dev-branch:   br-muddy-flower-ak85a9jc | compute: ep-holy-waterfall-akwxx49b
-playwright:        globalSetup uses DATABASE_URL (not DATABASE_URL_TEST)
-team:              Claude Code (lead/gate) → AG (co-lead builder) → omp (jr dev) → Codex (frontend)
-shadow-sync:       clock events + job status already sync to Neon
-graphify:          graphify update . → pipx binary (0.8.38) → graphify-out/
-gh-cli:            authenticated as White-Jesus — NOT linkstream-hub member
-                   workaround: node + git credential fill token for REST API PR creation
+neon-prod:       ep-jolly-morning-a6xlf4ke.us-west-2.aws.neon.tech (Linkstream)
+neon-dev-branch: br-muddy-flower-ak85a9jc | compute: ep-holy-waterfall-akwxx49b
+gh-cli:          authenticated as linkstream-hub (member of org)
+                 GITHUB_TOKEN cleared — always run unset GITHUB_TOKEN before gh commands
+playwright:      globalSetup uses DATABASE_URL (not DATABASE_URL_TEST)
+team:            Brandon (manager) → Claude Code (lead/gate) → AG (builder, Gemini) → Codex (frontend)
+graphify:        graphify update . → pipx binary (0.8.38) → graphify-out/
+vercel-logs:     MCP returns 403 Forbidden — surface errors in API response body
+```
+
+---
+
+## GAS STATE
+
+```yaml
+migration:
+  phase-15: MERGED
+  phase-16: MERGED — prod LIVE
+  phase-17: MERGED
+catalog:   docs/GAS_MIGRATION_SCOPE.md
+```
+
+---
+
+## MERGED PHASES (complete)
+
+```yaml
+phase-17:  MERGED PR #2
+phase-18:  MERGED PR #6 — EventBus outbox
+phase-19:  MERGED PR #7 — Observability + CI fix
+phase-20:  MERGED PR #9 — ESLint auth boundary rule
+fix-pr8:   MERGED PR #8 — jobs/sync error surface + upsert fix
 ```
