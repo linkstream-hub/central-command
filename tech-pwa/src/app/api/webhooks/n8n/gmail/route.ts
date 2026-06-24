@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     // Call Gemini 2.5 Flash to parse the raw email
     const { object } = await generateObject({
-      model: google('gemini-2.5-flash'),
+      model: google('gemini-1.5-flash'),
       schema: jobSchema,
       prompt: `You are an expert maintenance dispatcher.
         Analyze the following email and extract the structured data for a Work Order.
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
         unit: '',
         category: 'Unknown',
         priority: '4-STANDARD',
-        description: `[AI PARSING FAILED] Subject: ${payload.subject}\n\nBody: ${payload.bodyText}`,
+        description: `[AI PARSING FAILED] Subject: ${payload.subject}\n\nBody: ${payload.bodyText}\n\nError: ${error instanceof Error ? error.message : String(error)}`,
         status: 'Needs Review',
         emailType: 'adhoc_workorder',
         gmailMsgId: payload.gmailMsgId || '',
