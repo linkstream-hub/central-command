@@ -45,7 +45,25 @@ interface JobDetailModalProps {
   viewContext?: 'dispatch' | 'schedule';
 }
 
+export const COMM_STAKEHOLDER_TABS = [
+  { value: "REQUESTER", label: "REQUESTER" },
+  { value: "TENANT", label: "TENANT" },
+  { value: "TECH", label: "FIELD" },
+  { value: "NOTES", label: "INTERNAL" },
+] as const;
 
+export const TECH_CONTACT_SUMMARY = "Field assignment + status";
+
+export const STATUS_OPTIONS = [
+  "Needs Review",
+  "Ready to Schedule",
+  "PTE Required",
+  "Awaiting Approval",
+  "Scheduled",
+] as const;
+
+export const DISPATCH_NOTES_LABEL = "Tech Instructions";
+export const WORK_ORDER_CONTEXT_ENABLED = false;
 
 const TYPE_BADGES: Record<string, { label: string; class: string }> = {
   lapham_form: {
@@ -671,15 +689,15 @@ export default function JobDetailModal({
 
               {/* STAKEHOLDER SWITCHER */}
               <div className="flex h-[88px] border-b border-white/5 shrink-0">
-                {(["REQUESTER", "TENANT", "TECH", "NOTES"] as const)
-                  .map((s) => (
+                {COMM_STAKEHOLDER_TABS
+                  .map(({ value: s, label }) => (
                     <button
                       key={s}
                       onClick={() => setCommStakeholder(s)}
                       className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all relative ${commStakeholder === s ? "text-white" : "text-[var(--text-muted)] hover:text-white"}`}
                     >
                       <span className="text-[10px] font-black uppercase tracking-[0.2em]">
-                        {s}
+                        {label}
                       </span>
                       {commStakeholder === s && (
                         <motion.div
@@ -712,7 +730,7 @@ export default function JobDetailModal({
                         {commStakeholder === "TENANT"
                           ? [activeJob.tenantEmail, activeJob.tenantPhone].filter(Boolean).join(' · ') || 'No Contact Info'
                           : commStakeholder === "TECH"
-                            ? "Field communication via Tech PWA"
+                            ? TECH_CONTACT_SUMMARY
                             : activeJob.rmEmail || "No Email"}
                       </p>
                     </div>
@@ -1149,31 +1167,6 @@ export default function JobDetailModal({
                     </div>
                   </section>
 
-                  {/* ── WORK ORDER DESCRIPTION ── */}
-                  <section className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em]">
-                        Work Order Context
-                      </h4>
-                      {activeJob.gmailMsgId && (
-                        <a
-                          href={`https://mail.google.com/mail/u/0/#search/rfc822msgid:${encodeURIComponent(activeJob.gmailMsgId)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
-                        >
-                          <Mail size={10} />
-                          View Original Email
-                        </a>
-                      )}
-                    </div>
-                    <div className="bg-[var(--bg-surface)] rounded-2xl border border-white/10 backdrop-blur-sm p-5">
-                      <p className="text-xs font-medium text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap">
-                        {activeJob.description || "No description provided."}
-                      </p>
-                    </div>
-                  </section>
-
                   {(activeJob.tenantName || activeJob.tenantPhone || activeJob.tenantEmail) && (
                     <section className="space-y-3">
                       <h4 className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em]">
@@ -1298,16 +1291,7 @@ export default function JobDetailModal({
                           }
                           className="w-full bg-[#1a1a1b] border border-white/20 rounded-xl px-3 py-2.5 text-xs font-bold text-white outline-none focus:border-[var(--accent)] transition-all cursor-pointer"
                         >
-                          {([
-                            "Needs Review",
-                            "Ready to Schedule",
-                            "PTE Required",
-                            "Awaiting Approval",
-                            "Scheduled",
-                            "In Progress",
-                            "Complete",
-                            "Archived",
-                          ] as const).map((s) => (
+                          {STATUS_OPTIONS.map((s) => (
                             <option
                               key={s}
                               value={s}
@@ -1733,7 +1717,7 @@ export default function JobDetailModal({
                   {/* ── DISPATCH NOTES ── */}
                   <section className="space-y-3 pt-6 border-t border-white/5">
                     <h4 className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em]">
-                      Dispatch Notes
+                      {DISPATCH_NOTES_LABEL}
                     </h4>
                     <textarea
                       value={filteredNotes}
