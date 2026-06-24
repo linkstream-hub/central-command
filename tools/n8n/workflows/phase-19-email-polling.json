@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-16T20:11:18.103Z",
+  "updatedAt": "2026-06-24T17:05:45.337Z",
   "createdAt": "2026-06-11T02:35:59.838Z",
   "id": "wif9XlVbK3M6a1C8",
   "name": "Phase 19 — Email Polling & WO Intake",
@@ -652,7 +652,7 @@
         [],
         [
           {
-            "node": "IF: Lapham Form?",
+            "node": "HTTP: POST Vercel Webhook",
             "type": "main",
             "index": 0
           }
@@ -783,17 +783,6 @@
         ]
       ]
     },
-    "HTTP: POST jobs/sync": {
-      "main": [
-        [
-          {
-            "node": "IF: Comms Enabled?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "IF: Send Auto-Reply?": {
       "main": [
         [
@@ -873,7 +862,13 @@
     },
     "HTTP: POST Vercel Webhook": {
       "main": [
-        [],
+        [
+          {
+            "node": "IF: Comms Enabled?",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "Execute Workflow",
@@ -886,24 +881,24 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "PTOW Error Handler",
+    "errorWorkflow": "NUH0krzQiSrBmyfv",
     "binaryMode": "separate"
   },
   "staticData": {
     "node:Gmail Trigger": {
-      "lastTimeChecked": 1781634707,
+      "lastTimeChecked": 1782319430,
       "possibleDuplicates": [
-        "19ed1b45eab203f8",
-        "19ed1ac7c3c95181"
+        "19efa8445c5ddc99",
+        "19efa8078ea6872d"
       ]
     }
   },
   "meta": null,
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
-  "activeVersionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
-  "versionCounter": 17,
+  "versionId": "3888bf6a-9b90-4fe5-b119-4cf321759284",
+  "activeVersionId": "3888bf6a-9b90-4fe5-b119-4cf321759284",
+  "versionCounter": 19,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "shared": [
@@ -928,9 +923,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-06-16T20:11:18.106Z",
-    "createdAt": "2026-06-16T20:11:18.106Z",
-    "versionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
+    "updatedAt": "2026-06-24T17:05:45.339Z",
+    "createdAt": "2026-06-24T17:05:45.339Z",
+    "versionId": "3888bf6a-9b90-4fe5-b119-4cf321759284",
     "workflowId": "wif9XlVbK3M6a1C8",
     "nodes": [
       {
@@ -1209,43 +1204,6 @@
           }
         },
         "notes": "POST /api/intake/access-sync — auth via 'CC API Key' credential (x-api-key header). URL hardcoded — no $env needed."
-      },
-      {
-        "parameters": {
-          "method": "POST",
-          "url": "https://dispatch.aptmaintenanceinc.com/api/jobs/sync",
-          "authentication": "genericCredentialType",
-          "genericAuthType": "httpHeaderAuth",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
-            ]
-          },
-          "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={{ $json.jobPayload }}",
-          "options": {}
-        },
-        "id": "node-14-sync-to-neon",
-        "name": "HTTP: POST jobs/sync",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4,
-        "position": [
-          3008,
-          400
-        ],
-        "notesInFlow": true,
-        "credentials": {
-          "httpHeaderAuth": {
-            "id": "4IQFvUn2BHCXQmK5",
-            "name": "Header Auth account"
-          }
-        },
-        "notes": "POST /api/jobs/sync — creates or upserts WO in Neon. Auth via 'CC API Key' credential. URL hardcoded."
       },
       {
         "parameters": {
@@ -1545,6 +1503,46 @@
           608
         ],
         "notesInFlow": false
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://dispatch.aptmaintenanceinc.com/api/webhooks/n8n/gmail",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\n  \"sender\": \"={{ $('Gmail Trigger').item.json.from.text }}\",\n  \"subject\": \"={{ $('Gmail Trigger').item.json.subject }}\",\n  \"bodyText\": \"={{ $('Gmail Trigger').item.json.text }}\",\n  \"gmailMsgId\": \"={{ $('Gmail Trigger').item.json.id }}\"\n}",
+          "options": {}
+        },
+        "id": "node-vercel-webhook",
+        "name": "HTTP: POST Vercel Webhook",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [
+          3008,
+          400
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "4IQFvUn2BHCXQmK5",
+            "name": "Header Auth account"
+          }
+        },
+        "onError": "continueErrorOutput"
+      },
+      {
+        "parameters": {
+          "workflowId": "NUH0krzQiSrBmyfv"
+        },
+        "id": "node-error-handler",
+        "name": "Execute Workflow",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1,
+        "position": [
+          3008,
+          600
+        ]
       }
     ],
     "connections": {
@@ -1575,7 +1573,7 @@
           [],
           [
             {
-              "node": "IF: Lapham Form?",
+              "node": "HTTP: POST Vercel Webhook",
               "type": "main",
               "index": 0
             }
@@ -1688,7 +1686,7 @@
           ],
           [
             {
-              "node": "HTTP: POST jobs/sync",
+              "node": "HTTP: POST Vercel Webhook",
               "type": "main",
               "index": 0
             }
@@ -1699,18 +1697,7 @@
         "main": [
           [
             {
-              "node": "HTTP: POST jobs/sync",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "HTTP: POST jobs/sync": {
-        "main": [
-          [
-            {
-              "node": "IF: Comms Enabled?",
+              "node": "HTTP: POST Vercel Webhook",
               "type": "main",
               "index": 0
             }
@@ -1793,6 +1780,24 @@
           ],
           []
         ]
+      },
+      "HTTP: POST Vercel Webhook": {
+        "main": [
+          [
+            {
+              "node": "IF: Comms Enabled?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Execute Workflow",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "nodeGroups": [],
@@ -1802,34 +1807,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-06-16T20:11:18.156Z",
-        "id": 28,
+        "createdAt": "2026-06-24T17:05:45.428Z",
+        "id": 78,
         "workflowId": "wif9XlVbK3M6a1C8",
-        "versionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
+        "versionId": "3888bf6a-9b90-4fe5-b119-4cf321759284",
         "event": "deactivated",
         "userId": "49b0b0b1-006b-4452-9ab5-0cf056607f23"
       },
       {
-        "createdAt": "2026-06-16T20:11:18.454Z",
-        "id": 29,
+        "createdAt": "2026-06-24T17:05:45.741Z",
+        "id": 79,
         "workflowId": "wif9XlVbK3M6a1C8",
-        "versionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
-        "event": "activated",
-        "userId": "49b0b0b1-006b-4452-9ab5-0cf056607f23"
-      },
-      {
-        "createdAt": "2026-06-16T20:11:44.997Z",
-        "id": 30,
-        "workflowId": "wif9XlVbK3M6a1C8",
-        "versionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
-        "event": "deactivated",
-        "userId": "49b0b0b1-006b-4452-9ab5-0cf056607f23"
-      },
-      {
-        "createdAt": "2026-06-16T20:11:47.482Z",
-        "id": 31,
-        "workflowId": "wif9XlVbK3M6a1C8",
-        "versionId": "9171cb5d-d54c-4e92-9083-016a4d98f8a9",
+        "versionId": "3888bf6a-9b90-4fe5-b119-4cf321759284",
         "event": "activated",
         "userId": "49b0b0b1-006b-4452-9ab5-0cf056607f23"
       }
