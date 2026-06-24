@@ -58,11 +58,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[Webhook] Running Gemini 1.5 Flash parsing on email...');
+    console.log('[Webhook] Running Gemini 2.0 Flash parsing on email...');
 
     // Call Gemini to parse the raw email
     const { object } = await generateObject({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-2.0-flash'),
       schema: jobSchema,
       prompt: `You are an expert maintenance dispatcher.
         Analyze the following email and extract the structured data for a Work Order.
