@@ -29,8 +29,9 @@ export async function POST(request: NextRequest) {
     payload = await request.json();
     
     // Auth Check
-    const apiKey = request.headers.get('DASHBOARD_API_KEY');
-    if (apiKey !== process.env.DASHBOARD_API_KEY) {
+    const dashboardApiKey = request.headers.get('DASHBOARD_API_KEY');
+    const authHeader = request.headers.get('authorization');
+    if (dashboardApiKey !== process.env.DASHBOARD_API_KEY && authHeader !== `Bearer ${process.env.DASHBOARD_API_KEY}`) {
       console.warn('Unauthorized webhook attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

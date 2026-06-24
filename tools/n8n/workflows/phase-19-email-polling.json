@@ -286,43 +286,6 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://dispatch.aptmaintenanceinc.com/api/jobs/sync",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.jobPayload }}",
-        "options": {}
-      },
-      "id": "node-14-sync-to-neon",
-      "name": "HTTP: POST jobs/sync",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [
-        3008,
-        400
-      ],
-      "notesInFlow": true,
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "4IQFvUn2BHCXQmK5",
-          "name": "Header Auth account"
-        }
-      },
-      "notes": "POST /api/jobs/sync — creates or upserts WO in Neon. Auth via 'CC API Key' credential. URL hardcoded."
-    },
-    {
-      "parameters": {
         "conditions": {
           "boolean": [
             {
@@ -619,6 +582,46 @@
         608
       ],
       "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dispatch.aptmaintenanceinc.com/api/webhooks/n8n/gmail",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"sender\": \"={{ $('Gmail Trigger').item.json.from.text }}\",\n  \"subject\": \"={{ $('Gmail Trigger').item.json.subject }}\",\n  \"bodyText\": \"={{ $('Gmail Trigger').item.json.text }}\",\n  \"gmailMsgId\": \"={{ $('Gmail Trigger').item.json.id }}\"\n}",
+        "options": {}
+      },
+      "id": "node-vercel-webhook",
+      "name": "HTTP: POST Vercel Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        3008,
+        400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4IQFvUn2BHCXQmK5",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": "NUH0krzQiSrBmyfv"
+      },
+      "id": "node-error-handler",
+      "name": "Execute Workflow",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        3008,
+        600
+      ]
     }
   ],
   "connections": {
@@ -762,7 +765,7 @@
         ],
         [
           {
-            "node": "HTTP: POST jobs/sync",
+            "node": "HTTP: POST Vercel Webhook",
             "type": "main",
             "index": 0
           }
@@ -773,7 +776,7 @@
       "main": [
         [
           {
-            "node": "HTTP: POST jobs/sync",
+            "node": "HTTP: POST Vercel Webhook",
             "type": "main",
             "index": 0
           }
@@ -866,6 +869,18 @@
           }
         ],
         []
+      ]
+    },
+    "HTTP: POST Vercel Webhook": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
