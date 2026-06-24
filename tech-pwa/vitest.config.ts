@@ -7,6 +7,11 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src')
     },
+    server: {
+      deps: {
+        inline: ['next-auth', '@auth/core'],
+      },
+    },
     include: ['src/**/__tests__/**/*.test.ts'],
     coverage: {
       include: [

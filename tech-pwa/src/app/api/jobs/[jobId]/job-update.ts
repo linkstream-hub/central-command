@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { resolveJobStatus, resolveEmailTrigger } from '@/lib/job-transitions';
 import { createJobStateService, toJobId, toTechId } from '@/domain/job';
 import { makeJobStateDAL } from '@/lib/dal/job-state-dal';
-import type { SideEffect, Result } from '@/domain/job';
+import type { SideEffect, Result, ArrivalWindow } from '@/domain/job';
 import type { JobStatus } from '@/lib/types';
 
 import type { SideEffectExecutor } from '@/lib/side-effects';
@@ -18,39 +18,50 @@ export type JobUpdateSuccess =
   | { type: 'NO_OP' }
   | { type: 'UPDATED'; warning?: string };
 
+type JobUpdateBody = {
+  assignedTech?: string; serviceCategory?: string; estHours?: number;
+  rmName?: string; rmEmail?: string; tenantName?: string; tenantPhone?: string;
+  tenantEmail?: string; accessInfo?: string; scheduledDate?: string;
+  scheduledTime?: string; status?: string; notes?: string; address?: string;
+  unit?: string; description?: string; priority?: string; emailType?: string;
+  gmailMsgId?: string; pteGranted?: string; timing?: string; tenantPref?: string;
+  tenantPets?: string; wcCode?: string;
+};
+
 export async function apply(
   jobId: string,
-  body: any,
+  body: Record<string, unknown>,
   ctx: { isApiKeyAuth: boolean },
   executor: SideEffectExecutor
 ): Promise<Result<JobUpdateSuccess, JobUpdateError>> {
+  const b = body as JobUpdateBody;
   // 1. Map body -> updates
   const updates: Partial<typeof jobs.$inferInsert> = {};
 
-  if (body.assignedTech !== undefined) updates.tech = body.assignedTech;
-  if (body.serviceCategory !== undefined) updates.category = body.serviceCategory;
-  if (body.estHours !== undefined) updates.estHours = body.estHours;
-  if (body.rmName !== undefined) updates.rmName = body.rmName;
-  if (body.rmEmail !== undefined) updates.rmEmail = body.rmEmail;
-  if (body.tenantName !== undefined) updates.tenantName = body.tenantName;
-  if (body.tenantPhone !== undefined) updates.tenantPhone = body.tenantPhone;
-  if (body.tenantEmail !== undefined) updates.tenantEmail = body.tenantEmail;
-  if (body.accessInfo !== undefined) updates.accessInfo = body.accessInfo;
-  if (body.scheduledDate !== undefined) updates.scheduledDate = body.scheduledDate;
-  if (body.scheduledTime !== undefined) updates.scheduledTime = body.scheduledTime;
-  if (body.status !== undefined) updates.status = body.status;
-  if (body.notes !== undefined) updates.notes = body.notes;
-  if (body.address !== undefined) updates.address = body.address;
-  if (body.unit !== undefined) updates.unit = body.unit;
-  if (body.description !== undefined) updates.description = body.description;
-  if (body.priority !== undefined) updates.priority = body.priority;
-  if (body.emailType !== undefined) updates.emailType = body.emailType;
-  if (body.gmailMsgId !== undefined) updates.gmailMsgId = body.gmailMsgId;
-  if (body.pteGranted !== undefined) updates.pte = body.pteGranted;
-  if (body.timing !== undefined) updates.timing = body.timing;
-  if (body.tenantPref !== undefined) updates.tenantPref = body.tenantPref;
-  if (body.tenantPets !== undefined) updates.tenantPets = body.tenantPets;
-  if (body.wcCode !== undefined) updates.wcCode = body.wcCode;
+  if (b.assignedTech !== undefined) updates.tech = b.assignedTech;
+  if (b.serviceCategory !== undefined) updates.category = b.serviceCategory;
+  if (b.estHours !== undefined) updates.estHours = b.estHours;
+  if (b.rmName !== undefined) updates.rmName = b.rmName;
+  if (b.rmEmail !== undefined) updates.rmEmail = b.rmEmail;
+  if (b.tenantName !== undefined) updates.tenantName = b.tenantName;
+  if (b.tenantPhone !== undefined) updates.tenantPhone = b.tenantPhone;
+  if (b.tenantEmail !== undefined) updates.tenantEmail = b.tenantEmail;
+  if (b.accessInfo !== undefined) updates.accessInfo = b.accessInfo;
+  if (b.scheduledDate !== undefined) updates.scheduledDate = b.scheduledDate;
+  if (b.scheduledTime !== undefined) updates.scheduledTime = b.scheduledTime;
+  if (b.status !== undefined) updates.status = b.status;
+  if (b.notes !== undefined) updates.notes = b.notes;
+  if (b.address !== undefined) updates.address = b.address;
+  if (b.unit !== undefined) updates.unit = b.unit;
+  if (b.description !== undefined) updates.description = b.description;
+  if (b.priority !== undefined) updates.priority = b.priority;
+  if (b.emailType !== undefined) updates.emailType = b.emailType;
+  if (b.gmailMsgId !== undefined) updates.gmailMsgId = b.gmailMsgId;
+  if (b.pteGranted !== undefined) updates.pte = b.pteGranted;
+  if (b.timing !== undefined) updates.timing = b.timing;
+  if (b.tenantPref !== undefined) updates.tenantPref = b.tenantPref;
+  if (b.tenantPets !== undefined) updates.tenantPets = b.tenantPets;
+  if (b.wcCode !== undefined) updates.wcCode = b.wcCode;
 
   // 2. If no recognized fields -> return NO_OP
   if (Object.keys(updates).length === 0) {
@@ -138,7 +149,7 @@ export async function apply(
     if (resolvedStatus) updates.status = resolvedStatus;
 
     if (!ctx.isApiKeyAuth && updates.status && updates.status !== prevStatus) {
-      const email = body.tenantEmail || jobState.tenantEmail;
+      const email = b.tenantEmail || jobState.tenantEmail;
       
       if (email && email.includes('@')) {
         const trigger = resolveEmailTrigger(updates.status, prevStatus);
@@ -149,8 +160,8 @@ export async function apply(
               type: 'SEND_CONFIRMATION',
               jobId: toJobId(jobId),
               tenantEmail: email,
-              scheduledDate: body.scheduledDate || jobState.scheduledDate || '',
-              scheduledWindow: body.scheduledTime || jobState.scheduledTime || 'morning'
+              scheduledDate: b.scheduledDate || jobState.scheduledDate || '',
+              scheduledWindow: (b.scheduledTime || jobState.scheduledTime || 'morning') as ArrivalWindow
             });
           } else if (trigger === 'pte-required') {
             // Note: In Phase 21 this will be real token and jobId, currently mapped to Outreach effect
@@ -158,7 +169,8 @@ export async function apply(
               type: 'SEND_SCHEDULING_OUTREACH',
               jobId: toJobId(jobId),
               tenantEmail: email,
-              token: 'legacy-token' as any // Dummy for type safety as email-executor doesn't use it
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            token: 'legacy-token' as any // Phase 21 will replace with real token
             });
           }
         } catch (e) {
