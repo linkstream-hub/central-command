@@ -60,14 +60,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    let object: any = {};
+    let object: z.infer<typeof jobSchema>;
     let inboundAccessInfo = '';
 
     const laphamResult = detectLaphamForm(sender ?? '', subject ?? '', bodyText ?? '');
     if (laphamResult) {
       console.log('[Webhook] Lapham form detected. Skipping Gemini.');
       const priority = laphamResult.pteGranted === 'Yes' ? '3-PTE' : '4-STANDARD';
-      
+
       object = {
         address: laphamResult.address,
         unit: laphamResult.unit,
@@ -81,26 +81,25 @@ export async function POST(request: NextRequest) {
         emailType: laphamResult.emailType,
         notes: `PTE Granted: ${laphamResult.pteGranted}\nPTE Notes: ${laphamResult.pteNotes}\nPets: ${laphamResult.tenantHasPets}\nPreferred Contact: ${laphamResult.tenantPreferredContact}`,
       };
-      
+
       inboundAccessInfo = laphamResult.pteNotes;
     } else {
       console.log('[Webhook] Running Gemini 2.5 Flash parsing on email...');
 
-      // Call Gemini to parse the raw email
       const { object: geminiObject } = await generateObject({
         model: google('gemini-2.5-flash'),
         schema: jobSchema,
         prompt: `You are an expert maintenance dispatcher.
           Analyze the following email and extract the structured data for a Work Order.
-          
+
           CRITICAL INSTRUCTIONS FOR INSPECTION EMAILS:
           If the email is from Sam Cooney, SSC Inspections, or mentions an "Inspection Summary" / "Annual Inspections":
           1. Set the category strictly to "Inspection Repair".
           2. Set the emailType strictly to "inspection".
           3. If there is a Google Drive link (https://drive.google.com/...) in the body, extract that link and place it in the "notes" field exactly as: "Inspection Report Link: [link]".
-          
+
           Email Subject: ${subject || 'No Subject'}
-          
+
           Email Body:
           ${bodyText || 'No Body'}
         `,

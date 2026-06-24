@@ -1,74 +1,85 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { employees } from '@/lib/schema';
-import { eq } from 'drizzle-orm';
-import * as fs from 'fs';
+import { eq, and, sql } from 'drizzle-orm';
 import { parse } from 'csv-parse/sync';
-
-function normalizeName(name: string): string {
-  if (!name) return '';
-  name = name.trim();
-  name = name.split('#')[0].trim();
-  if (name.includes(',')) {
-    const parts = name.split(',');
-    if (parts.length === 2) {
-      name = `${parts[1].trim()} ${parts[0].trim()}`;
-    }
-  }
-  return name;
-}
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const apiKey = req.headers.get('x-api-key') ?? req.headers.get('DASHBOARD_API_KEY');
+  if (apiKey !== process.env.DASHBOARD_API_KEY) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const CSV_URL = `https://docs.google.com/spreadsheets/d/1eCSHpj5381R7Hhloe718r1n8fEfesY2tjYOuOLxTSd4/gviz/tq?tqx=out:csv&sheet=Tech%20Roster&t=${Date.now()}`;
     const res = await fetch(CSV_URL, { cache: 'no-store' });
     const text = await res.text();
-    
-    const records = parse(text, {
-      columns: true,
-      skip_empty_lines: true,
-    });
 
-    await db.update(employees).set({ isActive: false, badge: null });
+    const records = parse(text, { columns: true, skip_empty_lines: true }) as Record<string, string>[];
 
-    let insertedCount = 0;
-    
-    for (const row of records as Record<string, string>[]) {
-      const rawName = row['Name'];
-      if (!rawName) continue;
-      
-      const cleanName = normalizeName(rawName);
-      const badge = row['Badge #'] || null;
-      const phone = row['Phone'] || null;
-      
-      const existing = await db.select().from(employees).where(eq(employees.name, cleanName));
-      
-      if (existing.length > 0) {
-        await db.update(employees)
-          .set({ 
-            isActive: true, 
-            badge: badge,
-            phone: phone,
-            role: 'tech' 
-          })
-          .where(eq(employees.id, existing[0].id));
+    // Deactivate tech-role employees only — never touch staff
+    await db.update(employees)
+      .set({ isActive: false, badge: null })
+      .where(eq(employees.role, 'tech'));
+
+    let count = 0;
+
+    for (const row of records) {
+      const name = (row['Name'] || '').trim();
+      if (!name) continue;
+
+      const badge      = row['Badge #']?.trim()    || null;
+      const phone      = row['Phone']?.trim()       || null;
+      const rank       = row['Rank']?.trim()        || null;
+      const pinHash    = row['PIN Hash']?.trim()    || null;
+      const activeStr  = (row['Active'] || '').toUpperCase();
+      const isActive   = activeStr === 'TRUE' || activeStr === '1' || activeStr === 'YES';
+
+      const data = {
+        name,
+        phone,
+        rank,
+        role: 'tech' as const,
+        isActive,
+        ...(pinHash ? { pinHash } : {}),
+        skillCarpentry:   parseFloat(row['Carpentry']    || '0') || 0,
+        skillPlumbing:    parseFloat(row['Plumbing']     || '0') || 0,
+        skillElectrical:  parseFloat(row['Electrical']   || '0') || 0,
+        skillFinishCarp:  parseFloat(row['Finish Carp']  || '0') || 0,
+        skillStructural:  parseFloat(row['Structural']   || '0') || 0,
+        skillLandscaping: parseFloat(row['Landscaping']  || '0') || 0,
+        skillJanitorial:  parseFloat(row['Janitorial']   || '0') || 0,
+      };
+
+      if (badge) {
+        // Badge-keyed upsert — uses unique index on (orgId, badge)
+        await db.insert(employees)
+          .values({ orgId: 'APT-CA', badge, ...data })
+          .onConflictDoUpdate({
+            target: [employees.orgId, employees.badge],
+            targetWhere: sql`badge IS NOT NULL`,
+            set: data,
+          });
       } else {
-        await db.insert(employees).values({
-          orgId: 'APT-CA',
-          name: cleanName,
-          badge: badge,
-          phone: phone,
-          role: 'tech',
-          isActive: true,
-        });
+        // No badge — match by name + role
+        const existing = await db.select({ id: employees.id })
+          .from(employees)
+          .where(and(eq(employees.name, name), eq(employees.role, 'tech')));
+
+        if (existing.length > 0) {
+          await db.update(employees).set(data).where(eq(employees.id, existing[0].id));
+        } else {
+          await db.insert(employees).values({ orgId: 'APT-CA', ...data });
+        }
       }
-      insertedCount++;
+
+      count++;
     }
 
-    return NextResponse.json({ success: true, count: insertedCount });
+    return NextResponse.json({ success: true, count });
   } catch (error) {
-    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
 }
