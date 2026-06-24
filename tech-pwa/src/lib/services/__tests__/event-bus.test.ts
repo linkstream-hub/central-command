@@ -28,12 +28,12 @@ describe('EventBus.publish()', () => {
     vi.clearAllMocks();
     process.env.N8N_EVENT_BUS_URL = MOCK_WEBHOOK_URL;
     // Fix fetch mock to passthrough neon db queries
-    global.fetch = vi.fn().mockImplementation((...args) => {
+    global.fetch = vi.fn().mockImplementation((...args: Parameters<typeof fetch>) => {
       const url = args[0]?.toString() || '';
       if (url.includes('n8n.example.com')) {
-        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) } as Response);
       }
-      return (originalFetch as any)(...args);
+      return originalFetch(...args);
     });
     
     // Cleanup any leaked test events just in case
@@ -72,12 +72,12 @@ describe('EventBus.publish()', () => {
   });
 
   it('inserts row with status=pending (not error) when webhook fails — delivery eventual', async () => {
-    (global.fetch as any).mockImplementation(async (...args: any[]) => {
+    vi.mocked(global.fetch).mockImplementation(async (...args: Parameters<typeof fetch>) => {
       const url = args[0]?.toString() || '';
       if (url.includes('n8n.example.com')) {
         throw new Error('Network error');
       }
-      return (originalFetch as any)(...args);
+      return originalFetch(...args);
     });
 
     const result = await EventBus.publish(testEvent);
@@ -141,8 +141,8 @@ describe('EventBus.publish()', () => {
     
     // We can't use not.toHaveBeenCalled() because Neon DB driver uses fetch internally.
     // Instead we check it wasn't called with the webhook URL.
-    const calls = (global.fetch as any).mock.calls;
-    const webhookCalls = calls.filter((c: any) => c[0]?.toString().includes('n8n.example.com'));
+    const calls = vi.mocked(global.fetch).mock.calls;
+    const webhookCalls = calls.filter((c) => c[0]?.toString().includes('n8n.example.com'));
     expect(webhookCalls).toHaveLength(0);
   });
 });

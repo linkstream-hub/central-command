@@ -15,6 +15,7 @@ import {
   ComplianceAlert,
   DispatchDataResponse,
   ComplianceAlertsResponse,
+  TechStatus,
 } from "@/lib/dashboard-api";
 import type { DashboardStats } from "@/lib/types";
 import { Job, JobStatus } from "@/lib/types";
@@ -45,7 +46,7 @@ type WorkspaceView = "triage" | "dispatch" | "table";
 export default function LivePage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [techs, setTechs] = useState<any[]>([]);
+  const [techs, setTechs] = useState<TechStatus[]>([]);
   const [complianceAlerts, setComplianceAlerts] = useState<ComplianceAlert[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +64,7 @@ export default function LivePage() {
     const [jobsRes, complianceRes, techsRes] = await Promise.all([
       dashboardRequest<DispatchDataResponse>("getDispatchData"),
       dashboardRequest<ComplianceAlertsResponse>("getComplianceAlerts"),
-      dashboardRequest<{success: boolean; techs: any[]}>("getTechList"),
+      dashboardRequest<{success: boolean; techs: TechStatus[]}>("getTechList"),
     ]);
 
     if (jobsRes.success) {
@@ -77,6 +78,7 @@ export default function LivePage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadLiveData();
 
     const jobInterval = setInterval(() => {

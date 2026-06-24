@@ -22,6 +22,7 @@ const jobSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let payload: any = {};
   try {
     payload = await request.json();
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
     console.log('[Webhook] Successfully processed and inserted WO:', newJobId);
 
     return NextResponse.json({ success: true, job: newJob });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[Webhook] Failed to process n8n payload via Gemini:', error);
     
     // FALLBACK: If AI parsing fails, insert the raw email as a Work Order so it's not lost
@@ -161,7 +162,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, job: fallbackJob, note: 'Fallback used due to AI error' });
     } catch (fallbackErr) {
       console.error('[Webhook] Fallback insertion also failed:', fallbackErr);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
     }
   }
 }

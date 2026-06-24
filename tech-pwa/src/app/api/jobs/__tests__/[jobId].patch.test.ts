@@ -1,5 +1,7 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { NextRequest } from 'next/server';
+
+vi.mock('@/auth', () => ({ auth: vi.fn().mockResolvedValue(null) }));
 import { db } from '../../../../lib/db';
 import { jobs } from '../../../../lib/schema';
 import { eq } from 'drizzle-orm';
