@@ -115,14 +115,14 @@
         "conditions": {
           "string": [
             {
-              "value1": "={{ $('HTTP: POST Vercel Webhook').item.json.job.senderType }}",
+              "value1": "={{ $('HTTP: POST Vercel Webhook').item.json.parsed.senderType }}",
               "operation": "notEqual",
               "value2": "APT Internal"
             }
           ],
           "boolean": [
             {
-              "value1": "={{ !!$('HTTP: POST Vercel Webhook').item.json.job.requesterEmail || !!$('HTTP: POST Vercel Webhook').item.json.job.rmEmail }}",
+              "value1": "={{ !!$('HTTP: POST Vercel Webhook').item.json.parsed.senderEmail || !!$('HTTP: POST Vercel Webhook').item.json.job.rmEmail }}",
               "value2": true
             }
           ]
@@ -144,14 +144,14 @@
         "conditions": {
           "string": [
             {
-              "value1": "={{ $('Code: Merge Property Data').item.json.senderEmail }}",
+              "value1": "={{ $('HTTP: POST Vercel Webhook').item.json.parsed.senderEmail }}",
               "operation": "contains",
               "value2": "laphamcompany.com"
             },
             {
-              "value1": "={{ $('Code: Merge Property Data').item.json.senderEmail }}",
+              "value1": "={{ $('HTTP: POST Vercel Webhook').item.json.parsed.senderEmail }}",
               "operation": "equals",
-              "value2": "={{ $('Code: Merge Property Data').item.json.rmEmail }}"
+              "value2": "={{ $('HTTP: POST Vercel Webhook').item.json.job.rmEmail }}"
             }
           ]
         },
@@ -173,7 +173,7 @@
         "conditions": {
           "boolean": [
             {
-              "value1": "={{ $('Code: Merge Property Data').item.json.isLaphamForm }}",
+              "value1": "={{ $('HTTP: POST Vercel Webhook').item.json.parsed.isLaphamForm }}",
               "value2": true
             }
           ]
@@ -207,7 +207,7 @@
         },
         "sendBody": true,
         "specifyBody": "string",
-        "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('Code: Merge Property Data').item.json.requesterEmail || $('Code: Merge Property Data').item.json.rmEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Request Received — ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your property'), text: 'Your maintenance request for ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'the property') + ' has been received. Our dispatch team will be in touch shortly.\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
+        "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('HTTP: POST Vercel Webhook').item.json.job.rmEmail || $('HTTP: POST Vercel Webhook').item.json.parsed.senderEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Request Received — ' + ($('HTTP: POST Vercel Webhook').item.json.job.address || 'your property'), text: 'Your maintenance request for ' + ($('HTTP: POST Vercel Webhook').item.json.job.address || 'the property') + ' has been received. Our dispatch team will be in touch shortly.\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
         "options": {}
       },
       "id": "node-19-resend-lapham-ack",
@@ -244,7 +244,7 @@
         },
         "sendBody": true,
         "specifyBody": "string",
-        "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('Code: Merge Property Data').item.json.requesterEmail || $('Code: Merge Property Data').item.json.rmEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Request Received — ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your property'), text: 'Your maintenance request for ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'the property') + ' has been received. Our dispatch team will be in touch shortly.\\n\\nFor fastest scheduling on future requests, please include the Lapham Maintenance Request form with your submission. This helps us capture all required tenant contact and access details upfront.\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
+        "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('HTTP: POST Vercel Webhook').item.json.job.rmEmail || $('HTTP: POST Vercel Webhook').item.json.parsed.senderEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Request Received — ' + ($('HTTP: POST Vercel Webhook').item.json.job.address || 'your property'), text: 'Your maintenance request for ' + ($('HTTP: POST Vercel Webhook').item.json.job.address || 'the property') + ' has been received. Our dispatch team will be in touch shortly.\\n\\nFor fastest scheduling on future requests, please include the Lapham Maintenance Request form with your submission. This helps us capture all required tenant contact and access details upfront.\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
         "options": {}
       },
       "id": "node-20-resend-lapham-no-form",
@@ -281,7 +281,7 @@
         },
         "sendBody": true,
         "specifyBody": "string",
-        "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('Code: Merge Property Data').item.json.requesterEmail || $('Code: Merge Property Data').item.json.rmEmail || $('Code: Merge Property Data').item.json.senderEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Request Received — ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your property'), text: 'Your maintenance request for ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'the property') + ' has been received. Our dispatch team will be in touch shortly.\\n\\n[TEMPLATE_TODO: Phase 26 — insert APT intake form link here for fastest scheduling]\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
+        "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('HTTP: POST Vercel Webhook').item.json.job.rmEmail || $('HTTP: POST Vercel Webhook').item.json.parsed.senderEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Request Received — ' + ($('HTTP: POST Vercel Webhook').item.json.job.address || 'your property'), text: 'Your maintenance request for ' + ($('HTTP: POST Vercel Webhook').item.json.job.address || 'the property') + ' has been received. Our dispatch team will be in touch shortly.\\n\\n[TEMPLATE_TODO: Phase 26 — insert APT intake form link here for fastest scheduling]\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
         "options": {}
       },
       "id": "node-21-resend-general-ack",
@@ -306,19 +306,19 @@
         "conditions": {
           "string": [
             {
-              "value1": "={{ $('Code: Merge Property Data').item.json.emailType }}",
+              "value1": "={{ $('HTTP: POST Vercel Webhook').item.json.job.emailType }}",
               "operation": "notEqual",
               "value2": "turnover"
             },
             {
-              "value1": "={{ $('Code: Merge Property Data').item.json.emailType }}",
+              "value1": "={{ $('HTTP: POST Vercel Webhook').item.json.job.emailType }}",
               "operation": "notEqual",
               "value2": "inspection"
             }
           ],
           "boolean": [
             {
-              "value1": "={{ !!$('Code: Merge Property Data').item.json.tenantEmail }}",
+              "value1": "={{ !!$('HTTP: POST Vercel Webhook').item.json.job.tenantEmail }}",
               "value2": true
             }
           ]
@@ -352,7 +352,7 @@
         },
         "sendBody": true,
         "specifyBody": "string",
-        "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('Code: Merge Property Data').item.json.tenantEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Coordinating Your Maintenance Visit — ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your unit'), text: 'Hi ' + ($('Code: Merge Property Data').item.json.tenantName || 'Resident') + ',\\n\\nWe received a maintenance work order for ' + ($('Code: Merge Property Data').item.json.propertyAddress || 'your unit') + (($('Code: Merge Property Data').item.json.unitNumber) ? ' Unit ' + $('Code: Merge Property Data').item.json.unitNumber : '') + '.\\n\\nOur team will be in touch to coordinate a convenient time. Please reply to this email or contact us at workorder@aptmaintenanceinc.com with your available dates and times.\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
+        "body": "={{ JSON.stringify({ from: 'noreply@aptmaintenanceinc.com', to: [$('HTTP: POST Vercel Webhook').item.json.job.tenantEmail], replyTo: 'workorder@aptmaintenanceinc.com', subject: 'Coordinating Your Maintenance Visit — ' + ($('HTTP: POST Vercel Webhook').item.json.job.address || 'your unit'), text: 'Hi ' + ($('HTTP: POST Vercel Webhook').item.json.job.tenantName || 'Resident') + ',\\n\\nWe received a maintenance work order for ' + ($('HTTP: POST Vercel Webhook').item.json.job.address || 'your unit') + (($('HTTP: POST Vercel Webhook').item.json.job.unit) ? ' Unit ' + $('HTTP: POST Vercel Webhook').item.json.job.unit : '') + '.\\n\\nOur team will be in touch to coordinate a convenient time. Please reply to this email or contact us at workorder@aptmaintenanceinc.com with your available dates and times.\\n\\n— APT Maintenance\\nworkorder@aptmaintenanceinc.com' }) }}",
         "options": {}
       },
       "id": "node-23-resend-tenant-coordination",
