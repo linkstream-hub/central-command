@@ -1,19 +1,19 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
 import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, useSensor, useSensors, useDroppable, useDraggable
 } from "@dnd-kit/core";
 import { Job, JobStatus } from "@/lib/types";
 import { dashboardRequest } from "@/lib/dashboard-api";
-import { AlertTriangle, Navigation } from "lucide-react";
+import { Navigation } from "lucide-react";
 import JobAssignmentModal from "./JobAssignmentModal";
 
 interface DispatchTimelineBoardProps {
   jobs: Job[];
   roster?: { techName: string; name?: string; badge?: string | null; skills?: Record<string, number | null> }[];
+  date: string;
   searchQuery?: string;
   onJobClick?: (job: Job) => void;
   onJobUpdated?: (updatedJob: Job) => void;
@@ -21,6 +21,29 @@ interface DispatchTimelineBoardProps {
 
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16]; // 8 AM to 4 PM
 const TOTAL_HOURS = HOURS.length;
+
+export function buildScheduledJobUpdate({
+  job,
+  assignedTechs,
+  startTime,
+  estimatedHours,
+  date,
+}: {
+  job: Job;
+  assignedTechs: string[];
+  startTime: string;
+  estimatedHours: number;
+  date: string;
+}): Job {
+  return {
+    ...job,
+    assignedTech: assignedTechs.join('; '),
+    status: 'Scheduled' as JobStatus,
+    scheduledDate: date,
+    scheduledTime: startTime,
+    estimatedHours,
+  };
+}
 
 function TimelineCell({ techName, hour }: { techName: string, hour: number }) {
   const { isOver, setNodeRef } = useDroppable({ id: `${techName}|${hour}` });
@@ -140,15 +163,28 @@ function TechTimelineRow({ tech, jobs, onJobClick }: { tech: { name: string; ski
   );
 }
 
-export default function DispatchTimelineBoard({ jobs, roster = [], searchQuery = '', onJobClick, onJobUpdated }: DispatchTimelineBoardProps) {
+export default function DispatchTimelineBoard({ jobs, roster = [], date, searchQuery = '', onJobClick, onJobUpdated }: DispatchTimelineBoardProps) {
   const [draggingJob, setDraggingJob] = useState<Job | null>(null);
   const [pendingDrop, setPendingDrop] = useState<{ job: Job; tech: string; hour: string } | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  const visibleJobs = jobs.filter(j => j.status !== 'Complete' && j.status !== 'Archived');
+  const visibleJobs = jobs.filter(j => {
+    if (j.status === 'Complete' || j.status === 'Archived') return false;
+    if (!searchQuery.trim()) return true;
+
+    const query = searchQuery.toLowerCase();
+    return (
+      String(j.address || '').toLowerCase().includes(query) ||
+      String(j.description || '').toLowerCase().includes(query) ||
+      String(j.assignedTech || '').toLowerCase().includes(query)
+    );
+  });
   
   const backlogJobs = visibleJobs.filter(j => !j.scheduledTime && j.status === 'Ready to Schedule');
-  const scheduledJobs = visibleJobs.filter(j => j.scheduledTime || j.status === 'Scheduled' || j.status === 'In Progress');
+  const scheduledJobs = visibleJobs.filter(j =>
+    (j.scheduledTime || j.status === 'Scheduled' || j.status === 'In Progress') &&
+    (!j.scheduledDate || j.scheduledDate === date)
+  );
 
   const techs = useMemo(() => {
     const map = new Map<string, { name: string; techName: string; skills: string; load: 0 }>();
@@ -197,8 +233,13 @@ export default function DispatchTimelineBoard({ jobs, roster = [], searchQuery =
   async function handleConfirmDrop(hours: number, assignedTechs: string[]) {
     if (!pendingDrop) return;
     const { job, hour } = pendingDrop;
-    const techString = assignedTechs.join('; ');
-    const updatedJob = { ...job, assignedTech: techString, status: 'Scheduled' as JobStatus, scheduledTime: hour, estimatedHours: hours };
+    const updatedJob = buildScheduledJobUpdate({
+      job,
+      assignedTechs,
+      startTime: hour,
+      estimatedHours: hours,
+      date,
+    });
     onJobUpdated?.(updatedJob);
     setPendingDrop(null);
     await dashboardRequest('updateJob', { job: updatedJob });

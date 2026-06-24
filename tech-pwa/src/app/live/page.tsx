@@ -7,7 +7,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 import JobQueueTable, { StatusTab } from "@/components/dashboard/JobQueueTable";
 import KanbanBoard from "@/components/dashboard/KanbanBoard";
-import { Search, LayoutDashboard, CalendarDays, Calendar, List } from "lucide-react";
+import { Search, LayoutDashboard, CalendarDays, List, ChevronLeft, ChevronRight } from "lucide-react";
 import ActivityFeed from "@/components/dashboard/ActivityFeed";
 import JobDetailModal from "@/components/dashboard/JobDetailModal";
 import {
@@ -19,8 +19,26 @@ import {
 } from "@/lib/dashboard-api";
 import type { DashboardStats } from "@/lib/types";
 import { Job, JobStatus } from "@/lib/types";
-import { LockSendButton } from '@/components/dashboard/LockSendButton';
-import { ConfirmationScreen } from '@/components/dashboard/ConfirmationScreen';
+
+export const DEFAULT_WORKSPACE_VIEW: WorkspaceView = "triage";
+
+export function getTodayIsoDate() {
+  return new Date().toISOString().split("T")[0];
+}
+
+export function getAdjacentIsoDate(date: string, offsetDays: number) {
+  const nextDate = new Date(`${date}T00:00:00`);
+  nextDate.setDate(nextDate.getDate() + offsetDays);
+  return nextDate.toISOString().split("T")[0];
+}
+
+export function formatDispatchDateLabel(date: string) {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 const TAB_PARAM_MAP: Record<string, StatusTab> = {
   review: "NEEDS_REVIEW",
@@ -44,20 +62,19 @@ function TabSync({ onTab }: { onTab: (t: StatusTab) => void }) {
 type WorkspaceView = "triage" | "dispatch" | "table";
 
 export default function LivePage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [, setStats] = useState<DashboardStats | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [techs, setTechs] = useState<TechStatus[]>([]);
-  const [complianceAlerts, setComplianceAlerts] = useState<ComplianceAlert[]>([]);
+  const [, setComplianceAlerts] = useState<ComplianceAlert[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   const [statusTab, setStatusTab] = useState<StatusTab>("ALL");
-  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("dispatch");
-  const [confirmationData, setConfirmationData] = useState<{ techCount: number; jobCount: number } | null>(null);
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(DEFAULT_WORKSPACE_VIEW);
+  const [selectedDate, setSelectedDate] = useState(getTodayIsoDate);
   
   const searchRef = useRef<HTMLInputElement>(null);
-  const scrollRef = useRef<number>(0);
 
   const loadLiveData = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -157,16 +174,6 @@ export default function LivePage() {
               className="bg-black/40 border border-zinc-800 rounded-lg py-1.5 pl-9 pr-4 text-[11px] font-bold text-white focus:border-[var(--accent)] focus:bg-[#0f1115] focus:ring-1 focus:ring-[var(--accent)]/30 outline-none w-64 transition-all"
             />
           </div>
-          
-          {workspaceView === "dispatch" && (
-            <div className="ml-4 pl-4 border-l border-zinc-800">
-               <LockSendButton 
-                 date={new Date().toISOString().split('T')[0]}
-                 disabled={loading}
-                 onSuccess={(result) => setConfirmationData(result)}
-               />
-            </div>
-          )}
         </div>
 
         {/* Dynamic Workspace Area */}
@@ -234,10 +241,32 @@ export default function LivePage() {
                   <h2 className="text-lg font-black text-white uppercase tracking-widest">Dispatch Board</h2>
                   <p className="text-xs text-zinc-400 font-bold tracking-wide mt-1">Drag and drop jobs from the Ready to Dispatch queue onto technician timelines.</p>
                 </div>
+                <div className="flex items-center gap-1 rounded-lg border border-zinc-800 bg-black/40 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate((date) => getAdjacentIsoDate(date, -1))}
+                    className="p-2 rounded-md text-[var(--text-muted)] hover:text-white hover:bg-white/5 transition-colors"
+                    aria-label="Previous dispatch date"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <span className="min-w-28 text-center text-[10px] font-black uppercase tracking-widest text-white">
+                    {formatDispatchDateLabel(selectedDate)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate((date) => getAdjacentIsoDate(date, 1))}
+                    className="p-2 rounded-md text-[var(--text-muted)] hover:text-white hover:bg-white/5 transition-colors"
+                    aria-label="Next dispatch date"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
               </div>
               <DispatchTimelineBoard 
                 jobs={jobs} 
                 roster={techs} 
+                date={selectedDate}
                 searchQuery={searchQuery}
                 onJobClick={(job) => setSelectedJob(job)}
                 onJobUpdated={(updatedJob) => {
@@ -268,14 +297,6 @@ export default function LivePage() {
         onSave={() => loadLiveData()}
       />
 
-      {confirmationData && (
-        <ConfirmationScreen 
-          techCount={confirmationData.techCount} 
-          jobCount={confirmationData.jobCount} 
-          date={new Date().toISOString().split('T')[0]} 
-          onClose={() => setConfirmationData(null)} 
-        />
-      )}
     </DashboardLayout>
   );
 }
