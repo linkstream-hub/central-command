@@ -120,15 +120,15 @@ All routes accept either a next-auth session cookie (office staff) or an API key
 
 Production: `https://dispatch.aptmaintenanceinc.com`
 
-GitHub auto-deploy is not reliable (Vercel `rootDirectory` must be set to `tech-pwa` in project settings). Always deploy manually after merging to `main`:
+Merging to `main` triggers a Vercel auto-deploy (~90s). No manual step needed.
 
+If you need to force a manual deploy:
 ```bash
 vercel deploy --prod --archive=tgz
 ```
-
 Run from `C:\PTOW\1_APT_Central_Command` (repo root). Do not answer `yes` to the env pull prompt — it overwrites `.env.local` with production values.
 
-Preview deployments trigger for feature branches when a PR exists.
+Preview deployments trigger automatically for all PR branches.
 
 See `docs/ARCHITECTURE.md` for full environment, database branch, and GAS migration documentation.
 
