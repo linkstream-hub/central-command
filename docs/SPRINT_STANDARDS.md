@@ -49,12 +49,11 @@ All evidence lives in `artifacts/`. A sprint with no evidence is not done.
 
 **Open security gaps (in priority order):**
 1. Cloudflare Worker in front of TechPWA.gs — currently "Anyone" access (OPEN)
-2. Session token hashing — tokens stored plain in Tech Roster col M (OPEN / UNVERIFIED)
-3. n8n + Flowise → Railway — not fully migrated (OPEN)
-4. n8n workflows + Flowise flows — not version-controlled (OPEN)
-5. Apps Script unhandled exceptions — silent failures, no alerting (OPEN)
-6. `NEXT_PUBLIC_DASHBOARD_API_KEY` in push/subscribe/route.ts — should be server-only env var (OPEN)
+2. n8n workflows — not version-controlled in repo (OPEN)
+3. `NEXT_PUBLIC_DASHBOARD_API_KEY` in push/subscribe/route.ts — should be server-only env var (OPEN)
 
 **Closed:**
 - M1: ✅ `saveAttachmentToDrive` uses `DriveApp.Access.DOMAIN` (APT org only).
 - M3: ✅ Force PIN change on first login shipped (commit 32d9aad).
+- M4: ✅ Session tokens SHA-256 hashed in Neon (Phase 24).
+- M5: ✅ n8n migrated to Railway (Phase 25).
