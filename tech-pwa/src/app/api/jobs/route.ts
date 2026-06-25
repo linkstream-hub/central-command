@@ -5,7 +5,7 @@ import { jobs, timeRecords, employees, pushSubscriptions } from '@/lib/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { Job } from '@/lib/types';
 import { jobsRepository, type ManualJobPayload } from '@/lib/dal/jobs';
-import { computeDashboardStats } from '@/lib/dal/mappers';
+import { computeDashboardStats, normalizeLegacyStatus } from '@/lib/dal/mappers';
 import webpush from 'web-push';
 
 const VAPID_EMAIL = process.env.VAPID_EMAIL;
@@ -111,7 +111,7 @@ export async function GET() {
         scheduledDate: job.scheduledDate || '',
         scheduledTime: job.scheduledTime || '',
         estimatedHours: Number(job.estHours || 0),
-        status: (job.status || 'Needs Review') as Job['status'],
+        status: normalizeLegacyStatus(job.status || 'Needs Review') as Job['status'],
         rmName: job.rmName || '',
         rmEmail: job.rmEmail || '',
         accessInfo: job.accessInfo || '',

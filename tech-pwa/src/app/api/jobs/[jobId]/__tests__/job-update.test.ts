@@ -171,9 +171,61 @@ describe('JobUpdate Module - apply()', () => {
     if (result.ok && result.value.type === 'UPDATED') {
       expect(result.value.warning).toBeDefined(); // Warning is set
     }
-    
+
     const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, jobId)).limit(1);
     expect(dbJob[0].status).toBe('Scheduled'); // DB update still succeeded
+
+    await cleanupJob(jobId);
+  });
+
+  // ─── C1 dual-seam RED tests ──────────────────────────────────────────────────
+  // These fail before C1 changes land. They define the contract.
+
+  it('11. RtS job with existing tech+date+time — notes update must NOT auto-schedule', async () => {
+    const jobId = 'j11';
+    await setupJob(jobId, {
+      status: 'Ready to Schedule',
+      tech: 'T01',
+      scheduledDate: '2026-06-25',
+      scheduledTime: 'morning',
+    });
+
+    const result = await apply(jobId, { notes: 'new note' }, { isApiKeyAuth: false }, executor);
+
+    expect(result).toEqual({ ok: true, value: { type: 'UPDATED' } });
+    const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, jobId)).limit(1);
+    expect(dbJob[0].status).toBe('Ready to Schedule');
+    expect(executor.executed.length).toBe(0);
+
+    await cleanupJob(jobId);
+  });
+
+  it('12. Direct { status: Scheduled } without tech+date+time — must return SCHEDULE_INCOMPLETE', async () => {
+    const jobId = 'j12';
+    await setupJob(jobId, { status: 'Needs Info' });
+
+    const result = await apply(jobId, { status: 'Scheduled' }, { isApiKeyAuth: false }, executor);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe('SCHEDULE_INCOMPLETE');
+    }
+    const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, jobId)).limit(1);
+    expect(dbJob[0].status).toBe('Needs Info');
+
+    await cleanupJob(jobId);
+  });
+
+  it('13. PTE Required status change — must NOT fire side effects', async () => {
+    const jobId = 'j13';
+    await setupJob(jobId, { status: 'Needs Info', tenantEmail: 'tenant@test.com' });
+
+    const result = await apply(jobId, { status: 'PTE Required' }, { isApiKeyAuth: false }, executor);
+
+    expect(result).toEqual({ ok: true, value: { type: 'UPDATED' } });
+    const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, jobId)).limit(1);
+    expect(dbJob[0].status).toBe('PTE Required');
+    expect(executor.executed.length).toBe(0);
 
     await cleanupJob(jobId);
   });
