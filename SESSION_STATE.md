@@ -136,12 +136,12 @@ PR #15:   MERGED 2026-06-24 — fix/phase-25-grilling-cleanup
           migration 0008 — PENDING APPLY to prod Neon
           KanbanBoard priority sort LIVE
 
-NEXT ACTIONS (priority order):
-  1. Brandon: apply migration 0008 to prod Neon
-             SQL: ALTER TABLE "jobs" DROP COLUMN "dispatch_sent_at";
-  2. Brandon: import tools/n8n/workflows/phase-19-email-polling.json to Railway n8n
-  3. Brandon: set INTAKE_COMMS_ENABLED=true in Vercel env
-  4. Deploy: vercel deploy --prod from C:\PTOW\1_APT_Central_Command
+COMPLETED (CC — 2026-06-25):
+  1. migration 0008 APPLIED — dispatch_sent_at dropped from prod Neon
+  2. n8n wif9XlVbK3M6a1C8 updated via REST API — 16 nodes, still active
+  3. INTAKE_COMMS_ENABLED=true set in Vercel production env
+  4. vercel deploy --prod — LIVE (dpl_4opaFd6VM3vLTrdzMsd1LUFuT8Rg)
+     dispatch.aptmaintenanceinc.com 200 OK
 
 Phase C1: Resolve dual-seam in job-update.ts (own branch, next sprint)
           — route all status changes through JobStateService, remove resolveJobStatus fork
