@@ -21,7 +21,7 @@ export default function JobAssignmentModal({ isOpen, onClose, onConfirm, job, pr
     if (isOpen && job) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setHours(job.estimatedHours || 2);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setSelectedTechs([primaryTech]);
     }
   }, [isOpen, job, primaryTech]);
