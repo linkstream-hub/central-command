@@ -3,7 +3,7 @@
 
 ---
 
-## SESSION: S168 (2026-06-25)
+## SESSION: S169 (2026-06-25)
 
 ---
 
@@ -22,12 +22,12 @@ sandbox:    http://localhost:4141 (Docker — dev Neon branch)
 
 ```yaml
 branch:  main
-head:    bad848e3
+head:    72d2b8cd
 
 open-prs: none
 
 production:
-  deployed: bad848e3 — PRs #17+#18+#19 LIVE
+  deployed: 42857102 — PRs #17+#18+#19+#20+#21 LIVE
   status:   CURRENT — no pending deploy
 ```
 
@@ -49,12 +49,19 @@ INTAKE_COMMS_ENABLED: false — dormant until CC actively used by dispatch
 ## PRIORITY ORDER (next session)
 
 ```yaml
-1. INTAKE_COMMS_ENABLED flip — DEFERRED
+1. Neon prod cleanup — PENDING MANUAL
+   → Run at ep-jolly-morning-a6xlf4ke.us-west-2.aws.neon.tech:
+     SELECT id, job_id, status, created_at FROM jobs WHERE job_id LIKE 'EMAIL-={%';
+     UPDATE jobs SET status = 'Archived' WHERE job_id LIKE 'EMAIL-={%';
+   → One corrupted WO: jobId = 'EMAIL-={{ $('Gmail Trigger').item.json.id }}'
+   → n8n root cause FIXED (wif9XlVbK3M6a1C8 patched — $json.email.X refs)
+
+2. INTAKE_COMMS_ENABLED flip — DEFERRED
    → No action until dispatch team actively uses CC
    → When ready: reimport phase-19-email-polling.json to Railway
    → Then: vercel env add INTAKE_COMMS_ENABLED true production + deploy
 
-2. Impeccable design sprint (optional)
+3. Impeccable design sprint (optional)
    → Branch: feat/phase-28-sentinel-diet (UNMERGED, orphaned)
    → Verify state, cherry-pick if usable
    → /impeccable harden jobs
