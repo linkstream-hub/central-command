@@ -69,7 +69,27 @@ describe('normalizeLegacyStatus', () => {
     expect(normalizeLegacyStatus('Open')).toBe('Needs Review');
   });
 
+  it('maps PTE-Pending to PTE Required', () => {
+    expect(normalizeLegacyStatus('PTE-Pending')).toBe('PTE Required');
+  });
+
+  it('maps Approval Needed to Awaiting Approval', () => {
+    expect(normalizeLegacyStatus('Approval Needed')).toBe('Awaiting Approval');
+  });
+
+  it('maps Tenant Contacted to PTE Required', () => {
+    expect(normalizeLegacyStatus('Tenant Contacted')).toBe('PTE Required');
+  });
+
+  it('maps New to Needs Review', () => {
+    expect(normalizeLegacyStatus('New')).toBe('Needs Review');
+  });
+
   it('passes through canonical status unchanged', () => {
     expect(normalizeLegacyStatus('Ready to Schedule')).toBe('Ready to Schedule');
+  });
+
+  it('defaults empty string to Needs Review', () => {
+    expect(normalizeLegacyStatus('')).toBe('Needs Review');
   });
 });
