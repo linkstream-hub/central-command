@@ -2,7 +2,7 @@
 
 import { db } from '../db';
 import { jobs as jobsTable, employees as employeesTable } from '../schema';
-import { mapJob, computeDashboardStats } from './mappers';
+import { mapJob } from './mappers';
 import { eq, and, sql } from 'drizzle-orm';
 import { Job } from '../types';
 import { resolveWCCode } from '../wc-codes';

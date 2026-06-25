@@ -3,7 +3,7 @@ import { teardownFixtures } from './fixtures/seed';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
-async function globalTeardown(config: FullConfig) {
+async function globalTeardown(_config: FullConfig) {
   console.log('--- GLOBAL TEARDOWN START ---');
   
   // Ensure env is loaded for teardown process

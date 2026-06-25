@@ -6,7 +6,7 @@
  * Remove callers, do not restore functionality.
  */
 
-export async function sheetsRequest(action: string, payload: Record<string, unknown> = {}): Promise<never> {
+export async function sheetsRequest(action: string, _payload: Record<string, unknown> = {}): Promise<never> {
   throw new Error(
     `[NEON-CUTOVER] sheetsRequest('${action}') called after cutover. ` +
     `All reads and writes must go through Neon Postgres. ` +
