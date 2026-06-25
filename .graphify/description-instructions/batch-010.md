@@ -1,0 +1,85 @@
+# Node Description Batch 11 of 49
+
+Graphify is running in assistant/skill mode (no API key). You are the host
+assistant (Claude Code / Codex / Gemini CLI). Read the prompt below and write
+your JSON answer to the answer file.
+
+## Prompt
+
+You are documenting nodes in a knowledge graph.
+For each entry below, write ONE concise factual plain-language sentence
+describing what it is or does. Use only the provided context.
+For a code symbol (kind=code-symbol — a function, class, or constant),
+describe what the function/symbol does based on its name, source location
+and neighbors — e.g. "Resolves the configured ontology profile from graphify.yaml.".
+For an entity node (any other kind — e.g. a person, place, event, object),
+describe what the entity is and its role, grounded in its type, its
+relations (neighbors) and the provided citations/evidence — e.g.
+"Lady Carfax, a wealthy heiress who disappears en route to Lausanne.".
+Ground entity descriptions in the citations/evidence when present; do not
+speculate beyond the context, so a node with no supporting context may be
+left out of the reply.
+LANGUAGE: each entry has a `lang=` marker giving the language of its source.
+Write that entry's description in EXACTLY that language. Do not translate to
+a single common language — match each node's source language individually.
+No marketing language.
+Respond ONLY with a JSON object mapping each node id (as a string) to its
+one-sentence description — no prose, no markdown fences.
+
+- "commit:repo:github.com/linkstream-hub/central-command@501f6381138da612a82f84095c4f0d92da45af51": "501f638 docs(sprint8): update branch diff output against main" | kind=Commit | source=git | neighbors=[49a06ca docs(sprint8): verify and docum…, chore/neon-preview-cleanup, chore/s104-session-closeout, chore/s115-session-cleanup, chore/s97-phase3-architecture-design, chore/s99-closeout] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@515ed6c23cf397da8389e0d2e49ca1b693dce22c": "515ed6c fix: remove every-minute Vercel cron (Hobby plan)" | kind=Commit | source=git | neighbors=[01bf641 Initial commit — clean history, chore/lean-agent-stack, docs/phase-a-intake-plan, feat/phase-18-event-publishing-seam, feat/phase-19-observability, feat/phase-20-auth-lint] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@696963ccec3415afbfa0ff68b79dedad6f89646f": "696963c feat: bypass getGmailThread special case and fetch directly in JobDetai…" | kind=Commit | source=git | neighbors=[chore/s104-session-closeout, chore/s115-session-cleanup, chore/s97-phase3-architecture-design, chore/s99-closeout, feat/go-live-validation, feat/hotfix-archive-neon] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@70fab334b93c4a8e4e0dcd2579813a768d2c0bce": "70fab33 fix(dispatch): session 57 — core dispatch bug fixes + status mapping + …" | kind=Commit | source=git | neighbors=[chore/s97-phase3-architecture-design, chore/s99-closeout, edff8b6 docs(claude): add open issues f…, jobs.ts, mappers.ts, ActivityFeed.tsx] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@7cd80e21010b1bd520de3012401cf6a7e6df74c6": "7cd80e2 fix(15): GAS Phase A dead code cleanup (#2635)" | kind=Commit | source=git | neighbors=[chore/design-extract-artifacts, chore/trigger-prod-deploy-2, dependabot/npm_and_yarn/tech-pwa/all-de…, feat/phase-16-execution, feat/phase-17-techpwa-cutover, feat/phase-18-techpwa-cutover-2] | lang=pt
+- "commit:repo:github.com/linkstream-hub/central-command@9c898352bf39423b009a3a9a449cd236545e2e10": "9c89835 chore: remove every-minute cron on main — n8n owns gmail sync" | kind=Commit | source=git | neighbors=[01bf641 Initial commit — clean history, chore/lean-agent-stack, docs/phase-a-intake-plan, feat/phase-18-event-publishing-seam, feat/phase-19-observability, feat/phase-20-auth-lint] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@9ea2ab162c3424e953e3506ef95e1a0c6d73c7af": "9ea2ab1 docs: regenerate diff and update test results for Sprint 8" | kind=Commit | source=git | neighbors=[8d8aa10 feat(tech-pwa): add Cloudflare …, chore/neon-preview-cleanup, chore/s104-session-closeout, chore/s115-session-cleanup, chore/s97-phase3-architecture-design, chore/s99-closeout] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@ba945bd28b9254bb5476bfcf075b45e35951cdc7": "ba945bd fix: stop emailing on malformed JSON bodies in DashboardAPI doPost" | kind=Commit | source=git | neighbors=[chore/neon-preview-cleanup, chore/s104-session-closeout, chore/s115-session-cleanup, chore/s97-phase3-architecture-design, chore/s99-closeout, feat/go-live-validation] | lang=en
+- "dal_job_state_dal": "job-state-dal.ts" | kind=code-symbol | source=tech-pwa/src/lib/dal/job-state-dal.ts:L1 | neighbors=[route.ts, 3310fd7 Feat/phase 17 job state machine…, 7388cb3 feat(phase-17): ESLint boundary…, route.ts, makeJobStateDAL(), mapArrivalWindow()] | lang=en
+- "e2e_dispatch_spec": "dispatch.spec.ts" | kind=code-symbol | source=tech-pwa/tests/e2e/dispatch.spec.ts:L1 | neighbors=[01bf641 Initial commit — clean history, 304e1ae Merge pull request #99 from BGB…, 500f6b5 feat(sprint5): E2E test suite w…, 7015339 chore: session close S124/S125 …, 7b54d08 test(p3): Task 22 test sprint —…, 8731c27 Merge origin/main into feat/wor…] | lang=en
+- "hr_page": "page.tsx" | kind=code-symbol | source=tech-pwa/src/app/hr/page.tsx:L1 | neighbors=[01bf641 Initial commit — clean history, c6162cc feat(sprint6b): tenant response…, ToastContext.tsx, useToast(), DashboardLayout.tsx, HRPage()] | lang=en
+- "lib_job_transitions": "job-transitions.ts" | kind=code-symbol | source=tech-pwa/src/lib/job-transitions.ts:L1 | neighbors=[01bf641 Initial commit — clean history, 3f3710c feat(p2b): job transition unit …, 57acd08 Merge pull request #2402 from B…, 938c5d6 Fix Tech Roster sync, cache bug…, c94407e Merge remote-tracking branch 'o…, eb6cbf4 Fix Tech Roster sync, cache bug…] | lang=en
+- "sign_route": "route.ts" | kind=code-symbol | source=tech-pwa/src/app/api/field/attestation/sign/route.ts:L1 | neighbors=[01bf641 Initial commit — clean history, 4fa0199 Merge pull request #1003 from B…, da08c0d Merge pull request #853 from BG…, e69b48a feat: tier-2.5 security hardeni…, fb6a776 feat(p3-4): field API routes — …, db.ts] | lang=en
+- "tests_job_state_test": "job-state.test.ts" | kind=code-symbol | source=tech-pwa/src/domain/job/__tests__/job-state.test.ts:L1 | neighbors=[1e45239 feat(domain): add JobStateServi…, 3310fd7 Feat/phase 17 job state machine…, job-state.ts, createJobStateService(), JOB_STATE_MACHINE, JobStateDAL] | lang=en
+- "time_off_page": "page.tsx" | kind=code-symbol | source=tech-pwa/src/app/time-off/page.tsx:L1 | neighbors=[01bf641 Initial commit — clean history, c6162cc feat(sprint6b): tenant response…, ToastContext.tsx, useToast(), index.tsx, useTranslation()] | lang=en
+- "branch:repo:github.com/linkstream-hub/central-command#fix/jobs-sync-expose-cause": "fix/jobs-sync-expose-cause" | kind=Branch | source=git | neighbors=[01bf641 Initial commit — clean history, 085b137 feat(phase-19): observability s…, 086dc4e feat(phase-18): event publishin…, 0d3dd7b chore: lean agent stack — remov…, 1f387bc refactor(c1): extract JobUpdate…, 3310fd7 Feat/phase 17 job state machine…] | lang=en
+- "clock_out_route": "route.ts" | kind=code-symbol | source=tech-pwa/src/app/api/field/clock-out/route.ts:L1 | neighbors=[POST(), db.ts, db, fieldAuth.ts, verifyFieldSession(), fieldSchemas.ts] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@0d3dd7bdb25ff67b646ae23e1c0b131752b26f9a": "0d3dd7b chore: lean agent stack — remove GSD, purge archived skills, fix Bottom…" | kind=Commit | source=git | neighbors=[docs/phase-a-intake-plan, feat/phase-18-event-publishing-seam, feat/phase-19-observability, feat/phase-20-auth-lint, feature/phase-23-lapham-integration, feature/phase-24-tech-roster] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@13b1a4a216680cef768a0b1141271e7c28a96b74": "13b1a4a Merge pull request #62 from BGB-CRB-Holdings/docs/session72-handoff" | kind=Commit | source=git | neighbors=[chore/s104-session-closeout, chore/s115-session-cleanup, chore/s97-phase3-architecture-design, chore/s99-closeout, feat/go-live-validation, feat/hotfix-archive-neon] | lang=pt
+- "commit:repo:github.com/linkstream-hub/central-command@1db6df5cf4b8231e9c9cb3df4705dccc4dfb6b03": "1db6df5 feat(sprint6a): inbound reply automation (#58)" | kind=Commit | source=git | neighbors=[chore/s104-session-closeout, chore/s115-session-cleanup, chore/s97-phase3-architecture-design, chore/s99-closeout, feat/go-live-validation, feat/hotfix-archive-neon] | lang=pt
+- "commit:repo:github.com/linkstream-hub/central-command@22e07995d0d7569c6841cbf6c165c368e15479aa": "22e0799 chore: remove design extract artifacts from Phase 19 scope" | kind=Commit | source=git | neighbors=[111ab72 feat: migrate email polling to …, feat/phase-19-code-js-email-migration, 664130b fix: n8n IF node and data source, aptmaintenanceinc-com-anatomy.tsx, aptmaintenanceinc-com-motion.framer.js, aptmaintenanceinc-com-motion.one.js] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@3dc17bf935b73b54c7beeab0fc91d91e29432caf": "3dc17bf chore: close session S138 — governance scaffold complete, handoff updat…" | kind=Commit | source=git | neighbors=[chore/design-extract-artifacts, chore/trigger-prod-deploy-2, dependabot/npm_and_yarn/tech-pwa/all-de…, feat/gas-migration-scope, feat/governance-scaffold, feat/phase-16-execution] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@41b6a575f28ed35c0ac0200d68a1332d504551bf": "41b6a57 feat(job-update): Phase 18 event publishing seam" | kind=Commit | source=git | neighbors=[feat/phase-18-event-publishing-seam, 0a622e8 chore(tests): remove console.log, job-update.ts, route.ts, schema.ts, event-bus.ts] | lang=pt
+- "commit:repo:github.com/linkstream-hub/central-command@48682cd7d1609fc21048833eab0f6912534466a0": "48682cd docs: retrofit ADRs for 8 production decisions (Phase 2)" | kind=Commit | source=git | neighbors=[2cc8791 ci: add workflow_dispatch to ve…, chore/design-extract-artifacts, chore/trigger-prod-deploy-2, dependabot/npm_and_yarn/tech-pwa/all-de…, feat/gas-migration-scope, feat/governance-scaffold] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@50a04d060b43267863d754a569bfb1c34c8afb65": "50a04d0 Update ROADMAP.md for Phase 10 preparation" | kind=Commit | source=git | neighbors=[chore/design-extract-artifacts, chore/trigger-prod-deploy-2, dependabot/npm_and_yarn/tech-pwa/all-de…, feat/gas-migration-scope, feat/governance-scaffold, feat/phase-16-execution] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@5dfa41c5b076fe0c475ec1863fb93cd9eea08f0a": "5dfa41c Merge branch 'origin/main' into feat/sprint7-gmail-cron" | kind=Commit | source=git | neighbors=[13b1a4a Merge pull request #62 from BGB…, chore/s104-session-closeout, chore/s115-session-cleanup, chore/s97-phase3-architecture-design, chore/s99-closeout, feat/go-live-validation] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@6b0151ba5b77f0aef7fee075c0c800dae81ede72": "6b0151b docs: update diff artifact to include latest local verification commits" | kind=Commit | source=git | neighbors=[chore/s104-session-closeout, chore/s115-session-cleanup, chore/s97-phase3-architecture-design, chore/s99-closeout, feat/go-live-validation, feat/hotfix-archive-neon] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@6e3dab42d08f50545b1213168c7f03d9c2cf3388": "6e3dab4 fix(ci): run Vercel CLI from root to correctly support dashboard root-d…" | kind=Commit | source=git | neighbors=[chore/s104-session-closeout, chore/s115-session-cleanup, chore/s97-phase3-architecture-design, chore/s99-closeout, feat/go-live-validation, feat/hotfix-archive-neon] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@72a43164d826421b702829268393c3521f2a9d1f": "72a4316 feat(ui): implement UI backlog sprint (email regex, status dropdowns, b…" | kind=Commit | source=git | neighbors=[706a717 refactor(ui): resolve JobDetail…, chore/s104-session-closeout, chore/s97-phase3-architecture-design, chore/s99-closeout, feat/hotfix-archive-neon, feat/p3-2-time-records-migration] | lang=pt
+- "commit:repo:github.com/linkstream-hub/central-command@85590e16e9191ba89042d104fda4da484ae757fb": "85590e1 test: generate Sprint 7 test results and update sync-gmail-history with…" | kind=Commit | source=git | neighbors=[5dfa41c Merge branch 'origin/main' into…, chore/s104-session-closeout, chore/s115-session-cleanup, chore/s97-phase3-architecture-design, chore/s99-closeout, feat/go-live-validation] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@8641269c2cb4848fcf279eaa3a0935c9da4c5202": "8641269 ci: eliminate 90% actions burn — skip E2E on dependabot, weekly nightly…" | kind=Commit | source=git | neighbors=[3dc17bf chore: close session S138 — gov…, chore/design-extract-artifacts, chore/trigger-prod-deploy-2, dependabot/npm_and_yarn/tech-pwa/all-de…, feat/gas-migration-scope, feat/governance-scaffold] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@a75b2b4753daf28751e44c9ebfec2b023d99e772": "a75b2b4 chore: remove COMMAND_CENTER.html from repo — desktop-only doc" | kind=Commit | source=git | neighbors=[chore/design-extract-artifacts, chore/trigger-prod-deploy-2, dependabot/npm_and_yarn/tech-pwa/all-de…, feat/gas-migration-scope, feat/governance-scaffold, feat/phase-16-execution] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@ccf4049e67af2781abdfc8f62c1efc80750bac1d": "ccf4049 refactor: add path-scoped CLAUDE.md gates (Phase 3)" | kind=Commit | source=git | neighbors=[48682cd docs: retrofit ADRs for 8 produ…, chore/design-extract-artifacts, chore/trigger-prod-deploy-2, dependabot/npm_and_yarn/tech-pwa/all-de…, feat/gas-migration-scope, feat/governance-scaffold] | lang=en
+- "commit:repo:github.com/linkstream-hub/central-command@f754adac7dd3fd3fdd04a73a1aacd93622f64683": "f754ada docs(10-gas-migration-scope): create phase plan" | kind=Commit | source=git | neighbors=[8641269 ci: eliminate 90% actions burn …, chore/design-extract-artifacts, chore/trigger-prod-deploy-2, dependabot/npm_and_yarn/tech-pwa/all-de…, feat/gas-migration-scope, feat/governance-scaffold] | lang=en
+- "dashboard_techcard": "TechCard.tsx" | kind=code-symbol | source=tech-pwa/src/components/dashboard/TechCard.tsx:L1 | neighbors=[01bf641 Initial commit — clean history, 17fd617 fix(lint): resolve all 41 ESLin…, 464b853 Merge branch 'main' of https://…, 4ec6397 feat(phase-20): ESLint auth bou…, 57acd08 Merge pull request #2402 from B…, a84fa3d fix(pipeline): un-archive June …] | lang=en
+- "e2e_cc_full_spec": "cc-full.spec.ts" | kind=code-symbol | source=tech-pwa/tests/e2e/cc-full.spec.ts:L1 | neighbors=[01bf641 Initial commit — clean history, 3134723 feat(validation): CC full valid…, 7015339 chore: session close S124/S125 …, e33b50c Merge pull request #1898 from B…, e88aa19 Merge pull request #1167 from B…, API_HEADERS] | lang=en
+- "e2e_tenant_loop_spec": "tenant-loop.spec.ts" | kind=code-symbol | source=tech-pwa/tests/e2e/tenant-loop.spec.ts:L1 | neighbors=[01bf641 Initial commit — clean history, 1243d79 Merge pull request #1007 from B…, 154e47e feat(p3): DashboardAPI migratio…, 19786db chore(deps): bump lucide-react …, 304e1ae Merge pull request #99 from BGB…, 483ae7a feat(e2e): update emptyState lo…] | lang=en
+- "fix_techs_route": "route.ts" | kind=code-symbol | source=tech-pwa/src/app/api/fix-techs/route.ts:L1 | neighbors=[01bf641 Initial commit — clean history, 17fd617 fix(lint): resolve all 41 ESLin…, 464b853 Merge branch 'main' of https://…, 4ec6397 feat(phase-20): ESLint auth bou…, 57acd08 Merge pull request #2402 from B…, 938c5d6 Fix Tech Roster sync, cache bug…] | lang=en
+- "lib_auth": "auth.ts" | kind=code-symbol | source=tech-pwa/src/lib/auth.ts:L1 | neighbors=[page.tsx, page.tsx, 01bf641 Initial commit — clean history, page.tsx, page.tsx, page.tsx] | lang=en
+- "lib_sandbox_store": "sandbox-store.ts" | kind=code-symbol | source=tech-pwa/src/lib/sandbox-store.ts:L1 | neighbors=[01bf641 Initial commit — clean history, 4de928d fix(sandbox): remove unused var…, 66e8283 fix(modal+sandbox): remove Draf…, 70fab33 fix(dispatch): session 57 — cor…, 85b437b fix(comms+views): Draft AI stak…, fe2aac9 feat: implement Neon-first PAGA…] | lang=en
+
+## Instructions
+
+Write a single JSON object mapping each node id to a one-sentence description
+to: C:\PTOW\1_APT_Central_Command\.graphify\description-instructions\batch-010.json
+
+Keep each description factual and concise (one sentence). No markdown, no prose
+outside the JSON object. It is acceptable to omit a node if context is
+insufficient — but include every node you can ground confidently.
+
+Example answer format:
+```json
+{
+  "node_id_1": "Resolves the configured ontology profile from graphify.yaml.",
+  "node_id_2": "Colonel James Barclay, an antagonist in The Crooked Man."
+}
+```

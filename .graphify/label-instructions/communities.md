@@ -1,0 +1,155 @@
+# Community Labeling
+
+Graphify is running in assistant/skill mode (no API key). You are the host
+assistant (Claude Code / Codex / Gemini CLI). Read the community listing below
+and write 2-5 word plain-language names for each.
+
+## Language
+
+LANGUAGE: each community line ends with a `[lang=…]` marker giving the
+language of its source nodes. Write that community's name in EXACTLY that
+language. Do not normalize every name to one common language.
+
+## Communities
+
+Community 0: chore/context-bundle-hook, chore/design-extract-artifacts, chore/phase-12-merge-sync, chore/s123-session-close, chore/trigger-prod-deploy, chore/trigger-prod-deploy-2, claude/plan-dispatch-dashboard-BX4AV, dependabot/npm_and_yarn/tech-pwa/all-dependencies-7de26a6757, docs/phase-13-context, feat/add-workflow-dispatch, feat/adw-flag-gate-and-hooks, feat/gas-migration-scope [lang=en]
+Community 1: chore/neon-preview-cleanup, chore/s104-session-closeout, chore/s115-session-cleanup, chore/s117-session-close, chore/s121-state-and-spec, chore/s97-phase3-architecture-design, chore/s99-closeout, chore/v1.1-milestone-init, feat/foundation-milestone, feat/foundation-phase5-n8n-export, feat/foundation-phases-9-11, feat/go-live-validation [lang=en]
+Community 2: chore/lean-agent-stack, docs/phase-a-intake-plan, feat/phase-18-event-publishing-seam, feat/phase-19-observability, feat/phase-20-auth-lint, feature/phase-23-lapham-integration, feature/phase-24-tech-roster, fix/email-intake-parse, fix/jobs-sync-expose-cause, fix/remove-leaked-html-file, fix/remove-vercel-cron, main [lang=en]
+Community 3: verifyFieldSession(, timeRecords, feat/phase-17-job-state-machine, route.ts, hashPin(, POST(, 1a3868e chore: post phase-17 diff for Claude Code review, 1e45239 feat(domain): add JobStateService — 6-state FSM, TDD, 4fa0199 Merge pull request #1003 from BGB-CRB-Holdings/feat/, 702027a fix(ci): correct actions/checkout and setup-node to , 7388cb3 feat(phase-17): ESLint boundary, index.ts, DAL adapt, 73e906c docs(phase-17): rewrite spec with current 6-state FS [lang=en]
+Community 4: checkNewLeadEmails(, Code.js, addToDispatchQueue(, addToMasterDirectory(, applyClassificationLabels(, applyProcessedLabel(, buildSmartPropertyContext(, buildThreadContext(, checkForMissingEmail(, detectLaphamForm(, dismissNewContact(, enrichFromLaphamDb( [lang=en]
+Community 5: 111ab72 feat: migrate email polling to n8n, 22e0799 chore: remove design extract artifacts from Phase 19, eacdcfe Feat/phase 17 techpwa cutover (#2653, fb73ec0 feat(phase-17): Complete TechPWA cutover, aptmaintenanceinc-com-anatomy.tsx, Button(, ButtonProps, Input(, InputProps, aptmaintenanceinc-com-motion.framer.js, durations, easings [lang=en]
+Community 6: dashboardRequest(, page.tsx, CalendarPage(, CalendarSkeleton(, DayDetailPanel(, MonthGrid(, ManualJobCreateModal.tsx, ManualJobCreateModal(, ManualJobCreateModalProps, PRIORITIES, SERVICE_CATEGORIES, AdminControlPanel( [lang=en]
+Community 7: 10dfe41 fix(phase-20): resolve TypeScript errors blocking CI, 17fd617 fix(lint): resolve all 41 ESLint errors to zero, 4b11a57 fix(e2e): lazy-init Resend client to prevent module-, 738a640 chore(ci): gate E2E to workflow_dispatch only, ce35b66 fix(phase-20): fix remaining TypeScript errors from , TechLoginView.tsx, TechLoginView(, TechLoginViewProps, DispatchTimelineBoard.tsx, buildScheduledJobUpdate(, DispatchTimelineBoard(, DispatchTimelineBoardProps [lang=en]
+Community 8: index.ts, job-state.ts, AdvanceEvent, applyEvent(, ArrivalWindow, ClockInEvent, CompleteEvent, createJobStateService(, declareSideEffects(, JOB_STATE_MACHINE, JobEvent, JobEventType [lang=en]
+Community 9: 0bb75e9 docs(12): fix plan-checker blockers — add DINT requi, 0bc0eb6 fix(adw): scout.md model names and add manual n8n fl, 10ebf48 chore: merge origin/main — resolve Foundation→v1.1 s, 1a2c4c7 Merge branch 'main' of https://github.com/BGB-CRB-Ho, 1f414b3 chore: update diff artifact, 2a9e7b5 chore: resolve SESSION_STATE merge conflict — take r, 3e87d74 chore(s121): Foundation Milestone closed — update st, 46a2ab1 chore(s121): session close — sprint in progress, BLO, 4851c79 chore: update diff artifact, 4b464d4 docs(phase-12): wave 3 summary, 5a92c81 docs(12): fix plan-checker warnings — portable asser, 64760e1 fix(drizzle): commit _journal.json alongside 0005_cl [lang=pt]
+Community 10: 1491bd8 chore: merge main into fix/phase-19-env-blocked (res, 8fbeeb2 feat(phase-28): sentinel diet — migrate Railway sent, ae595ff chore(tooling): add GSD platform scaffold, agent def, gsd-check-update-worker.js, { checkLatestVersion }, fs, { isSemverNewer }, MANAGED_HOOKS, { PACKAGE_NAME }, path, result, staleHooks [lang=en]
+Community 11: global-error.tsx, GlobalError(, manifest.ts, manifest(, page.tsx, BillingPage(, 01bf641 Initial commit — clean history, 0001_nervous_black_queen.sql, 0006_glossy_puck.sql, intake.spec.ts, IntelComingSoonPage(, route.ts [lang=en]
+Community 12: 45da6f7 fix(dispatch): session 58 — DnD sourceType, multi-te, 94e3ccd fix(dispatch): session 58 — comms lane routing + tec, c3a55af fix(dispatch): semicolon delimiter for multi-tech + , d70b43d fix(dispatch): resolve remaining tsc errors for stat, JobDetailModal.tsx, AttachmentRow(, COMM_STAKEHOLDER_TABS, formatMsgTimestamp(, formatTechName(, JobDetailModal(, JobDetailModalProps, normalizeName( [lang=en]
+Community 13: e61f88a fix(security+team): server-side GAS proxy, team view, fe2aac9 feat: implement Neon-first PAGA meal premium automat, sheets-client.ts, sheetsRequest(, AppSidebar.tsx, AppSidebar(, cn(, NAV_ITEMS, RouteGuard.tsx, RouteGuard(, TECH_ROUTES, route.ts [lang=pt]
+Community 14: c6162cc feat(sprint6b): tenant response loop — unread badge , ClockedInBar.tsx, ClockedInBar(, ClockedInBarProps, Toast.tsx, ToastContext.tsx, ToastContext, ToastItem, ToastType, useToast(, 0002_noisy_shinko_yamashiro.sql, compliance_alerts [lang=en]
+Community 15: 0f4d6d9 chore(phase2): create verification artifact template, 1fe925e chore: session close S127 — Playwright baseline comp, 2572de2 docs(phase2): close verification — 3 pass, 4 fail/bl, 42ca9f4 docs(02): capture Phase 2 context — Core Loop Verifi, 7044d01 docs(03): create phase 3 gap remediation plans — 3 p, 79ca7b3 docs(03): research phase gap-remediation domain, 7db2a9c wip: phase-16 paused at inventory complete — 3 cutov, 8133164 chore(s117): session close — Phase 2 complete, Phase, 8f544ff docs(02): revise Phase 2 context — split verificatio, 9b7c4e8 docs(03): plan Phase 3 Gap Remediation — 3 plans, 2 , bc024ea fix(tests): resolve Playwright baseline — DISP-03/P3, d7815ab chore(s117): finalize STATE.md — Phase 3 execution o [lang=pt]
+Community 16: jobs, 4d7ba4d feat(phase-12): Neon-only cutover — sever Sheets rea, jobs.ts, jobsRepository, ManualJobPayload, computeDashboardStats(, route.ts, deriveStakeholder(, extractEmailAddress(, GET(, parseMsgDate(, POST( [lang=en]
+Community 17: route.ts, POST(, 2ea94d6 feat(phase-25): Parsing & Intake Quality — GAS parsi, access-codes.ts, AccessMergeResult, computeAccessMerge(, extractCodes(, detectLaphamForm.ts, detectLaphamForm(, LaphamParseResult, email.ts, escapeHtml( [lang=en]
+Community 18: 57acd08 Merge pull request #2402 from BGB-CRB-Holdings/fix-p, a84fa3d fix(pipeline): un-archive June WOs, patch n8n AI web, b135e46 fix(pipeline): un-archive June WOs, patch n8n AI web, fe0e4e1 chore: add db assignment test scripts, TechCard.tsx, TechCard(, TechCardProps, fsm-constraints.spec.ts, parser.spec.ts, tenantContacts, analyze-wos.ts, main( [lang=en]
+Community 19: Clocked In Bar, b0bfd98 feat(tech-pwa): impeccable harden+polish pass on job, CameraUpload.tsx, CameraUpload(, CameraUploadProps, Skeleton.tsx, SkeletonBlock(, SkeletonCard(, en.ts, en, Messages, es.ts [lang=en]
+Community 20: 0268497 docs(11-02): expand MANIFEST.json from 1 to 4 workfl, 19ec6a8 fix(phase-19): remove id from n8n credentials, 261857b docs(12): add plans 04 and 05 — NEON-02 read cutover, 2873c89 chore: update diff artifact, 462d3fc docs: remap codebase (7 docs via gsd-map-codebase re, 64c8c30 chore: update diff artifact, 664130b fix: n8n IF node and data source, 6f9a972 docs(11-02): add Railway n8n verification checklist , 87334be chore: update diff artifact, 88bbb61 fix(phase-19): correct off-by-one in buildLaphamDb —, 9982767 fix(phase-19): complete Lapham extraction, property , a157981 docs(11-01): write header, executive summary, P0 ite [lang=en]
+Community 21: 938c5d6 Fix Tech Roster sync, cache bug, UI, add CONTEXT, eb6cbf4 Fix Tech Roster sync, cache bug, UI, add CONTEXT, route.ts, GET(, normalizeName(, db.ts, sql, INITIAL_TECHS, check-latest-jobs.ts, main(, cleanup-test-data.ts, fix-tech-roster.ts [lang=en]
+Community 22: SchedulePageComponents.tsx, DateDetailModal(, DateDetailModalProps, DraggableJobCard(, DraggableJobCardProps, DroppableScheduleCell(, DroppableScheduleCellProps, DroppableTimeSlot(, DroppableTimeSlotProps, DurationSelectorModal(, DurationSelectorModalProps, GridJobCard( [lang=en]
+Community 23: 70fab33 fix(dispatch): session 57 — core dispatch bug fixes , bdabbf4 fix: correct dashboard stats semantics + delete dead, mappers.ts, mapJob(, normalizeLegacyStatus(, ActivityFeed.tsx, ActivityEvent, ActivityFeed(, ActivityFeedProps, SummaryCards.tsx, StatFilter, SummaryCards( [lang=en]
+Community 24: 0003_mysterious_darkhawk.sql, accrual_rules, attestations, breaks, clients, dispatcher_feedback, employees, gmail_sync_state, historical_assignments, inventory_items, inventory_transactions, invoice_line_items [lang=en]
+Community 25: 48540a0 feat(schedule): lock-and-send API + schema migration, 4a4b8b2 chore: sr-01-03 diff artifact, 83b1277 chore: session close S132 — Wave 2b merged, sentinel, b52653d fix(ci): prefer-const phoneMap + remove unused index, ca1117e chore: test results for sr-01-03, schema.ts, accrualRules, clients, dispatcherFeedback, historicalAssignments, inventoryItems, inventoryTransactions [lang=pt]
+Community 26: getSession(, page.tsx, IndexPage(, ChangePinPage(, auth.ts, clearSession(, syncQueue.ts, apiCall(, apiGet(, dequeueEvent(, enqueueEvent(, FIELD_POST_ROUTES [lang=en]
+Community 27: d1440d9 fix(api): expose Postgres cause in jobs/sync error +, f8dac22 fix: robust date parsing in sync API routes to handl, fe10b9c fix: resolve linting errors in sync routes (unused i, time-records.ts, timeRecordsRepository, compliance.ts, ComplianceStatus, evaluateCACompliance(, ShiftDetails, complianceAlerts, check-neon-counts.mjs, checkCounts( [lang=en]
+Community 28: employees, babaa64 chore: S99 session closeout — P3-1 complete, SESSION, d7eb645 feat(p3-1): schema foundation — 28-table Neon schema, techs.ts, techsRepository, seed.ts, teardownFixtures(, TEST_JOBS, route.ts, GET(, seed-test-data.ts, main( [lang=en]
+Community 29: Job, JobChip.tsx, JobChip(, JobChipProps, ScheduleGrid.tsx, getWeekDates(, ScheduleGrid(, ScheduleGridProps, WeekTech, TechRow.tsx, getInitials(, TechRow( [lang=en]
+Community 30: gsd-statusline.js, composeStatusline(, evaluateUpdateCache(, formatGsdState(, fs, getConfigValue(, isInstalledAheadOfLatest(, { isSemverNewer }, os, { PACKAGE_NAME, updateCacheFileName }, parseStateMd(, path [lang=pt]
+Community 31: Job Queue Table, Summary Cards, 1a1e686 chore: update settings allowlist, 448bb95 chore: dispatch dashboard diff artifact, a5382b6 feat(live): rebuild /live as three-column dispatch d, StatusTab, ComplianceAlert, ComplianceAlertsResponse, DispatchDataResponse, page.tsx, formatDispatchDateLabel(, getAdjacentIsoDate( [lang=pt]
+Community 32: KanbanBoard.tsx, KANBAN_COLUMNS, KanbanBoard(, KanbanBoardProps, KanbanCard(, KanbanColumn(, persistStatusChange(, PRIORITY_CLASS, PRIORITY_LABEL, job-transitions.ts, EmailTrigger, resolveEmailTrigger( [lang=en]
+Community 33: gsd-check-update.js, cacheDir, cacheFile, child, cwd, detectConfigDir(, fs, globalConfigDir, globalVersionFile, homeDir, os, path [lang=pt]
+Community 34: page.tsx, ComplianceData, CompliancePage(, TimeRecord, CommandPalette.tsx, CommandPalette(, CommandPaletteProps, PRIORITY_COLOR, DashboardLayout.tsx, DashboardLayout(, NOTIF_COLORS, NOTIF_ICON [lang=en]
+Community 35: gsd-workflow-guard.js, currentBranch(, forceGitAddCwds(, fs, path, { spawnSync }, stdinTimeout, { tokenize }, workflowGuardEnabled(, git-cmd.js, ARGUMENT_TAKING_FLAGS, BOOLEAN_FLAGS [lang=en]
+Community 36: db, route.ts, POST(, commsMessages, GET(, query-neon.ts, main(, import.test.ts, MOCK_CSV, mockFetch( [lang=en]
+Community 37: route.ts, POST(, GET(, pushSubscriptions, SendRoleSchema, auth.ts, fetchStaffPermissions(, { handlers, auth, signIn, signOut } [lang=en]
+Community 38: JobQueueTable.tsx, getJobAge(, JobQueueTable(, JobQueueTableProps, matchScore(, SortDir, SortIndicator(, SortIndicatorProps, SortKey, STATUS_LABELS, STATUS_ORDER, STATUS_TRANSITIONS [lang=en]
+Community 39: TechStatus, Job Detail Modal, Dashboard API Client, ManualScheduleModal.tsx, DURATION_OPTIONS, ManualScheduleModal(, ManualScheduleModalProps, TIME_OPTIONS, FieldStatusEntry, TechRosterEntry, page.tsx, DaySchedule [lang=en]
+Community 40: seed.ts, ADDRESSES, CATEGORIES, db, DISTRIBUTION, EMAIL_TYPES, pick(, PRIORITIES, RM_NAMES, seed(, sql, STATUSES [lang=en]
+Community 41: layout.tsx, metadata, RootLayout(, viewport, Providers.tsx, Providers(, InstallPrompt.tsx, BeforeInstallPromptEvent, Event, InstallPrompt(, ToastProvider(, LocaleProvider( [lang=en]
+Community 42: cc-full.spec.ts, API_HEADERS, FlowResult, fsSync, getLADate(, pathSync, record(, results, todayLA, tomorrowLA [lang=en]
+Community 43: gsd-update-banner.js, buildBannerOutput(, fs, main(, os, { PACKAGE_NAME, updateCacheFileName }, path, readCache(, recordFailureWarning(, shouldSuppressFailureWarning( [lang=pt]
+Community 44: index.js, anthropic, createPR(, fetchClaudeMd(, generateSpec(, ghGet(, ghPost(, ghPut(, listExistingSpecs(, server [lang=en]
+Community 45: SuggestTechs.js, buildTechScores(, getInactiveTechNames(, getTechAvailability(, getTodayStr(, loadDurationDefaults(, loadSkillRatings(, loadTechAssignments(, suggestTechsForJob( [lang=en]
+Community 46: route.ts, GET(, guardProduction(, handleGet(, handlePost(, MOCK_JOBS, MOCK_TECH, POST( [lang=en]
+Community 47: gsd-read-injection-scanner.js, ALL_PATTERNS, INJECTION_PATTERNS, isExcludedPath(, MARKDOWN_LINK_PATTERNS, path, stdinTimeout, SUMMARISATION_PATTERNS [lang=en]
+Community 48: gsd-worktree-path-guard.js, fs, git(, nearestExistingDir(, path, SPAWNOPT, { spawnSync }, stdinTimeout [lang=en]
+Community 49: 7aa872a feat(p3-5): GAS bridge cleanup, route.ts, GET( [lang=pt]
+Community 50: 1bfef1d feat(p3-2): migration scripts — migrate-time-records, 51b349c chore(p3-2): add test results artifact, 658624f chore(p3-2): regenerate diff artifact — include migr, migrate-time-records.ts, run(, verify-p3-2.ts [lang=en]
+Community 51: 0000_conscious_microchip.sql, comms_messages, job_comments, jobs, techs, time_records [lang=en]
+Community 52: go-live.spec.ts, FlowResult, fsSync, log(, pathSync [lang=en]
+Community 53: index.js, apiRequest(, raiseGitHubIssue(, runStaleJobScan(, THRESHOLDS_MS [lang=en]
+Community 54: index.js, anthropic, apiRequest(, raiseGitHubIssue(, runAudit( [lang=en]
+Community 55: index.js, anthropic, apiRequest(, raiseGitHubIssue(, runWcScan( [lang=en]
+Community 56: export.py, api_get(, main(, slugify( [lang=en]
+Community 57: route.ts, extractField(, genAI, POST( [lang=en]
+Community 58: db-fix.ts, db, main(, sql [lang=en]
+Community 59: test-sprint.ts, hashPin(, main(, { request } [lang=en]
+Community 60: worker.js, ALLOWED_ORIGINS, corsHeaders(, fetch( [lang=en]
+Community 61: index.js, ALLOWED_ORIGINS, corsHeaders(, fetch( [lang=en]
+Community 62: next.config.ts, nextConfig, sentryConfig, withPWA [lang=en]
+Community 63: DateNavigation.tsx, DateNavigation(, DateNavigationProps [lang=en]
+Community 64: SPRINT_CC_FULL_VALIDATION.md, SPRINT_GO_LIVE_VALIDATION.md, seed-test-data.ts [lang=en]
+Community 65: import.py, api_post(, main( [lang=en]
+Community 66: extract_legacy_data.py, fetch_data(, main( [lang=en]
+Community 67: migrate-dispatch-queue.ts, normalizeAddressKey(, run( [lang=en]
+Community 68: migrate-master-directory.ts, normalizeAddressKey(, run( [lang=en]
+Community 69: run-migration.ts, MIGRATION, run( [lang=en]
+Community 70: index.js, pingDashboard(, raiseAlert( [lang=en]
+Community 71: EventBusSideEffectExecutor, .execute(, SideEffectExecutor [lang=en]
+Community 72: proxy.ts, config, proxy( [lang=en]
+Community 73: check-dupes.js, { neon }, sql [lang=en]
+Community 74: check-jobs.js, { neon }, sql [lang=en]
+Community 75: check-statuses.js, { neon }, sql [lang=en]
+Community 76: check-time-records.js, { neon }, sql [lang=en]
+Community 77: get-all-gids.js, fs, html [lang=en]
+Community 78: get-gids.js, fs, html [lang=en]
+Community 79: Comms Route, Database Schema [lang=en]
+Community 80: EventBus Module, JobStateService [lang=en]
+Community 81: utils.ts, cn( [lang=en]
+Community 82: reparse-lapham.ts, run( [lang=en]
+Community 83: test-sheets.js, fetchSheet( [lang=en]
+Community 84: ADR-001 (Dual Auth Architecture [lang=en]
+Community 85: ADR-002 (Neon Postgres [lang=en]
+Community 86: ADR-004 (Work Order Lifecycle [lang=en]
+Community 87: ADR-005 (Multi-Tenancy [lang=en]
+Community 88: Dispatch Battle Test Spec [lang=en]
+Community 89: Dispatch Excellence Spec [lang=en]
+Community 90: Dispatch Polish Spec [lang=en]
+Community 91: Dispatcher Feedback System Spec [lang=en]
+Community 92: Google Auth Spec [lang=en]
+Community 93: HR Permissions and Deploy Spec [lang=en]
+Community 94: Tech PWA I18n Spec [lang=en]
+Community 95: Job Comments Spec [lang=en]
+Community 96: Kill Sync Spec [lang=en]
+Community 97: App Sidebar [lang=en]
+Community 98: computeDashboardStats [lang=en]
+Community 99: AI-SPEC.md [lang=en]
+Community 100: EVAL-REVIEW.md [lang=en]
+Community 101: PATTERNS.md [lang=en]
+Community 102: PLAN.md [lang=en]
+Community 103: RESEARCH.md [lang=en]
+Community 104: CommandPalette.tsx [lang=en]
+Community 105: hr/page.tsx [lang=en]
+Community 106: JobDetailModal.tsx [lang=en]
+Community 107: job/[jobId]/page.tsx [lang=en]
+Community 108: SPEC_P2_2_COMPLIANCE_ACTIVATION.md [lang=en]
+Community 109: SPRINT_8_CF_WORKER_TECHPWA.md [lang=en]
+Community 110: SPRINT_ADW_FLAG_GATE_AND_HOOKS.md [lang=en]
+Community 111: file.svg [lang=en]
+Community 112: time-off/page.tsx [lang=en]
+Community 113: weekly-schedule/page.tsx [lang=en]
+Community 114: Globe Icon (SVG [lang=en]
+Community 115: APT Maintenance Logo [lang=en]
+Community 116: n8n Version Control [lang=en]
+Community 117: Next.js Logo [lang=en]
+Community 118: Schedule Page Components [lang=en]
+Community 119: Sentinel Spec Architect [lang=en]
+Community 120: SPRINT P3-5 GAS Bridge Cleanup [lang=en]
+Community 121: SPRINT TIER 2.5 Security [lang=en]
+Community 122: TECH PWA API Spec [lang=en]
+Community 123: Vercel Logo [lang=en]
+Community 124: Window Icon [lang=en]
+
+## Instructions
+
+Write a single JSON object mapping each community id (as a string) to its
+2-5 word name to: C:\PTOW\1_APT_Central_Command\.graphify\label-instructions\communities.json
+
+Example:
+```json
+{
+  "0": "Authentication Flow",
+  "1": "Authentication Flow",
+  "2": "Authentication Flow"
+}
+```
+
+Then re-run `graphify update` (or `graphify label`) to ingest the names.
