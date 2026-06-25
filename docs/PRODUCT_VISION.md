@@ -1,7 +1,7 @@
 # APT FSM — PRODUCT VISION
 # The authoritative north star for all build decisions.
 # Any feature, sprint, or architectural choice that doesn't advance this vision = don't build it.
-# Last Updated: S137 (2026-06-04)
+# Last Updated: S168 (2026-06-25)
 
 ---
 
@@ -85,15 +85,21 @@ Every feature we ship maps to one of these. Nothing gets built that doesn't adva
 - Special handling for known partners (Lapham)
 
 ### 2. Dispatch Console ✅ SHIPPED
-- Schedule grid with tech rows and job chips
-- Lock and Send (assigns all techs for the day in one action)
+- Triage Kanban (default view) — jobs scoped to active states, sorted by priority tier
+- Date navigation — dispatcher selects day, timeline board updates
 - Real-time job counts (urgent, needs action, PTE pending, today scheduled, done this week)
+- Lock and Send removed (PR #15 — deprecated per S160 grilling)
 
 ### 3. Tech Mobile App ✅ SHIPPED
 - Badge + PIN login (no Google account required for techs)
 - Job list with urgency-coded cards (amber URGENT, teal STANDARD)
 - Clock-in / shift start
 - Bottom navigation
+
+### 3a. UI Hardening ✅ SHIPPED (Phase 22, PR #12)
+- Dead artifacts removed (LockSendButton, ConfirmationScreen)
+- JobDetailModal label/status/duplicate-section fixes
+- Kanban scoped to triage states only
 
 ### 4. Coordination Loop ❌ GAP — HIGHEST PRIORITY
 - Automated tenant contact when PTE not granted (`sendTenantContact` commented out in Code.js)
