@@ -130,8 +130,21 @@ Graphify:  DONE 2026-06-24 — 1941 nodes, 13931 edges, 125 communities
 
 Phase B:  Schema migration (ADR-004 columns) — deferred
 Phase C:  DB cleanup SQL — after 3+ confirmed real email parses
-Phase C1: Extract JobUpdate module from jobs/[jobId]/route.ts (own branch, next sprint)
-          Run /grilling on design first
+PR #15:   MERGED 2026-06-24 — fix/phase-25-grilling-cleanup
+          lock-and-send/route.ts DELETED (130L, Snapshot-and-Send deprecated)
+          dispatchSentAt removed from schema.ts
+          migration 0008 — PENDING APPLY to prod Neon
+          KanbanBoard priority sort LIVE
+
+NEXT ACTIONS (priority order):
+  1. Brandon: apply migration 0008 to prod Neon
+             SQL: ALTER TABLE "jobs" DROP COLUMN "dispatch_sent_at";
+  2. Brandon: import tools/n8n/workflows/phase-19-email-polling.json to Railway n8n
+  3. Brandon: set INTAKE_COMMS_ENABLED=true in Vercel env
+  4. Deploy: vercel deploy --prod from C:\PTOW\1_APT_Central_Command
+
+Phase C1: Resolve dual-seam in job-update.ts (own branch, next sprint)
+          — route all status changes through JobStateService, remove resolveJobStatus fork
 Phase C2: Delete lib/job-transitions.ts — after C1
 Phase 21: GAS Cutover — complex, later
 ```
