@@ -290,8 +290,6 @@ function computeStats(jobs: Job[]): DashboardStats {
   const formatter = new Intl.DateTimeFormat('en-CA', options); // en-CA gives YYYY-MM-DD
   const today = formatter.format(now);
   
-  const weekAgoDate = new Date(now.getTime() - 7 * 86400000);
-  const weekAgo = formatter.format(weekAgoDate);
 
   const active  = jobs.filter(j => j.status !== 'Archived' && j.status !== 'Complete');
   return {

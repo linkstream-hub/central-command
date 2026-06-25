@@ -150,7 +150,7 @@ export async function apiCall<T = { success: boolean }>(
 
 export async function apiGet<T = { success: boolean }>(
   action: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _params: Record<string, string> = {}
 ): Promise<T> {
   const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;

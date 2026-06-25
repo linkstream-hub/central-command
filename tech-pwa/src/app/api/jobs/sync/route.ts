@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Upsert: exclude auto-managed columns from ON CONFLICT SET
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { id: _id, createdAt: _ca, jobId: _jobId, ...updateSet } = jobData;
     const result = await db.insert(jobs)
       .values(jobData)
