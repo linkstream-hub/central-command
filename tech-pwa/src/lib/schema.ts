@@ -370,7 +370,6 @@ export const jobs = pgTable('jobs', {
   trackingToken: text('tracking_token'),
   tenantScheduled: boolean('tenant_scheduled').default(false),
   disputeReason: text('dispute_reason'),
-  dispatchSentAt: timestamp('dispatch_sent_at'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

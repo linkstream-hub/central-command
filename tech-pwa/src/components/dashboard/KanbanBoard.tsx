@@ -193,10 +193,14 @@ export default function KanbanBoard({ jobs, searchQuery = '', onJobClick, onJobS
       <div className="flex h-full gap-4 overflow-x-auto custom-scrollbar pb-4">
         {KANBAN_COLUMNS.map(column => {
           // Merge "Awaiting Approval" into the PTE Required (Blocked) column visually
-          const colJobs = visibleJobs.filter(j => 
-            j.status === column.id || 
-            (column.id === 'PTE Required' && j.status === 'Awaiting Approval')
-          );
+          const colJobs = visibleJobs
+            .filter(j =>
+              j.status === column.id ||
+              (column.id === 'PTE Required' && j.status === 'Awaiting Approval')
+            )
+            .sort((a, b) =>
+              (a.priority ?? '9-UNKNOWN').localeCompare(b.priority ?? '9-UNKNOWN')
+            );
           
           return (
             <KanbanColumn

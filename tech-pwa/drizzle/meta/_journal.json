@@ -57,6 +57,13 @@
       "when": 1781997424311,
       "tag": "0007_curly_kree",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782346758750,
+      "tag": "0008_fixed_kingpin",
+      "breakpoints": true
     }
   ]
 }

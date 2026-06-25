@@ -1,0 +1,1 @@
+ALTER TABLE "jobs" DROP COLUMN "dispatch_sent_at";
