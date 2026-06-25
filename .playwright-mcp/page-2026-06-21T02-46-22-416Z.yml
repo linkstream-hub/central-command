@@ -1,0 +1,255 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - link "Skip to content" [ref=e3] [cursor=pointer]:
+      - /url: "#primary"
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - img "telephone icon" [ref=e8]
+          - link "510-747-9713" [ref=e9] [cursor=pointer]:
+            - /url: tel:510-747-9713
+        - generic [ref=e10]:
+          - img "envelope icon" [ref=e11]
+          - link "info@aptmaintenanceinc.com" [ref=e12] [cursor=pointer]:
+            - /url: mailto:info@aptmaintenanceinc.com
+        - generic [ref=e13]:
+          - img "location icon" [ref=e14]
+          - text: 4770 San Pablo Ave. Ste A Emeryville, CA 94608
+      - generic [ref=e15]:
+        - link "APT Maintenance logo" [ref=e17] [cursor=pointer]:
+          - /url: https://aptmaintenanceinc.com/
+          - img "APT Maintenance logo" [ref=e18]
+        - navigation [ref=e19]:
+          - button "Main Menu" [ref=e20]:
+            - generic [ref=e21]: Main Menu
+    - main [ref=e25]:
+      - article [ref=e26]:
+        - heading "APT Maintenance" [level=1] [ref=e27]
+        - generic [ref=e28]:
+          - heading "About APT Maintenance" [level=2] [ref=e29]
+          - generic [ref=e33]:
+            - generic [ref=e36]:
+              - heading "Property Maintenance Simplified!" [level=3] [ref=e37]
+              - generic [ref=e38]:
+                - img "Remodelled kitchen" [ref=e40]
+                - paragraph [ref=e41]: APT Maintenance simplifies property upkeep with comprehensive construction, renovation, and maintenance services, making us your one-stop solution for all your property needs.
+            - generic [ref=e42]:
+              - link "Previous Slide" [ref=e44] [cursor=pointer]:
+                - /url: /previous-slide
+                - generic [ref=e45]: Previous Slide
+              - generic [ref=e46]:
+                - link [ref=e48] [cursor=pointer]:
+                  - /url: ""
+                - link [ref=e50] [cursor=pointer]:
+                  - /url: ""
+                - link [ref=e52] [cursor=pointer]:
+                  - /url: ""
+                - link [ref=e54] [cursor=pointer]:
+                  - /url: ""
+              - link "Next Slide" [ref=e56] [cursor=pointer]:
+                - /url: /next-slide
+                - generic [ref=e57]: Next Slide
+          - generic [ref=e59]:
+            - generic [ref=e61]:
+              - generic [ref=e62]:
+                - paragraph [ref=e63]: APT Maintenance
+                - paragraph [ref=e64]: We're your one-stop solution for a beautiful, well-functioning property.
+                - paragraph [ref=e65]: We understand the importance of a well-maintained property. APT Maintenance offers comprehensive construction, renovation, and maintenance services, ensuring your space reflects its full potential.
+              - figure [ref=e67]:
+                - img "All the APT Maintenance staff" [ref=e68]
+            - generic [ref=e70]:
+              - generic [ref=e73]:
+                - figure [ref=e74]
+                - heading "General Contractor" [level=2] [ref=e75]
+                - paragraph [ref=e77]: We specialize in general construction, structural repairs, and replacements for commercial and apartment buildings, including deck and soft story retrofits, as well as stair and walkway repairs. Our thorough assessments and high-quality craftsmanship provide reliable, long-lasting solutions that ensure safety, stability, and minimal disruption to occupants.
+                - figure [ref=e78]
+              - generic [ref=e81]:
+                - figure [ref=e82]
+                - heading "Renovation Services" [level=2] [ref=e83]
+                - paragraph [ref=e85]: We offer expert renovation services for commercial and apartment buildings, focusing on modernizing spaces with strategic planning, design, and execution. We ensure high-quality craftsmanship and minimal disruption while enhancing functionality, aesthetics, and property value.
+                - figure [ref=e87]
+              - generic [ref=e90]:
+                - figure [ref=e91]
+                - heading "Maintenance & Repair" [level=2] [ref=e92]
+                - paragraph [ref=e94]: We provide comprehensive maintenance and repair services for commercial properties and apartment buildings, covering routine inspections, preventive upkeep, and urgent repairs. Our expert team ensures optimal property condition, safety, and aesthetic appeal while minimizing downtime and enhancing tenant satisfaction.
+                - figure [ref=e96]
+            - link "View All Our Services" [ref=e100] [cursor=pointer]:
+              - /url: https://aptmaintenanceinc.com/services/
+          - generic [ref=e103]:
+            - heading "Take a Look at Some of Our Work" [level=2] [ref=e104]
+            - generic [ref=e105]:
+              - paragraph [ref=e110]: Oakland, CA
+              - paragraph [ref=e115]: Orinda, CA
+              - paragraph [ref=e120]:
+                - text: Home addition- Road Construction Project
+                - text: Oakland, CA
+            - generic [ref=e121]:
+              - paragraph [ref=e126]: Richmond, CA
+              - paragraph [ref=e131]: Marine, CA
+              - paragraph [ref=e136]: Oakland, CA
+          - heading "What Our Clients Say" [level=2] [ref=e138]
+          - generic [ref=e142]:
+            - generic [ref=e143]:
+              - generic:
+                - generic [ref=e145]:
+                  - generic [ref=e146]:
+                    - text: “
+                    - paragraph [ref=e148]: As a non occupied property owner I have worked with Bem and APT on 2 remodel occasions. I was kept informed on any major decisions as well as frequent updates on progress timelines. The crew was courteous, orderly, and always left a safe environment for my tenants. I would highly recommend them for any remodel projects.
+                  - generic [ref=e149]: Laurel O.,
+                  - generic [ref=e150]: Company CEO
+                - text: “ “ “ “
+            - generic [ref=e151]:
+              - link "Previous Slide" [ref=e153] [cursor=pointer]:
+                - /url: /previous-slide
+                - generic [ref=e154]: Previous Slide
+              - generic [ref=e155]:
+                - link [ref=e157] [cursor=pointer]:
+                  - /url: ""
+                - link [ref=e159] [cursor=pointer]:
+                  - /url: ""
+                - link [ref=e161] [cursor=pointer]:
+                  - /url: ""
+                - link [ref=e163] [cursor=pointer]:
+                  - /url: ""
+                - link [ref=e165] [cursor=pointer]:
+                  - /url: ""
+              - link "Next Slide" [ref=e167] [cursor=pointer]:
+                - /url: /next-slide
+                - generic [ref=e168]: Next Slide
+          - generic [ref=e171]:
+            - heading "Our Latest Instagram Posts" [level=2] [ref=e172]
+            - generic [ref=e173]:
+              - generic [ref=e174]:
+                - link "Favorite mid century mod building w/finished concr" [ref=e177] [cursor=pointer]:
+                  - /url: https://www.instagram.com/p/CZcpboqPMkx/
+                  - generic: Favorite mid century mod building w/finished concr
+                  - img [ref=e178]
+                  - img [ref=e180]
+                - 'link "Onto the next one #olderbuildings #remodel #rewire" [ref=e183] [cursor=pointer]':
+                  - /url: https://www.instagram.com/p/CZcpA-dPYLn/
+                  - generic: "Onto the next one #olderbuildings #remodel #rewire"
+                  - img [ref=e184]
+                  - img [ref=e186]
+                - 'link "Almost done with another one 🙏🏾@apt_maintenance #t" [ref=e189] [cursor=pointer]':
+                  - /url: https://www.instagram.com/p/CZQR44xpMuX/
+                  - generic:
+                    - text: Almost done with another one
+                    - img "🙏🏾"
+                    - text: "@apt_maintenance #t"
+                  - img [ref=e190]
+                  - img [ref=e192]
+                - link "Replaced an entire run of countertops without any" [ref=e195] [cursor=pointer]:
+                  - /url: https://www.instagram.com/p/CY7ljmfvejB/
+                  - generic: Replaced an entire run of countertops without any
+                  - img [ref=e196]
+              - generic [ref=e197]:
+                - button "Load More" [ref=e198]: Load More
+                - link "Follow on Instagram" [ref=e201] [cursor=pointer]:
+                  - /url: https://www.instagram.com/apt_maintenance/
+                  - img [ref=e202]
+                  - text: Follow on Instagram
+    - contentinfo [ref=e205]:
+      - generic [ref=e207]:
+        - generic [ref=e208]:
+          - generic [ref=e209]:
+            - img "APT Maintenance logo" [ref=e211]
+            - generic [ref=e212]:
+              - paragraph [ref=e213]: Since 2010, APT Maintenance has been the Bay Area's one-stop shop for property maintenance and renovations. Our expert team handles everything from simple fixes to full renovations. Contact us for a streamlined, reliable experience.
+              - paragraph [ref=e214]: "Licensed Bonded Insured CA LIC: #975959"
+          - generic [ref=e215]:
+            - generic [ref=e216]:
+              - heading "Get in Touch" [level=2] [ref=e217]
+              - generic [ref=e218]:
+                - img "telephone icon" [ref=e219]
+                - link "510-747-9713" [ref=e220] [cursor=pointer]:
+                  - /url: tel:510-747-9713
+              - generic [ref=e221]:
+                - img "envelope icon" [ref=e222]
+                - link "info@aptmaintenanceinc.com" [ref=e223] [cursor=pointer]:
+                  - /url: mailto:info@aptmaintenanceinc.com
+              - generic [ref=e224]:
+                - img "clock icon" [ref=e225]
+                - text: Monday-Friday 8AM - 4:30 PM
+              - generic [ref=e226]:
+                - img "location icon" [ref=e227]
+                - text: 4770 San Pablo Ave. Ste A Emeryville, CA 94608
+            - generic [ref=e228]:
+              - heading "Quick Links" [level=2] [ref=e229]
+              - list [ref=e231]:
+                - listitem [ref=e232]:
+                  - link "Home" [ref=e233] [cursor=pointer]:
+                    - /url: https://aptmaintenanceinc.com/
+                - listitem [ref=e234]:
+                  - link "About Us" [ref=e235] [cursor=pointer]:
+                    - /url: https://aptmaintenanceinc.com/about-us/
+                - listitem [ref=e236]:
+                  - link "Services" [ref=e237] [cursor=pointer]:
+                    - /url: https://aptmaintenanceinc.com/services/
+                - listitem [ref=e238]:
+                  - link "Contact" [ref=e239] [cursor=pointer]:
+                    - /url: https://aptmaintenanceinc.com/contact/
+        - generic [ref=e241]:
+          - generic [ref=e242]:
+            - status
+            - list
+          - form "Contact form" [ref=e243]:
+            - generic [ref=e244]:
+              - heading "Get a free quote" [level=2] [ref=e245]
+              - generic [ref=e246]:
+                - paragraph [ref=e248]:
+                  - generic [ref=e249]:
+                    - generic [ref=e250]: Your name
+                    - textbox "Your name" [ref=e252]:
+                      - /placeholder: Name
+                  - generic [ref=e253]:
+                    - generic [ref=e254]: Phone No.
+                    - textbox "Phone No." [ref=e256]
+                - paragraph [ref=e258]:
+                  - generic [ref=e259]:
+                    - generic [ref=e260]: Your email
+                    - textbox "Your email" [ref=e262]:
+                      - /placeholder: Email
+                  - generic [ref=e263]:
+                    - generic [ref=e264]: Subject
+                    - textbox "Subject" [ref=e266]
+              - paragraph [ref=e267]:
+                - generic [ref=e268]:
+                  - generic [ref=e269]: Your message
+                  - textbox "Your message" [ref=e271]:
+                    - /placeholder: Your Message
+                - text: Please enter the details of your request.
+                - text: A member of our support staff will respond as soon as possible.
+            - paragraph [ref=e273]:
+              - button "Send" [ref=e274]
+      - generic [ref=e276]:
+        - generic [ref=e277]:
+          - text: Copyright © 2026 APT Maintenance - All rights reserved
+          - generic [ref=e278]:
+            - text: Built by
+            - link "Nerd Crossing" [ref=e279] [cursor=pointer]:
+              - /url: https://nerdcrossing.com
+        - generic [ref=e280]:
+          - generic [ref=e281]:
+            - img "EPA Lead safe certified firm" [ref=e282]
+            - link "APT Maintenance, Inc. BBB Business Review" [ref=e283] [cursor=pointer]:
+              - /url: https://www.bbb.org/us/ca/oakland/profile/general-contractor/apt-maintenance-inc-1116-881392/#sealclick
+              - img "APT Maintenance, Inc. BBB Business Review" [ref=e284]
+          - generic [ref=e285]:
+            - link "linkedin" [ref=e286] [cursor=pointer]:
+              - /url: https://www.linkedin.com/company/aptmaintenanceinc
+              - img "linkedin" [ref=e287]
+            - link "facebook" [ref=e288] [cursor=pointer]:
+              - /url: https://www.facebook.com/APT-Maintenance-143466366115165
+              - img "facebook" [ref=e289]
+            - link "instagram" [ref=e290] [cursor=pointer]:
+              - /url: https://www.instagram.com/apt_maintenance/
+              - img "instagram" [ref=e291]
+  - iframe [ref=e294]:
+    - generic [ref=f1e5]:
+      - generic [ref=f1e6]:
+        - text: protected by
+        - strong [ref=f1e7]: reCAPTCHA
+      - generic [ref=f1e9]:
+        - text: reCAPTCHA is changing its terms of service.
+        - link "Take action." [ref=f1e10] [cursor=pointer]:
+          - /url: https://google.com/recaptcha/admin/migrate

@@ -1,11 +1,9 @@
 import { db } from '@/lib/db';
 import { jobs } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
-import { resolveJobStatus, resolveEmailTrigger } from '@/lib/job-transitions';
 import { createJobStateService, toJobId, toTechId } from '@/domain/job';
 import { makeJobStateDAL } from '@/lib/dal/job-state-dal';
-import type { SideEffect, Result, ArrivalWindow } from '@/domain/job';
-import type { JobStatus } from '@/lib/types';
+import type { Result } from '@/domain/job';
 
 import type { SideEffectExecutor } from '@/lib/side-effects';
 
@@ -144,39 +142,15 @@ export async function apply(
       }
     }
   } else {
-    // 4b. Legacy path
-    const resolvedStatus = resolveJobStatus({ prevStatus: prevStatus as JobStatus, updates, jobState });
-    if (resolvedStatus) updates.status = resolvedStatus;
-
-    if (!ctx.isApiKeyAuth && updates.status && updates.status !== prevStatus) {
-      const email = b.tenantEmail || jobState.tenantEmail;
-      
-      if (email && email.includes('@')) {
-        const trigger = resolveEmailTrigger(updates.status, prevStatus);
-        
-        try {
-          if (trigger === 'scheduled') {
-            await executor.execute({
-              type: 'SEND_CONFIRMATION',
-              jobId: toJobId(jobId),
-              tenantEmail: email,
-              scheduledDate: b.scheduledDate || jobState.scheduledDate || '',
-              scheduledWindow: (b.scheduledTime || jobState.scheduledTime || 'morning') as ArrivalWindow
-            });
-          } else if (trigger === 'pte-required') {
-            // Note: In Phase 21 this will be real token and jobId, currently mapped to Outreach effect
-            await executor.execute({
-              type: 'SEND_SCHEDULING_OUTREACH',
-              jobId: toJobId(jobId),
-              tenantEmail: email,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            token: 'legacy-token' as any // Phase 21 will replace with real token
-            });
-          }
-        } catch (e) {
-          console.error('[job-update] legacy side effect failed:', e);
-          warning = 'Status updated but tenant notification email failed to send.';
-        }
+    // Straitjacket: 'Scheduled' is only valid via the FSM SCHEDULE path (willSchedule=true).
+    // Direct status='Scheduled' requires all three scheduling fields to be present.
+    if (updates.status === 'Scheduled') {
+      const missing: string[] = [];
+      if (!updates.tech && !jobState.tech) missing.push('tech');
+      if (!updates.scheduledDate && !jobState.scheduledDate) missing.push('scheduledDate');
+      if (!updates.scheduledTime && !jobState.scheduledTime) missing.push('scheduledTime');
+      if (missing.length > 0) {
+        return { ok: false, error: { code: 'SCHEDULE_INCOMPLETE', missing } };
       }
     }
   }
