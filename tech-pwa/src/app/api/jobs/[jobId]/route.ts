@@ -4,7 +4,6 @@ import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { jobs } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
-import { resolveJobStatus, resolveEmailTrigger } from '@/lib/job-transitions';
 import { mapJob } from '@/lib/dal/mappers';
 import { apply } from './job-update';
 import { EventBusSideEffectExecutor } from '@/lib/side-effects/event-bus-executor';
