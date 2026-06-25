@@ -61,3 +61,4 @@ sandbox-data.json
 
 .vercel
 .env*
+!.env.example

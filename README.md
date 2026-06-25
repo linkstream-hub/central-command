@@ -15,11 +15,11 @@ Requires Node.js >= 20 (inferred from `@types/node ^20` in devDependencies).
 Configure environment variables before starting:
 
 ```bash
-# tech-pwa/.env.local — minimum required vars:
-# DATABASE_URL, AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+cp tech-pwa/.env.example tech-pwa/.env.local
+# Fill in DATABASE_URL, AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 ```
 
-<!-- VERIFY: confirm canonical .env.example exists or document full required env var list -->
+Required env vars — see `tech-pwa/.env.example` for the full list.
 
 ## Quick Start
 
@@ -120,15 +120,15 @@ All routes accept either a next-auth session cookie (office staff) or an API key
 
 Production: `https://dispatch.aptmaintenanceinc.com`
 
-Push to `main` triggers a Vercel auto-deploy. Preview deployments are created for all feature branches.
-
-If Vercel GitHub integration is blocked, deploy manually from the repo root:
+GitHub auto-deploy is not reliable (Vercel `rootDirectory` must be set to `tech-pwa` in project settings). Always deploy manually after merging to `main`:
 
 ```bash
-vercel deploy --prod
+vercel deploy --prod --archive=tgz
 ```
 
-Do not answer `yes` to the env pull prompt — it overwrites `.env.local` with production values.
+Run from `C:\PTOW\1_APT_Central_Command` (repo root). Do not answer `yes` to the env pull prompt — it overwrites `.env.local` with production values.
+
+Preview deployments trigger for feature branches when a PR exists.
 
 See `docs/ARCHITECTURE.md` for full environment, database branch, and GAS migration documentation.
 
