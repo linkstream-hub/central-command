@@ -139,9 +139,11 @@ PR #15:   MERGED 2026-06-24 — fix/phase-25-grilling-cleanup
 COMPLETED (CC — 2026-06-25):
   1. migration 0008 APPLIED — dispatch_sent_at dropped from prod Neon
   2. n8n wif9XlVbK3M6a1C8 updated via REST API — 16 nodes, still active
-  3. INTAKE_COMMS_ENABLED=true set in Vercel production env
-  4. vercel deploy --prod — LIVE (dpl_4opaFd6VM3vLTrdzMsd1LUFuT8Rg)
+  3. INTAKE_COMMS_ENABLED=false (reverted — templates not yet confirmed)
+  4. vercel deploy --prod — LIVE (dpl_4jbBxtrqVAySUdoNrk7DGZL4rt49)
      dispatch.aptmaintenanceinc.com 200 OK
+
+BLOCKED: INTAKE_COMMS_ENABLED — waiting on template confirmation before flip
 
 Phase C1: Resolve dual-seam in job-update.ts (own branch, next sprint)
           — route all status changes through JobStateService, remove resolveJobStatus fork
