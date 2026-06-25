@@ -6,17 +6,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
   Zap, 
-  Calendar, 
   Users, 
   Receipt, 
-  Scale, 
-  BarChart3, 
   LogOut,
-  CalendarDays,
-  HeartHandshake,
   Pin,
   PinOff,
-  MessageSquare
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
@@ -51,7 +45,7 @@ export default function AppSidebar() {
         if (data?.current?.temperature_2m) {
           setWeather({ temp: Math.round(data.current.temperature_2m), city: data.city || 'Local' });
         }
-      } catch (err) {}
+      } catch {}
     };
 
     if ("geolocation" in navigator) {

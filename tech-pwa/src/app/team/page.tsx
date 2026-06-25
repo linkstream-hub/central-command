@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import TechCard from "@/components/dashboard/TechCard";
 import { dashboardRequest, TechStatus } from "@/lib/dashboard-api";
 import { Job, TechRosterEntry, FieldStatusEntry } from "@/lib/types";
-import { User, ShieldCheck, Calendar, X, AlertTriangle } from "lucide-react";
+import { User, ShieldCheck, X, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface DaySchedule {
