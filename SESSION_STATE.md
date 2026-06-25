@@ -66,7 +66,7 @@ INTAKE_COMMS_ENABLED: false — dormant until CC actively used by dispatch
 
 ```yaml
 hook-bug:      continuous-learning-v2 PostToolUse hook reverts Edit changes — use Bash sed instead
-vercel-deploy: ALWAYS vercel deploy --prod --archive=tgz from C:\PTOW\1_APT_Central_Command
+vercel-deploy: AUTO-DEPLOY FIXED (PR #21). Merge to main → READY in ~90s. CLI only needed for forced deploys.
 vercel-env:    ALWAYS answer NO to env pull — wipes .env.local
 github-token:  unset GITHUB_TOKEN before any gh command
 vpn:           VPN OFF before any CLI session

@@ -55,8 +55,7 @@
    └─ Any FAIL → AG fix sprint → retest before merge
    └─ All PASS/BLOCKED (valid reason) → "Clear to merge"
    └─ Brandon merges to main.
-   └─ Claude Code deploys: vercel deploy --prod --archive=tgz from C:\PTOW\1_APT_Central_Command
-   └─ Note: GitHub auto-deploy does NOT trigger reliably — always deploy via CLI after merge.
+   └─ Vercel auto-deploys from main (~90s). No manual CLI step needed.
 ```
 
 ---
