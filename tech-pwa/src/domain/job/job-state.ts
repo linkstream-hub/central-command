@@ -260,7 +260,7 @@ export const JOB_STATE_MACHINE: JobStateMachine = [
     to: 'Awaiting Tenant',
     event: 'REQUEST_TENANT_SCHEDULING',
     description: 'Fields filled, PTE not granted, maintenance WO — CC fires scheduling outreach.',
-    guard: (job, _event) => {
+    guard: (job) => {
       if (job.pteGranted !== 'No') return 'REQUEST_TENANT_SCHEDULING requires pteGranted = No';
       if (job.woType !== 'maintenance') return 'REQUEST_TENANT_SCHEDULING only valid for woType = maintenance';
       if (job.missingFields.length > 0) return `Cannot schedule outreach — missing fields: ${job.missingFields.join(', ')}`;

@@ -78,7 +78,7 @@ export async function GET(req: Request) {
     const result: Array<{
       techId: string; techName: string; status: string;
       minutesWorked: number; jobAddress?: string; clockInTime?: string;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     }> = Object.values(techRecords).map(({ _clockIn: _unused, ...r }) => r);
 
     // Append unassigned active techs

@@ -1,6 +1,6 @@
 "use client";
 
-import { Phone, MessageSquare, MapPin, Navigation, Calendar as CalendarIcon, PhoneCall } from "lucide-react";
+import { Phone, MessageSquare, Navigation, Calendar as CalendarIcon, PhoneCall } from "lucide-react";
 import { TechStatus } from "@/lib/dashboard-api";
 import { Job } from "@/lib/types";
 import { motion } from "framer-motion";

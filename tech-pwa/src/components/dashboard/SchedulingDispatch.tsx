@@ -113,7 +113,7 @@ function getRankInfo(badge?: string) {
 // ─────────────────────────────────────
 
 export default function SchedulingDispatch({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   job, onUpdate, techRoster, weekAvailability, tradeDurations, techSuggestions: _techSuggestions = [], onTriggerPTEEmail, outDates = {}
 }: SchedulingDispatchProps) {
   const [search, setSearch]               = useState("");

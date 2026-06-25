@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { timeRecords, jobs } from '@/lib/schema';
+import { timeRecords } from '@/lib/schema';
 import { verifyFieldSession } from '@/lib/fieldAuth';
 import * as crypto from 'crypto';
 import { ClockInSchema } from '@/lib/fieldSchemas';
