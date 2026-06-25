@@ -1,0 +1,282 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - link "Skip to content" [ref=e3] [cursor=pointer]:
+      - /url: "#primary"
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - img "telephone icon" [ref=e8]
+          - link "510-747-9713" [ref=e9] [cursor=pointer]:
+            - /url: tel:510-747-9713
+        - generic [ref=e10]:
+          - img "envelope icon" [ref=e11]
+          - link "info@aptmaintenanceinc.com" [ref=e12] [cursor=pointer]:
+            - /url: mailto:info@aptmaintenanceinc.com
+        - generic [ref=e13]:
+          - img "location icon" [ref=e14]
+          - text: 4770 San Pablo Ave. Ste A Emeryville, CA 94608
+      - generic [ref=e15]:
+        - link "APT Maintenance logo" [ref=e17] [cursor=pointer]:
+          - /url: https://aptmaintenanceinc.com/
+          - img "APT Maintenance logo" [ref=e18]
+        - navigation [ref=e19]:
+          - button "Main Menu" [ref=e20]:
+            - generic [ref=e21]: Main Menu
+    - main [ref=e25]:
+      - article [ref=e26]:
+        - heading "Contact" [level=1] [ref=e28]
+        - generic [ref=e29]:
+          - generic [ref=e30]:
+            - region "Tell us what needs attention." [ref=e31]:
+              - generic [ref=e32]:
+                - generic [ref=e33]:
+                  - paragraph [ref=e34]: Bay Area property maintenance
+                  - heading "Tell us what needs attention." [level=1] [ref=e35]
+                  - paragraph [ref=e36]: Send repair details, access notes, photos, and scheduling preferences in one place. Our team follows up within one business day.
+                  - generic "Primary contact actions" [ref=e37]:
+                    - link "Start a request" [ref=e38] [cursor=pointer]:
+                      - /url: "#apt-maintenance-request"
+                    - link "Email info@aptmaintenanceinc.com" [ref=e39] [cursor=pointer]:
+                      - /url: mailto:info@aptmaintenanceinc.com
+                - complementary "Need help now?" [ref=e40]:
+                  - heading "Need help now?" [level=2] [ref=e41]
+                  - paragraph [ref=e42]: For urgent safety or habitability issues, call the office directly.
+                  - list [ref=e43]:
+                    - listitem [ref=e44]:
+                      - generic [ref=e45]: Phone
+                      - link "510-747-9713" [ref=e46] [cursor=pointer]:
+                        - /url: tel:+15107479713
+                    - listitem [ref=e47]:
+                      - generic [ref=e48]: Email
+                      - link "info@aptmaintenanceinc.com" [ref=e49] [cursor=pointer]:
+                        - /url: mailto:info@aptmaintenanceinc.com
+                    - listitem [ref=e50]:
+                      - generic [ref=e51]: Hours
+                      - strong [ref=e52]: Monday–Friday, 8:00 AM–4:30 PM
+                    - listitem [ref=e53]:
+                      - generic [ref=e54]: Office
+                      - generic [ref=e55]:
+                        - text: 4770 San Pablo Ave. Ste A
+                        - text: Emeryville, CA 94608
+            - region "What happens next" [ref=e56]:
+              - generic [ref=e57]:
+                - heading "What happens next" [level=2] [ref=e58]
+                - list [ref=e59]:
+                  - listitem [ref=e60]:
+                    - strong [ref=e61]: Share the property details.
+                    - generic [ref=e62]: Tell us the address, unit, service type, and urgency.
+                  - listitem [ref=e63]:
+                    - strong [ref=e64]: Add access and scheduling notes.
+                    - generic [ref=e65]: We use this to bring the right materials and coordinate with tenants.
+                  - listitem [ref=e66]:
+                    - strong [ref=e67]: We route it to the team.
+                    - generic [ref=e68]: APT confirms the request and follows up with next steps.
+            - region "Give us the details once." [ref=e69]:
+              - generic [ref=e70]:
+                - generic [ref=e71]:
+                  - paragraph [ref=e72]: Maintenance request
+                  - heading "Give us the details once." [level=2] [ref=e73]
+                  - paragraph [ref=e74]:
+                    - text: Fields marked *
+                    - generic [ref=e75]: required
+                    - text: are required. If you prefer, email
+                    - link "info@aptmaintenanceinc.com" [ref=e76] [cursor=pointer]:
+                      - /url: mailto:info@aptmaintenanceinc.com
+                    - text: .
+                  - generic [ref=e77]: "Current summary: --- Select Service Type --- at address not entered, urgency not selected."
+                - generic "Give us the details once." [ref=e78]:
+                  - group "Request form" [ref=e79]:
+                    - generic [ref=e80]: Request form
+                    - paragraph [ref=e81]: Use this form to send the property, access, scheduling, and contact details APT needs to route the request.
+                    - generic [ref=e82]:
+                      - generic [ref=e83]:
+                        - status
+                        - list
+                      - form "Contact form" [ref=e84]:
+                        - generic [ref=e85]:
+                          - generic [ref=e86]:
+                            - heading "Property Information" [level=3] [ref=e87]
+                            - paragraph [ref=e89]:
+                              - textbox "Property Address" [ref=e91]
+                              - 'textbox "Unit # (if applicable)" [ref=e93]'
+                            - paragraph [ref=e95]:
+                              - combobox [ref=e97] [cursor=pointer]:
+                                - option "--- Select Service Type ---" [selected]
+                                - option "Plumbing"
+                                - option "Electrical"
+                                - option "Carpentry"
+                                - option "Finish Carpentry"
+                                - option "Landscaping"
+                                - option "Janitorial"
+                                - option "General Repair"
+                                - option "Turnover"
+                                - option "Inspection"
+                              - combobox [ref=e99] [cursor=pointer]:
+                                - option "--- How Urgent? ---" [selected]
+                                - option "ASAP — Safety or Habitability Issue"
+                                - option "Within 48 Hours"
+                                - option "Within 1 Week"
+                                - option "Flexible / Routine"
+                          - generic [ref=e100]:
+                            - heading "Description of Work Needed" [level=3] [ref=e101]
+                            - paragraph [ref=e102]:
+                              - generic [ref=e103]:
+                                - textbox "Describe the issue — what is broken, where it is located, how long it has been an issue, any relevant history" [ref=e104]
+                                - paragraph [ref=e105]: 0 characters
+                            - paragraph [ref=e107]:
+                              - button "Choose File" [ref=e109] [cursor=pointer]
+                              - generic [ref=e110]: "Optional: attach a photo of the issue to help us prepare the right technician and materials."
+                          - generic [ref=e111]:
+                            - heading "Access & Scheduling" [level=3] [ref=e112]
+                            - paragraph [ref=e114]:
+                              - combobox [ref=e116] [cursor=pointer]:
+                                - option "--- Permission to Enter? ---" [selected]
+                                - option "Yes — enter without tenant present"
+                                - option "No — must coordinate with tenant first"
+                                - option "Turnover — unit is vacant"
+                              - textbox "Lockbox code, gate code, or access instructions" [ref=e118]
+                            - paragraph [ref=e120]:
+                              - combobox [ref=e122] [cursor=pointer]:
+                                - option "--- Preferred Schedule Window ---" [selected]
+                                - option "Morning (8am–12pm)"
+                                - option "Afternoon (12pm–5pm)"
+                                - option "Any Time"
+                                - option "Specific Date Needed"
+                              - textbox "Specific date if needed (e.g. May 15)" [ref=e124]
+                            - paragraph [ref=e126]:
+                              - combobox [ref=e128] [cursor=pointer]:
+                                - option "--- Estimate Required? ---" [selected]
+                                - option "No — proceed with repair"
+                                - option "Yes — provide estimate before proceeding"
+                              - combobox [ref=e130] [cursor=pointer]:
+                                - option "--- Pets in Unit? ---" [selected]
+                                - option "No"
+                                - option "Yes — dog"
+                                - option "Yes — cat"
+                                - option "Yes — other"
+                                - option "Unknown"
+                          - generic [ref=e131]:
+                            - heading "Your Contact Information" [level=3] [ref=e132]
+                            - paragraph [ref=e134]:
+                              - textbox "Your Name (Property Manager or Owner)" [ref=e136]
+                              - textbox "Your Email" [ref=e138]
+                            - paragraph [ref=e139]:
+                              - textbox "Your Phone Number" [ref=e141]
+                          - generic [ref=e142]:
+                            - heading "Tenant Information (if applicable)" [level=3] [ref=e143]
+                            - paragraph [ref=e145]:
+                              - textbox "Tenant Name" [ref=e147]
+                              - textbox "Tenant Phone" [ref=e149]
+                            - paragraph [ref=e150]:
+                              - textbox "Tenant Email" [ref=e152]
+                          - paragraph [ref=e153]: Our team will follow up within 1 business day. For urgent safety issues call us directly at 510-747-9713.
+                          - paragraph [ref=e154]:
+                            - button "Submit Maintenance Request" [ref=e155] [cursor=pointer]
+                  - link "Send a regular email instead" [ref=e157] [cursor=pointer]:
+                    - /url: mailto:info@aptmaintenanceinc.com
+          - paragraph
+    - contentinfo [ref=e158]:
+      - generic [ref=e160]:
+        - generic [ref=e161]:
+          - generic [ref=e162]:
+            - img "APT Maintenance logo" [ref=e164]
+            - generic [ref=e165]:
+              - paragraph [ref=e166]: Since 2010, APT Maintenance has been the Bay Area's one-stop shop for property maintenance and renovations. Our expert team handles everything from simple fixes to full renovations. Contact us for a streamlined, reliable experience.
+              - paragraph [ref=e167]: "Licensed Bonded Insured CA LIC: #975959"
+          - generic [ref=e168]:
+            - generic [ref=e169]:
+              - heading "Get in Touch" [level=2] [ref=e170]
+              - generic [ref=e171]:
+                - img "telephone icon" [ref=e172]
+                - link "510-747-9713" [ref=e173] [cursor=pointer]:
+                  - /url: tel:510-747-9713
+              - generic [ref=e174]:
+                - img "envelope icon" [ref=e175]
+                - link "info@aptmaintenanceinc.com" [ref=e176] [cursor=pointer]:
+                  - /url: mailto:info@aptmaintenanceinc.com
+              - generic [ref=e177]:
+                - img "clock icon" [ref=e178]
+                - text: Monday-Friday 8AM - 4:30 PM
+              - generic [ref=e179]:
+                - img "location icon" [ref=e180]
+                - text: 4770 San Pablo Ave. Ste A Emeryville, CA 94608
+            - generic [ref=e181]:
+              - heading "Quick Links" [level=2] [ref=e182]
+              - list [ref=e184]:
+                - listitem [ref=e185]:
+                  - link "Home" [ref=e186] [cursor=pointer]:
+                    - /url: https://aptmaintenanceinc.com/
+                - listitem [ref=e187]:
+                  - link "About Us" [ref=e188] [cursor=pointer]:
+                    - /url: https://aptmaintenanceinc.com/about-us/
+                - listitem [ref=e189]:
+                  - link "Services" [ref=e190] [cursor=pointer]:
+                    - /url: https://aptmaintenanceinc.com/services/
+                - listitem [ref=e191]:
+                  - link "Contact" [ref=e192] [cursor=pointer]:
+                    - /url: https://aptmaintenanceinc.com/contact/
+        - generic [ref=e194]:
+          - generic [ref=e195]:
+            - status
+            - list
+          - form "Contact form" [ref=e196]:
+            - generic [ref=e197]:
+              - heading "Get a free quote" [level=2] [ref=e198]
+              - generic [ref=e199]:
+                - paragraph [ref=e201]:
+                  - generic [ref=e202]:
+                    - generic [ref=e203]: Your name
+                    - textbox "Your name" [ref=e205]:
+                      - /placeholder: Name
+                  - generic [ref=e206]:
+                    - generic [ref=e207]: Phone No.
+                    - textbox "Phone No." [ref=e209]
+                - paragraph [ref=e211]:
+                  - generic [ref=e212]:
+                    - generic [ref=e213]: Your email
+                    - textbox "Your email" [ref=e215]:
+                      - /placeholder: Email
+                  - generic [ref=e216]:
+                    - generic [ref=e217]: Subject
+                    - textbox "Subject" [ref=e219]
+              - paragraph [ref=e220]:
+                - generic [ref=e221]:
+                  - generic [ref=e222]: Your message
+                  - textbox "Your message" [ref=e224]:
+                    - /placeholder: Your Message
+                - text: Please enter the details of your request.
+                - text: A member of our support staff will respond as soon as possible.
+            - paragraph [ref=e226]:
+              - button "Send" [ref=e227]
+      - generic [ref=e229]:
+        - generic [ref=e230]:
+          - text: Copyright © 2026 APT Maintenance - All rights reserved
+          - generic [ref=e231]:
+            - text: Built by
+            - link "Nerd Crossing" [ref=e232] [cursor=pointer]:
+              - /url: https://nerdcrossing.com
+        - generic [ref=e233]:
+          - generic [ref=e234]:
+            - img "EPA Lead safe certified firm" [ref=e235]
+            - link "APT Maintenance, Inc. BBB Business Review" [ref=e236] [cursor=pointer]:
+              - /url: https://www.bbb.org/us/ca/oakland/profile/general-contractor/apt-maintenance-inc-1116-881392/#sealclick
+              - img "APT Maintenance, Inc. BBB Business Review" [ref=e237]
+          - generic [ref=e238]:
+            - link "linkedin" [ref=e239] [cursor=pointer]:
+              - /url: https://www.linkedin.com/company/aptmaintenanceinc
+              - img "linkedin" [ref=e240]
+            - link "facebook" [ref=e241] [cursor=pointer]:
+              - /url: https://www.facebook.com/APT-Maintenance-143466366115165
+              - img "facebook" [ref=e242]
+            - link "instagram" [ref=e243] [cursor=pointer]:
+              - /url: https://www.instagram.com/apt_maintenance/
+              - img "instagram" [ref=e244]
+  - iframe [ref=e247]:
+    - generic [ref=f5e5]:
+      - generic [ref=f5e6]:
+        - text: protected by
+        - strong [ref=f5e7]: reCAPTCHA
+      - generic [ref=f5e9]:
+        - text: reCAPTCHA is changing its terms of service.
+        - link "Take action." [ref=f5e10] [cursor=pointer]:
+          - /url: https://google.com/recaptcha/admin/migrate

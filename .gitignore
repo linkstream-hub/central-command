@@ -68,6 +68,10 @@ logs/
 # Ops credentials — never commit
 .ops/
 
+# Graphify tool output — regenerated on demand, not project artifacts
+.graphify/
+graphify-out/
+
 # AI tool local configs — not project artifacts, regenerate on demand
 .agent/
 .augment/
