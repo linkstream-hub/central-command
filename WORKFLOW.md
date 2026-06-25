@@ -54,7 +54,9 @@
    └─ Claude Code reads artifacts/ag_test_results.txt
    └─ Any FAIL → AG fix sprint → retest before merge
    └─ All PASS/BLOCKED (valid reason) → "Clear to merge"
-   └─ Brandon merges to main. Vercel auto-deploys.
+   └─ Brandon merges to main.
+   └─ Claude Code deploys: vercel deploy --prod --archive=tgz from C:\PTOW\1_APT_Central_Command
+   └─ Note: GitHub auto-deploy does NOT trigger reliably — always deploy via CLI after merge.
 ```
 
 ---
@@ -101,8 +103,7 @@ A diff with type errors is not a complete implement sprint.
 ## WHAT EACH AGENT IMPLEMENTS DIRECTLY
 
 **Claude Code implements directly (no AG needed):**
-- Apps Script backend-only changes (Code.js, DashboardAPI.gs, TechPWA.gs)
-- CLAUDE.md, WORKFLOW.md, memory file updates
+- CLAUDE.md, WORKFLOW.md, SESSION_STATE.md, memory file updates
 - Emergency patches where spec authoring takes longer than the fix
 - Irreversible sheet ops (triggers, bulk archive, backfill)
 - 1–3 file logic fixes that don't require browser verification
@@ -163,24 +164,14 @@ Completed specs → `specs/archive/`. Never accumulate root-level planning files
 
 ---
 
-## NEON MIGRATION — ACTIVE RULES
+## NEON MIGRATION — CURRENT STATE
 
-GAS (Google Apps Script) stays authoritative until Claude Code explicitly specs a read cutover for a specific action.
+Shadow-write phase complete (all 4 tables: `job_comments`, `time_records`, `techs`, `jobs`). Neon is now the primary read source for all migrated paths. GAS is being retired — no new GAS features, ever.
 
-**Shadow-write pattern (approved):**
-- Write to Neon after a successful GAS response
-- Failure is non-fatal — log and continue
-- Read from GAS, not Neon, until cutover is specced
-
-**Not approved until specced:**
-- New `/api/` routes that bypass GAS entirely for production traffic
-- Login routes that authenticate against Neon instead of TechPWA.gs
-- DAL files wired into production call paths
-
-Shadow-write order (risk-ascending): `job_comments` ✅ → `time_records` ✅ → `techs` ✅ → `jobs` ✅
-
-All 4 shadow-write tables complete as of session 56. Phase B (read cutover) is next.
-First read cutover target: `comms_messages` — job modal comms tab reads from Neon instead of Gmail API.
+**Active rules:**
+- All new routes read from Neon — no new GAS read paths
+- No new GAS features. New functionality → Next.js API routes or n8n
+- GAS remains for Google Workspace integration only (email polling delegated to n8n Phase 19)
 
 ---
 
