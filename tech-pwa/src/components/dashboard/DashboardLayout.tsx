@@ -143,7 +143,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               key={paletteJob.jobId}
               job={paletteJob}
               onClose={() => setPaletteJob(null)}
-              onSave={() => setPaletteJob(null)}
+              onSave={() => { setPaletteJob(null); window.dispatchEvent(new CustomEvent('apt:job-saved')); }}
             />
           )}
         </motion.div>
