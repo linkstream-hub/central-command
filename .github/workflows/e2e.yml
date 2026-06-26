@@ -1,7 +1,10 @@
 name: E2E Test Suite
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tech-pwa/**'
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -43,7 +46,7 @@ jobs:
           GOOGLE_CLIENT_ID: dummy-id
           GOOGLE_CLIENT_SECRET: dummy-secret
           PLAYWRIGHT_BASE_URL: http://localhost:3010
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

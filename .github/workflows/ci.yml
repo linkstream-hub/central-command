@@ -34,9 +34,9 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Run vitest
-        run: npx vitest run
+        run: npx vitest run --coverage
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
 
       - name: Lint
         run: npm run lint
