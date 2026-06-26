@@ -62,8 +62,33 @@ Always commit to `feat/[feature-name]`. Never directly to `main`. Any sprint com
 
 ## LOCKED DECISIONS
 
-**Status lifecycle:** Needs Review → Ready to Schedule → PTE Required → Awaiting Approval → Scheduled → In Progress → Complete → Archived
+**Status lifecycle — FSM truth (6 valid states):**
+- Valid: Needs Info | Awaiting Tenant | Ready to Schedule | Scheduled | In Progress | Complete
+- Terminal: Archived (no transitions out)
+- Legacy GAS states — NOT valid FSM inputs; normalize to Needs Info on encounter: PTE Required | Awaiting Approval | Needs Review
+- See domain/job/job-state.ts for canonical arc definitions. RULES.md is not the source of truth for status.
 - RtS → Scheduled: auto on PATCH when tech + date + time all present (server-side, live)
 - "Awaiting Approval" is NOT a tenant response flag — use badge/push instead
 
 **Infrastructure:** No PC-local dependencies in production. All infra on Vercel / Railway / Cloudflare.
+
+---
+
+## DESIGN STANDARDS
+
+**Orthogonality** — see `docs/ORTHOGONALITY.md` (load for any feature or schema work)
+- One data path per feature: read and write in the same system
+- One source of truth per concept: if it's in domain/, it's in the DB
+- Cross-cutting constraints (auth, orgId) enforced at framework level, not per-route
+- Shared logic lives in shared modules — never duplicated across files
+
+**Testing** — see `docs/TESTING.md` (load before writing any test)
+- Integration tests required for every `/api/` route
+- Tests must verify DB state, not just HTTP response
+- FSM tests must use real DB — mocked DAL hides prod bugs
+- Coverage enforced in CI (vitest run --coverage, thresholds: lines 90 / functions 90 / branches 80)
+
+**Code quality**
+- `no-explicit-any: error` in eslint — no exceptions, no CI bypass
+- `no-unused-vars: warn` — clean up before merge
+- Dual auth on every `/api/` route: session OR x-api-key, missing = BLOCK
