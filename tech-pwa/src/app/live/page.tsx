@@ -113,6 +113,13 @@ export default function LivePage() {
     };
   }, []);
 
+  useEffect(() => {
+    const handler = () => loadLiveData(false);
+    window.addEventListener('apt:job-saved', handler);
+    return () => window.removeEventListener('apt:job-saved', handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <DashboardLayout>
       <Suspense fallback={null}>

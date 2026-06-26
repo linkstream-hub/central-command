@@ -13,22 +13,7 @@ function parseMsgDate(dateStr: string): Date {
   return isNaN(d.getTime()) ? new Date() : d;
 }
 
-function extractEmailAddress(raw: string): string {
-  if (!raw) return '';
-  const match = raw.match(/<([^>]+)>/);
-  return match ? match[1].toLowerCase().trim() : raw.toLowerCase().trim();
-}
-
-function deriveStakeholder(fromEmail: string, toEmail: string, rmEmail?: string, tenantEmail?: string) {
-  const from = extractEmailAddress(fromEmail);
-  const to   = extractEmailAddress(toEmail);
-  const rm     = rmEmail     ? extractEmailAddress(rmEmail)     : '';
-  const tenant = tenantEmail ? extractEmailAddress(tenantEmail) : '';
-
-  if (rm     && (from === rm     || to === rm))     return 'REQUESTER';
-  if (tenant && (from === tenant || to === tenant)) return 'TENANT';
-  return 'TECH';
-}
+import { extractEmailAddress, deriveStakeholder } from '@/lib/comms-utils';
 
 export async function GET(
   request: NextRequest,

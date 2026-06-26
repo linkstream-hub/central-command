@@ -17,10 +17,11 @@ export default defineConfig({
     coverage: {
       include: [
         'src/lib/compliance.ts',
-        'src/lib/job-transitions.ts',
+        // job-transitions.ts deleted in PR #18 — removed from coverage include
         'src/lib/normalizeAddressKey.ts',
         'src/lib/detectLaphamForm.ts',
         'src/lib/access-codes.ts',
+        'src/lib/comms-utils.ts',
         'src/domain/**/*.ts',
         'src/lib/services/**/*.ts',
         'src/lib/side-effects/**/*.ts',

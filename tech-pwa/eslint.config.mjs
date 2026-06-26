@@ -105,6 +105,7 @@ const eslintConfig = defineConfig([
   // Suppress false positives: _-prefixed args/destructured params are intentionally unused
   {
     rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['warn', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
