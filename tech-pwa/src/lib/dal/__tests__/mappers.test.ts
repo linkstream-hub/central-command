@@ -65,31 +65,63 @@ describe('mapJob', () => {
 });
 
 describe('normalizeLegacyStatus', () => {
-  it('maps Open to Needs Review', () => {
-    expect(normalizeLegacyStatus('Open')).toBe('Needs Review');
+  // Legacy GAS aliases → 'Needs Info'
+  it('maps Open to Needs Info', () => {
+    expect(normalizeLegacyStatus('Open')).toBe('Needs Info');
   });
 
-  it('maps PTE-Pending to PTE Required', () => {
-    expect(normalizeLegacyStatus('PTE-Pending')).toBe('PTE Required');
+  it('maps New to Needs Info', () => {
+    expect(normalizeLegacyStatus('New')).toBe('Needs Info');
   });
 
-  it('maps Approval Needed to Awaiting Approval', () => {
-    expect(normalizeLegacyStatus('Approval Needed')).toBe('Awaiting Approval');
+  it('maps PTE-Pending to Needs Info', () => {
+    expect(normalizeLegacyStatus('PTE-Pending')).toBe('Needs Info');
   });
 
-  it('maps Tenant Contacted to PTE Required', () => {
-    expect(normalizeLegacyStatus('Tenant Contacted')).toBe('PTE Required');
+  it('maps Tenant Contacted to Needs Info', () => {
+    expect(normalizeLegacyStatus('Tenant Contacted')).toBe('Needs Info');
   });
 
-  it('maps New to Needs Review', () => {
-    expect(normalizeLegacyStatus('New')).toBe('Needs Review');
+  it('maps Approval Needed to Needs Info', () => {
+    expect(normalizeLegacyStatus('Approval Needed')).toBe('Needs Info');
   });
 
-  it('passes through canonical status unchanged', () => {
+  // Retired intermediate states → 'Needs Info'
+  it('maps Needs Review to Needs Info', () => {
+    expect(normalizeLegacyStatus('Needs Review')).toBe('Needs Info');
+  });
+
+  it('maps PTE Required to Needs Info', () => {
+    expect(normalizeLegacyStatus('PTE Required')).toBe('Needs Info');
+  });
+
+  it('maps Awaiting Approval to Needs Info', () => {
+    expect(normalizeLegacyStatus('Awaiting Approval')).toBe('Needs Info');
+  });
+
+  // Current canonical states pass through unchanged
+  it('passes through Needs Info unchanged', () => {
+    expect(normalizeLegacyStatus('Needs Info')).toBe('Needs Info');
+  });
+
+  it('passes through Scheduled unchanged', () => {
+    expect(normalizeLegacyStatus('Scheduled')).toBe('Scheduled');
+  });
+
+  it('passes through Ready to Schedule unchanged', () => {
     expect(normalizeLegacyStatus('Ready to Schedule')).toBe('Ready to Schedule');
   });
 
-  it('defaults empty string to Needs Review', () => {
-    expect(normalizeLegacyStatus('')).toBe('Needs Review');
+  it('passes through In Progress unchanged', () => {
+    expect(normalizeLegacyStatus('In Progress')).toBe('In Progress');
+  });
+
+  it('passes through Archived unchanged', () => {
+    expect(normalizeLegacyStatus('Archived')).toBe('Archived');
+  });
+
+  // Empty / null-ish fallback
+  it('defaults empty string to Needs Info', () => {
+    expect(normalizeLegacyStatus('')).toBe('Needs Info');
   });
 });

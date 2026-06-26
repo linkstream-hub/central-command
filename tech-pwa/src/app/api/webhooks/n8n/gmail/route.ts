@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
       emailType: emailType || 'adhoc_workorder',
       notes: notes || '',
       gmailMsgId: gmailMsgId || '',
-      status: 'Needs Review',
+      status: 'Needs Info',
       timestamp: new Date(),
     };
 
@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
         category: 'Unknown',
         priority: '4-STANDARD',
         description: `[AI PARSING FAILED] Subject: ${payload.subject}\n\nBody: ${payload.bodyText}\n\nError: ${error instanceof Error ? error.message : String(error)}\n\nModels: ${availableModels}`,
-        status: 'Needs Review',
+        status: 'Needs Info',
         emailType: 'adhoc_workorder',
         gmailMsgId: payload.gmailMsgId || '',
         timestamp: new Date(),

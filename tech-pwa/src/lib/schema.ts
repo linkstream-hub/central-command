@@ -172,6 +172,17 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
   uniqEndpoint: unique().on(t.employeeId, t.endpoint),
 }));
 
+export const jobPhotos = pgTable('job_photos', {
+  id: serial('id').primaryKey(),
+  orgId: text('org_id').notNull().default('APT-CA'),
+  jobId: integer('job_id').notNull(),
+  employeeId: integer('employee_id').notNull(),
+  photoType: text('photo_type').notNull(),
+  fileName: text('file_name').notNull(),
+  photoData: text('photo_data').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 export const timeOffRequests = pgTable('time_off_requests', {
   id: serial('id').primaryKey(),
   orgId: text('org_id').notNull().default('APT-CA'),

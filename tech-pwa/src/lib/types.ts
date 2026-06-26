@@ -1,8 +1,10 @@
 export type JobStatus =
-  | 'Needs Review'
+  | 'Needs Info'          // canonical current state (FSM entry)
+  | 'Needs Review'        // legacy alias — maps to 'Needs Info' via normalizeLegacyStatus
   | 'Ready to Schedule'
-  | 'PTE Required'
-  | 'Awaiting Approval'
+  | 'PTE Required'        // legacy alias — maps to 'Needs Info'
+  | 'Awaiting Approval'   // legacy alias — maps to 'Needs Info'
+  | 'Awaiting Tenant'
   | 'Scheduled'
   | 'In Progress'
   | 'Complete'
