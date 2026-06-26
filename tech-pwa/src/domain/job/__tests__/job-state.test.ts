@@ -208,6 +208,23 @@ describe('JobStateService.transition()', () => {
     expect(result.error.code).toBe('INVALID_TRANSITION');
   });
 
+  test("INVALID_TRANSITION: any event from 'Needs Review' (legacy state absent from FSM)", async () => {
+    // 'Needs Review' was removed from the FSM; all such WOs were migrated to 'Needs Info'.
+    // This proves the FSM correctly rejects transitions from a state that no longer exists.
+    const job = makeJob({ state: 'Needs Review' as unknown as typeof JOB_STATE_MACHINE[number]['from'] });
+    const dal = makeDal(job);
+    const svc = createJobStateService(dal);
+
+    const result = await svc.transition({
+      type: 'CLOCK_IN',
+      payload: { jobId: JOB_ID, techId: TECH_ID, clockedInAt: '2026-06-20T09:00:00Z' },
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe('INVALID_TRANSITION');
+  });
+
   test('side effects: START_TIME_RECORD declared on CLOCK_IN', async () => {
     const job = makeJob({ state: 'Scheduled' });
     const dal = makeDal(job);

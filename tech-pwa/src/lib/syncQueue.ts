@@ -13,6 +13,7 @@ const FIELD_POST_ROUTES: Record<string, string> = {
   endBreak:       '/api/field/break/end',
   markComplete:   '/api/field/job/complete',
   signAttestation:'/api/field/attestation/sign',
+  uploadReceipt:  '/api/field/job/photo',
 };
 
 const QUEUE_KEY = 'apt_sync_queue';

@@ -3,16 +3,21 @@ import { Job } from '../types';
 
 /**
  * Maps legacy backend statuses to the new JobStatus union.
+ * All legacy GAS aliases and retired intermediate states resolve to 'Needs Info'.
+ * Valid current statuses ('Needs Info', 'Scheduled', 'In Progress', etc.) pass through via ?? raw.
  */
 export function normalizeLegacyStatus(raw: string): string {
   const MAP: Record<string, string> = {
-    'Open':             'Needs Review',
-    'PTE-Pending':      'PTE Required',
-    'Tenant Contacted': 'PTE Required',
-    'Approval Needed':  'Awaiting Approval',
-    'New':              'Needs Review',
+    'Open':               'Needs Info',
+    'New':                'Needs Info',
+    'PTE-Pending':        'Needs Info',
+    'Tenant Contacted':   'Needs Info',
+    'Approval Needed':    'Needs Info',
+    'Needs Review':       'Needs Info',
+    'PTE Required':       'Needs Info',
+    'Awaiting Approval':  'Needs Info',
   };
-  return MAP[raw] || raw || 'Needs Review';
+  return MAP[raw] ?? (raw || 'Needs Info');
 }
 
 /**
@@ -58,8 +63,8 @@ export function mapJob(raw: Record<string, unknown>): Job {
 export function computeDashboardStats(jobs: Job[], today: string) {
   const active = jobs.filter(j => j.status !== 'Archived' && j.status !== 'Complete');
   return {
-    urgentCount:         active.filter(j => j.status === 'Needs Review').length,
-    needsActionCount:    active.filter(j => j.status === 'PTE Required' || j.status === 'Awaiting Approval').length,
+    urgentCount:         active.filter(j => j.status === 'Needs Info').length,
+    needsActionCount:    0,
     ptePendingCount:     active.filter(j => j.status === 'Ready to Schedule').length,
     todayScheduledCount: active.filter(j => j.scheduledDate === today).length,
     doneThisWeekCount:   jobs.filter(j => j.status === 'Complete' && j.scheduledDate === today).length,

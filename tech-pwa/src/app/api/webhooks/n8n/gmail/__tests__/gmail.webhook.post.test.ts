@@ -344,4 +344,20 @@ Description: Broken door`;
       expect(json.parsed.isLaphamForm).toBe(true);
     });
   });
+
+  describe('P0.2b: initial status', () => {
+    it('newly created job has status Needs Info (not Needs Review)', async () => {
+      const msgId = `msg-status-${Date.now()}`;
+      const req = makeRequest(
+        { gmailMsgId: msgId, sender: 'rm@example.com', subject: 'sub', bodyText: 'text' },
+        { 'DASHBOARD_API_KEY': TEST_API_KEY }
+      );
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      createdJobIds.push(`EMAIL-${msgId}`);
+
+      const dbJob = await db.select().from(jobs).where(eq(jobs.jobId, `EMAIL-${msgId}`)).limit(1);
+      expect(dbJob[0].status).toBe('Needs Info');
+    });
+  });
 });

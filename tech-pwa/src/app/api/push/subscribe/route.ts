@@ -1,27 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { db } from '@/lib/db';
+import { pushSubscriptions } from '@/lib/schema';
+import { verifyFieldSession } from '@/lib/fieldAuth';
 
-export async function POST(req: NextRequest) {
-  try {
-    const { token, subscription } = await req.json();
-    
-    // Forward to DashboardAPI to store subscription in Tech Roster
-    const apiUrl = process.env.NEXT_PUBLIC_DASHBOARD_API_URL;
-    if (!apiUrl) {
-      console.warn('Push subscription: no API URL — returning mock success');
-      return NextResponse.json({ success: true, message: 'Mock push subscription saved' });
-    }
+export const dynamic = 'force-dynamic';
 
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'savePushSubscription', token, subscription, apiKey: process.env.DASHBOARD_API_KEY }),
-    });
+const SubscribeSchema = z.object({
+  subscription: z.object({
+    endpoint: z.string(),
+    keys: z.object({
+      p256dh: z.string(),
+      auth: z.string(),
+    }),
+  }),
+});
 
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch (error: unknown) {
-    console.error('Push subscription error:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const session = await verifyFieldSession(req);
+  if (!session) {
+    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   }
+
+  const body: unknown = await req.json();
+  const parsed = SubscribeSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, message: 'Invalid request body', errors: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
+  const { subscription } = parsed.data;
+
+  await db.insert(pushSubscriptions).values({
+    orgId: 'APT-CA',
+    employeeId: session.employeeId,
+    endpoint: subscription.endpoint,
+    p256dh: subscription.keys.p256dh,
+    authKey: subscription.keys.auth,
+  }).onConflictDoUpdate({
+    target: [pushSubscriptions.employeeId, pushSubscriptions.endpoint],
+    set: {
+      p256dh: subscription.keys.p256dh,
+      authKey: subscription.keys.auth,
+      updatedAt: new Date(),
+    },
+  });
+
+  return NextResponse.json({ success: true });
 }
