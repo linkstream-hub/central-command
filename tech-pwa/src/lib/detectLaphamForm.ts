@@ -97,13 +97,20 @@ export function detectLaphamForm(
   }
 
   // ---------------------------------------------------------------------------
-  // Forwarded body handling — strip `> ` quote prefixes from Apple Mail forwards
+  // Forwarded body handling — handle both Gmail and Apple Mail forward formats
+  // Gmail:      "---------- Forwarded message ---------"
+  // Apple Mail: "Begin forwarded message:"
+  // Strip `> ` quote prefixes and `*bold*` asterisks from Apple Mail rendering
   // ---------------------------------------------------------------------------
   let forwardedBody = '';
-  const fwdIdx = body.indexOf('---------- Forwarded message ---------');
+  const gmailFwdIdx = body.indexOf('---------- Forwarded message ---------');
+  const appleFwdIdx = body.indexOf('Begin forwarded message:');
+  const fwdIdx = gmailFwdIdx !== -1 ? gmailFwdIdx : appleFwdIdx;
   if (fwdIdx !== -1) {
     forwardedBody = body.substring(fwdIdx);
     forwardedBody = forwardedBody.replace(/^> ?/gm, '');
+    // Apple Mail renders form field labels as *bold* — strip asterisks so regex matches
+    forwardedBody = forwardedBody.replace(/\*([^*]+)\*/g, '$1');
   }
 
   // ---------------------------------------------------------------------------
