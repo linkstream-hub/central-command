@@ -1,266 +1,209 @@
-# SESSION STATE
-# Overwrite completely at session close. Never append. This is the handoff.
+# SESSION_STATE.md — APT Central Command
+# READ THIS FIRST. Every session. Every agent.
+# Last updated: 2026-06-26
 
 ---
 
-## SESSION: S170 (2026-06-25)
+## FEATURE FREEZE — ACTIVE
+
+**No new features. No UI redesigns. No new n8n workflows. No schema changes outside approved recovery scope. No speculative refactors.**
+
+All agents acknowledge freeze. Any non-recovery work is BLOCKED pending all Phase 0–5 gates verified.
+
+Emergency production fixes only, with explicit Claude Code approval.
 
 ---
 
-## SYSTEM STATE
+## CURRENT STATE
 
 ```yaml
-status:     LIVE
-url:        https://dispatch.aptmaintenanceinc.com
-test-creds: badge=1 PIN=1234
-sandbox:    http://localhost:4141 (Docker — dev Neon branch)
+branch: fix/s171-field-fixes
+phase: PHASE_0 — Foundational Setup
+program: Audit Recovery (6-phase gated program)
+status: IN_PROGRESS
+freeze: ACTIVE
 ```
 
 ---
 
-## GIT STATE
+## SYSTEM BASELINES (Measured 2026-06-26)
 
 ```yaml
-branch:  fix/s170-ci-isolation (OPEN — PR pending)
-main-head: af4edddd (PR #22 merged 2026-06-25)
+tests:
+  count: 203
+  files: 24
+  pass_rate: 100%
+  duration: 34.02s
 
-open-prs:
-  fix/s170-ci-isolation: CI test isolation
-    - ci.yml: vitest now runs --coverage; uses DATABASE_URL_TEST secret
-    - e2e.yml: trigger changed workflow_dispatch → pull_request; uses DATABASE_URL_TEST
-    STATUS: push + PR pending
+coverage:
+  statements: 79.43%
+  branches: 81.20%
+  functions: 77.58%
+  lines: 84.13%
 
-production:
-  deployed: af4edddd — PR #22 LIVE (auto-deploy ~90s after merge)
-  status:   CURRENT
+next_js_version: "16.2.6"  # PHANTOM — must pin to 15.x (Phase 2)
+typescript: clean  # 0 errors at last merge
+
+vercel_runtime_errors_7d:
+  current_deployment: ~0 active errors (clean since 2026-06-25)
+  historical_storm: 4,000+ errors from bad deployment dpl_B2nqjhvZyHxRiZNbJAtqnD3Bp58j
+    root_cause: NeonDbError password authentication failed — wrong DATABASE_URL during infra migration 2026-06-21→23
+    status: RESOLVED (deployment retired)
+  active_issues:
+    - "Missing Google AI API Key" on /api/webhooks/n8n/gmail (count=4, 2026-06-24, deployment dpl_7M6sAPwsY2t5XWjni1HSrXqNXw5s)
+    - "Vercel timeout 300s" on /api/gas (count=1, 2026-06-25) — GAS instability, confirms Phase 0 Postmark urgency
+
+uptime_7d: NOT_YET_MEASURED  # UptimeRobot not yet configured (Phase 3 gate)
+rollback_proven: NOT_YET_PROVEN  # Phase 0 gate — must do rollback drill before Phase 1
+
+known_gas_call_paths:
+  - src/auth.ts → fetchStaffPermissions() → NEXT_PUBLIC_DASHBOARD_API_URL
+  - src/app/api/gas/route.ts → NEXT_PUBLIC_DASHBOARD_API_URL
+  - src/app/api/comms/[jobId]/route.ts:53 → NEXT_PUBLIC_DASHBOARD_API_URL
+
+critical_vulns:
+  - NEXT_PUBLIC_ variables pervasive: 200 symbols across 68 files (requires rigorous scrubbing)
+  - NEXT_PUBLIC_DASHBOARD_API_URL exposed in server-only context (Sentinels/worker.js proxy)
+  - localStorage tech session (apt_tech_session in tech-pwa/src/lib/auth.ts) — XSS-exploitable
+  - Single DEV_BYPASS_AUTH guard (NODE_ENV + VERCEL_ENV only)
+  - Phantom Next.js 16.2.6 — unverified package ecosystem
+  - Migration not gated (build = next build only; db:migrate runs manually)
+  - n8n owns event memory (not outbox-consumed)
+  - INTAKE_COMMS_ENABLED ghost flag (zero code gates)
+  - 138 WOs FSM-dead in prod
+
+deployment:
+  platform: Vercel (linkstream-hub/central-command)
+  db: Neon Postgres
+  auto_deploy: LIVE (merge to main → READY ~90s)
+  vercel_cli_deploy: works for forced deploys
+  migrations: manual (must fix in Phase 2)
+
+env_notes:
+  - VPN must be OFF for CLI sessions
+  - GITHUB_TOKEN must be unset before gh commands
+  - NEVER answer YES to vercel env pull (wipes .env.local)
+  - NEXT_PUBLIC_DASHBOARD_API_URL is server-only — must rename (Phase 1)
 ```
 
 ---
 
-## INFRA STATE
+## 6-PHASE RECOVERY PROGRAM
 
-```yaml
-neon-prod:    ep-jolly-morning-a6xlf4ke.us-west-2.aws.neon.tech (Linkstream account)
-neon-mcp:     org-icy-math-54327215 (accounts@linkstream.tech) — CORRECT account ✓
-neon-proj:    purple-dust-72858226 — "APT Central Command"
-neon-dev:     br-falling-hall-a6d1mszu ("dev" branch) — was br-muddy-flower-ak85a9jc (deleted)
-migrations:   8 applied to prod (dispatch_sent_at DROPPED 2026-06-25 via Neon MCP)
-n8n:          wif9XlVbK3M6a1C8 — 16 nodes, live
-n8n-key:      rotated 2026-06-25 (new expiry unknown — check n8n dashboard)
-vercel-mcp:   linkstream-hub ✓ (re-authed 2026-06-25)
-gh-secrets:   DATABASE_URL_TEST set 2026-06-26 → dev branch (br-falling-hall-a6d1mszu)
-```
+**Canonical plan:** `C:\Users\Aldrick\.gemini\antigravity\brain\9f4ae946-e172-46dd-9a27-8d376cf2c6de\implementation_plan.md`
 
----
+Each phase gates the next. No phase begins until prior phase gates are ALL confirmed true.
 
-## RESET SPRINT BACKLOG (post PR #22 merge)
+### Phase 0 — Foundational Setup & Tool Integrations
+_Dependency trigger: Plan approval (DONE). No code changes except emergency fixes._
 
-```yaml
-# Priority: IMMEDIATE → P0 → P1 → P2 → DEBT
-# Owner: CC=Claude Code, AG=Antigravity, BOTH=co-lead together
+Gates:
+- [ ] Rollback procedure tested and proven (< 5 mins)
+- [ ] Foundational docs created and approved (KNOWN_ISSUES, SYSTEM_OF_RECORD, ENVIRONMENT_MAP, AUTH_MODEL, ACTIVE_WORKFLOWS, DEPLOYMENT, OWNER_MANUAL, RUNBOOK, AGENT_PLAYBOOK, RISK_REGISTER)
+- [ ] Shift-Left tools integrated: Auth (Clerk/Lucia), Timekeeping vendor, UploadThing, Postmark Inbound
+- [ ] shadcn/ui adopted for all new Codex components
+- [ ] Agent governance files updated (AGENTS.md, CLAUDE.md, AG.md)
+- [ ] Baselines measured: Sentry errors/day + 7-day uptime
+- [ ] Task Card format enforced for all AG/Codex tasks
 
-IMMEDIATE:
-  A. CameraUpload throws on every photo — OPEN (AG)
-     fix: add /api/field/job/photo route + add 'uploadReceipt' to FIELD_POST_ROUTES
-     file: tech-pwa/src/lib/syncQueue.ts:113, CameraUpload.tsx:43
-     test: POST /api/field/job/photo with valid session → 200, file stored
+### Phase 1 — Security & Auth Hardening
+_Dependency trigger: All Phase 0 gates confirmed._
 
-  B. Push notifications never deliver — OPEN (AG)
-     fix: /api/push/subscribe → write to Neon pushSubscriptions table (not GAS)
-     files: tech-pwa/src/app/api/push/subscribe/route.ts
-     test: POST /api/push/subscribe → SELECT from pushSubscriptions → 1 row
+Gates:
+- [ ] Zero secrets in client bundles/page source (NEXT_PUBLIC_ removed)
+- [ ] API keys scoped and enforced at route level (401 bad key, 403 wrong route)
+- [ ] DEV bypass requires dual guards (env check + DEV_BYPASS_SECRET)
 
-  C. DONE 2026-06-25 — dispatch_sent_at DROPPED from prod (Neon MCP)
-  D. DONE 2026-06-25 — WO id=3194 Archived (dedup corruption anchor removed)
+### Phase 2 — CI/CD Safety & Pipeline Integrity
+_Dependency trigger: All Phase 1 gates confirmed._
 
-P0:
-  1. n8n jobId — DONE 2026-06-25:
-     - HTTP node → keypair mode (expressions now resolve correctly)
-     - Skip Filter: SENT + DRAFT guards added
-     - 2 corrupt jobs (3120, 3194) archived
-     - Data recovery: job 3217 (1921 Francisco St, kitchen light) + job 3218 (3770 Shafter Ave, fence)
-     - Corruption window audit complete — no additional missed inbound WOs
-     n8n wif9XlVbK3M6a1C8 is now healthy.
+Gates:
+- [ ] Next.js pinned to stable 15.x; full test suite passes
+- [ ] Atomic migrations: prod DB migrates on prod deploy; preview builds isolated
+- [ ] CI/CD blocks merge on failing unit/integration/E2E tests
 
-  2. status_transitions: 138 WOs FSM-dead — PARTLY DONE 2026-06-25:
-     DONE: 137 WOs migrated to 'Needs Info' via Neon MCP (zero legacy states in prod)
-     OPEN (AG TDD): normalizeLegacyStatus() add 'PTE Required'→'Needs Info', 'Awaiting Approval'→'Needs Info', 'Needs Review'→'Needs Info'
-     OPEN (AG TDD): intake route.ts — set status='Needs Info' not 'Needs Review'
-     test RED first: normalizeLegacyStatus('PTE Required') returns 'Needs Info'
-     test RED first: FSM transition from 'Needs Review' returns INVALID_TRANSITION (real DB)
-     note: DB clean now — AG parts prevent re-accumulation of legacy states
+### Phase 3 — Core Dispatch Loop Proof
+_Dependency trigger: All Phase 2 gates confirmed._
 
-  3. CI/test isolation — PARTLY DONE 2026-06-25:
-     DONE: DATABASE_URL_TEST secret set in GitHub Actions → Neon dev branch (br-falling-hall-a6d1mszu)
-     DONE: ci.yml updated — vitest run --coverage; uses DATABASE_URL_TEST
-     DONE: e2e.yml updated — trigger pull_request; uses DATABASE_URL_TEST
-     OPEN: PR merge for fix/s170-ci-isolation
-     note: ci.yml still uses DATABASE_URL for build step (placeholder — OK)
+Gates:
+- [ ] Core loop E2E Playwright test passes in CI (intake → WO → dispatch → assign → clock in/out → completion)
+- [ ] 10 manual jobs completed successfully without GAS fallback
+- [ ] /api/health live and monitored by UptimeRobot
 
-P1:
-  4. notifications: TechAssigned event (Phase 21) — OPEN (AG TDD)
-     fix: add TechAssigned to WorkOrderEvent union in event-bus.ts
-     fix: event-bus-executor.ts resolve techId from jobs.employeeId (not '')
-     fix: wire email/push to tech on assignment
-     test RED first: EventBus.publish({ type: 'TechAssigned' }) → 1 row in workflow_events
+### Phase 4 — Event Durability & Codebase Cleanup
+_Dependency trigger: All Phase 3 gates confirmed._
 
-  5. scheduling time precision — OPEN (AG TDD)
-     fix: job-update.ts:110 — store HH:MM or fix coercion
-     test RED first: PATCH /api/jobs/[id] with scheduledTime='10:00' → DB ≠ 'morning'
-     decision: new column for HH:MM OR more granular ArrivalWindow values
+Gates:
+- [ ] domain_events outbox in Neon; events survive infrastructure restarts
+- [ ] Ghost flags and orphaned routes completely removed
+- [ ] Code.js reduced to <= 200 lines
 
-  6. Block 11 E2E re-enable — OPEN (AG)
-     fix: remove fixme from tech-pwa.spec.ts Block 11 (phantom CF Worker dependency)
-     fix: use badge+PIN login pattern from DISP-03
+### Phase 5 — Owner Enablement & Auxiliary Tooling
+_Dependency trigger: All Phase 4 gates confirmed._
 
-P2 (schedule with AG after P0+P1):
-  7.  orgId scoping: add orgId WHERE clause to all schedule/job queries
-  8.  ADR-004 schema: missing_fields + tenant_proposed_date columns
-  9.  Delete 9 orphaned API routes
-  10. 12 GAS-only actions → Neon routes
-  11. Delete orphaned Lapham Extraction n8n node (pos [1264, 160], unconnected)
-  12. n8n IF: Comms Enabled? hardcoded boolean false — edit n8n node to enable
-  13. Remove INTAKE_COMMS_ENABLED from all docs (controls nothing in code)
-  14. Billing stub page — build or remove from nav
-```
+Gates:
+- [ ] /ops dashboard live
+- [ ] Deferred auxiliary tools evaluated (Inngest/Trigger.dev, Metabase, Crater/Stripe, Unleash)
+- [ ] Owner signs off on stability and runbooks
+- [ ] Feature resumption gate: all prior gates green → controlled feature growth behind feature flags
 
 ---
 
-## S170 AUDIT GROUND TRUTH (DO NOT DELETE)
+## TASK CARD TEMPLATE (Required for every AG/Codex task)
 
-```yaml
-# Feature audit completed 2026-06-25. Full detail in project_s170_audit_complete.md (memory)
-features:
-  email_intake:        IMPROVED — n8n expression FIXED; SENT+DRAFT filter added; 2 missed WOs recovered
-  comms_display:       PARTIAL — FIXED stakeholder (PR #22); 34 EMAIL-* WOs GAS-dependent
-  comms_reply:         PARTIAL — email works; SMS/TECH blocked
-  assignment:          PARTIAL — FIXED refetch (PR #22); time coercion still open (P1)
-  scheduling:          PARTIAL — scheduledDate correct; HH:MM coerced to 'morning'
-  status_transitions:  PARTIAL — 137 WOs migrated to Needs Info; normalizeLegacyStatus still needs AG fix
-  tech_pwa_visibility: WORKING ✓
-  clock_inout:         PARTIAL — clock-out skips FSM; orgId hardcoded
-  notifications:       BROKEN — Phase 21 never shipped; techId=''
-  wo_type_detection:   BROKEN — no DB column, no detection fn
-
-n8n_wif9XlVbK3M6a1C8_state (HEALTHY as of 2026-06-25):
-  HTTP_node: keypair mode — expressions evaluate per-email ✓
-  Skip_Filter_guards: SENT (outbound replies), DRAFT (APT drafts), auto-reply, bounce ✓
-  gmailMsgId: resolves correctly from $json.email.id ✓
-  known_leakthrough: RM thread-reply emails (INBOX, not SENT) pass filter — pre-existing, not P0
-
-schema:
-  dispatch_sent_at: DROPPED 2026-06-25 ✓
-  ghost_tables: 8 tables with zero API routes
-
-prod_db_ops_done:
-  - WO id=3194 Archived (dedup corruption anchor)
-  - WO id=3120 Archived (earlier corrupt expression job)
-  - WO id=3217 created (1921 Francisco St 3C, kitchen light — recovered from exec 1839)
-  - WO id=3218 created (3770 Shafter Ave Cottage, fence — recovered from exec 1776)
-  - 137 WOs migrated 'Needs Review'/'PTE Required'/'Awaiting Approval' → 'Needs Info'
-
-test_suite:
-  total: 22 files, 188 tests (PR #22 baseline)
-  real_db_tests: event-bus, [jobId].patch, clock-in, job/complete, techs, import
-  mocked_tests: job-state (FSM), most UI component tests
-  e2e_ci: NOW on pull_request gate (ci isolation PR pending)
-  coverage: thresholds in vitest.config.ts; enforced via --coverage (ci isolation PR pending)
+```markdown
+Task:
+Business reason:
+User-visible outcome:
+Files allowed to change:
+Files forbidden to change:
+Database changes:
+API changes:
+Auth changes:
+n8n/GAS changes:
+New dependency:
+RED test criteria:
+GREEN verification:
+Rollback plan:
+Definition of done:
+Assumptions:
+Evidence required:
 ```
+
+Incomplete Task Card = BLOCKED. No exceptions.
 
 ---
 
-## KNOWN ISSUES / DO NOT TOUCH
+## OPEN ITEMS (from fix/s171-field-fixes — Phase 3 candidates)
 
-```yaml
-hook-bug:      continuous-learning-v2 PostToolUse hook reverts Edit changes — use Bash/Write instead
-vercel-deploy: AUTO-DEPLOY FIXED (PR #21). Merge to main → READY in ~90s.
-vercel-env:    ALWAYS answer NO to env pull — wipes .env.local
-github-token:  unset GITHUB_TOKEN before any gh command
-vpn:           VPN OFF before any CLI session
-tsc:           Always run from C:\PTOW\1_APT_Central_Command (repo root)
-no-ai-attr:    No Co-Authored-By, no PR footer, no AI attribution anywhere
-migration-0008: APPLIED 2026-06-25 ✓
-n8n-dev-branch: was br-muddy-flower-ak85a9jc — DELETED; now br-falling-hall-a6d1mszu
-```
+These were in-progress before freeze. Slot into Phase 3 after Phase 0-2 gates pass:
+- Camera upload route fix (A)
+- Push subscribe → Neon (B)
+- normalizeLegacyStatus() edge cases (P0.2)
+- Lapham Apple Mail forward detection (uncommitted, diagnosed)
 
 ---
 
-## N8N WORKFLOW REGISTRY
+## AGENT BOUNDARIES
 
-```yaml
-active:
-  wif9XlVbK3M6a1C8: Phase 19 — Email Polling & WO Intake (HEALTHY as of 2026-06-25)
-  fpwZXWR9u7nOmiDa: CC Event Bus Router
-  NUH0krzQiSrBmyfv: PTOW Error Handler
-  0V9YLwpiTBJ84InU: FLAG Gate Notification
-  Wiuvox8VOZNtVoDN: CA Break Compliance Monitor
-  dshTB3lODDYy0FTP: CC Event Bus Outbox Poller
 ```
+Claude Code: lead / gate / reviewer / sole Task Card creator / sole merge authority
+AG: backend executor — API, domain, DB, n8n (inside approved Task Cards only)
+Codex: frontend only — /app/** pages/components/CSS; uses shadcn/ui for all new components
+omp: bounded single-file scout tasks only; never cross-domain
+```
+
+No agent approves own work. No merge without explicit "Clear to merge" from Claude Code.
 
 ---
 
-## ARCHITECTURE LOCKED — S153
+## RULES (always active)
 
-```yaml
-domain-layer:    tech-pwa/src/domain/ — pure business logic, no Next.js imports
-dal-injection:   domain/ accepts DAL interface — unit-testable
-result-type:     Result<T,E> — no throws in domain logic
-branded-ids:     JobId, TechId, PropertyId
-discriminated-u: JobState discriminated union
-zod-boundaries:  all API route inputs validated with Zod schemas
-tdd-standard:    every phase from 17 onward ships tests-first — non-negotiable
-fsm:             JOB_STATE_MACHINE (8 arcs) + createJobStateService factory
-event-bus:       EventBus.publish() => workflow_events outbox => n8n router
-auth-tech:       badge + SHA-256 PIN => UUID session_token in Neon (tech routes)
-auth-staff:      Google OAuth next-auth v5 (office routes)
-eslint-boundary: no-restricted-imports in eslint.config.mjs (ADR-001)
-mapper:          single source of truth => lib/dal/mappers.ts:mapJob
-comms-utils:     lib/comms-utils.ts — extractEmailAddress, deriveStakeholder (added S170)
-orthogonality:   docs/ORTHOGONALITY.md — one data path, one truth, framework-level constraints
-testing:         docs/TESTING.md — integration tests mandatory, real DB, coverage enforced
-```
-
----
-
-## KEY ARCHITECTURAL FACTS
-
-```yaml
-neon-prod:        ep-jolly-morning-a6xlf4ke.us-west-2.aws.neon.tech (Linkstream)
-neon-dev-branch:  br-falling-hall-a6d1mszu (compute: ep-damp-truth-a6l72dw7)
-gh-cli:           authenticated as linkstream-hub — unset GITHUB_TOKEN before gh commands
-playwright:       globalSetup uses DATABASE_URL — NOW uses DATABASE_URL_TEST in CI (ci isolation PR)
-team:             Brandon (manager) => Claude Code + AG (co-leads, equal) => Codex (frontend)
-vercel-logs:      MCP returns 403 Forbidden — surface errors in API response body
-webhook-auth:     DASHBOARD_API_KEY header OR Authorization: Bearer <key>
-comms-inbound:    /api/comms/inbound now derives stakeholder from job rmEmail/tenantEmail (PR #22)
-assignment-refetch: fixed via apt:job-saved event (PR #22)
-phase21-stub:     event-bus-executor.ts:11 techId='' — TechAssigned event missing entirely
-org-id-gap:       orgId absent from ALL schedule/job WHERE clauses — P2
-fsm-dead-count:   0 WOs (was 137 — all migrated to 'Needs Info' 2026-06-25)
-n8n-comms-gate:   IF: Comms Enabled? hardcoded boolean false — edit n8n node to enable
-intake_comms_flag: GHOST — zero code gates in tech-pwa/src/**; remove from docs (P2.13)
-```
-
----
-
-## MERGED PHASES (complete)
-
-```yaml
-phase-17:  MERGED PR #2
-phase-18:  MERGED PR #6 — EventBus outbox
-phase-19:  MERGED PR #7 — Observability + CI fix
-phase-20:  MERGED PR #9 — ESLint auth boundary rule
-phase-23:  MERGED PR #11 — Lapham Form + Access Code Merge
-phase-24:  MERGED PR #13 — /api/techs/import rewrite + prod backfill (32 techs)
-fix-pr8:   MERGED PR #8 — jobs/sync error surface + upsert fix
-fix-pr10:  MERGED PR #10 — email intake 4 bugs + tests
-fix-pr14:  MERGED PR #14 — intake parse quality + n8n comms refs + C4 mapper dedup (194 tests)
-fix-pr15:  MERGED PR #15 — lock-and-send deleted + migration 0008 + Kanban sort
-fix-pr16:  MERGED PR #16 — normalizeLegacyStatus in GET /api/jobs (199 tests)
-fix-pr17:  MERGED PR #17 — C1 dual-seam eliminated, resolveJobStatus deleted (202 tests)
-fix-pr18:  MERGED PR #18 — C2 job-transitions.ts deleted (188 tests)
-fix-pr19:  MERGED PR #19 — lint sprint, 0 warnings (202 tests)
-phase-22:  MERGED PR #12 — UI fixes (10 tests)
-fix-pr21:  MERGED PR #21 — Vercel auto-deploy exit codes fixed
-fix-pr22:  MERGED PR #22 — S170 project reset (security, orthogonality, process, 188 tests)
-```
+- No GAS new code ever
+- No AI attribution in commits/PRs
+- No client-side secrets
+- No JavaScript-readable session tokens
+- No migration without env gating
+- No feature work until all Phase 0-5 gates green
+- Karpathy: state root cause, state exact files, minimal change, run once, verify
+- Pocock TDD: RED → GREEN → REFACTOR; no prod code without failing test first
