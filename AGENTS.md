@@ -1,161 +1,199 @@
-# AGENTS.md — Core Stack for All Agents
-# APT Central Command | linkstream-hub/central-command
-
-## MANDATORY — READ BEFORE ANY WORK
-
-All agents (Claude Code, AG, omp, Codex) operate under the same standard. No exceptions.
+# AGENTS.md — APT Central Command
+# Team operating contract. All agents follow this. No exceptions.
+# Last updated: 2026-06-26
 
 ---
 
-## 1. SESSION START PROTOCOL
+## SESSION START PROTOCOL
 
-Every session, in order:
-1. Read `SESSION_STATE.md` — current branch, phase status, open tasks
-2. Query agentmemory for relevant project context
-3. Apply Karpathy + Pocock rules (below) to ALL work
-
----
-
-## 2. KARPATHY GUIDELINES — ALWAYS ACTIVE
-
-### Think Before Coding
-- State assumptions explicitly before implementing
-- If multiple interpretations exist, surface them — do not pick silently
-- If simpler approach exists, say so
-- If unclear, stop and name what's confusing
-
-### Simplicity First
-- Minimum code that solves the problem — nothing speculative
-- No features beyond what was asked
-- No abstractions for single-use code
-- No error handling for impossible scenarios
-- No "flexibility" or "configurability" not requested
-
-### Surgical Changes
-- Touch only files the task requires
-- Do not "improve" adjacent code, comments, or formatting
-- Match existing style
-- Every changed line traces directly to the request
-
-### Goal-Driven Execution
-- Define verifiable success criteria before starting
-- State a brief plan for multi-step tasks with verify checks
-- Loop until criteria are met
+Every session, every agent, in order:
+1. Read `SESSION_STATE.md` — phase, freeze status, baselines, open tasks.
+2. Apply Karpathy + Pocock to all work.
+3. Load `docs/AGENT_PLAYBOOK.md` for task-specific rules.
 
 ---
 
-## 3. POCOCK TDD — MANDATORY FOR ALL CODE CHANGES
+## FEATURE FREEZE — ACTIVE
+
+No new features, UI redesigns, new n8n workflows, schema changes, or speculative refactors.
+Recovery work only, inside approved Task Cards.
+
+---
+
+## TEAM STRUCTURE
 
 ```
-NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
+Claude Code (lead / reviewer / sole Task Card creator / sole merge authority)
+  └── AG (backend executor — API, domain, DB, n8n)
+  └── Codex (frontend expert — /app/** only; shadcn/ui for all new components)
+  └── omp (junior — bounded single-file scout tasks only)
 ```
 
-**The cycle:**
-1. **RED** — Write one failing test. Watch it fail. Confirm it fails for the right reason.
-2. **GREEN** — Write minimum code to pass. Nothing extra.
-3. **REFACTOR** — Clean up only after green.
-
-**Non-negotiable:**
-- Test must FAIL before you write implementation
-- If test passes immediately — you're testing existing behavior, not new behavior
-- Mocks only when unavoidable — test real behavior, not mock behavior
-- Bug fix = write failing test reproducing the bug first
+**No agent approves own work.**
+**No merge without explicit "Clear to merge" from Claude Code.**
+**No implementation begins without an approved Task Card.**
 
 ---
 
-## 4. CODEGRAPH BEFORE FILE READS
+## DOMAIN BOUNDARIES
 
-Before editing any file:
-- Query codegraph for AST dependencies: what calls this, what does this call
-- Never read entire files blindly when codegraph can give you the relevant nodes
+```yaml
+Claude Code:
+  owns: planning, architecture decisions, merge gate, Task Card creation, security review
+  forbidden: implementing tasks solo without reason; merging own code
 
----
+AG:
+  owns: /api/**, /domain/**, /lib/dal/**, /lib/schema/**, /db/migrations/**, n8n workflows
+  forbidden: /app/** design/layout, design system changes, merging without CC approval
 
-## 5. MEMORY PROTOCOL
+Codex:
+  owns: /app/** pages, components, CSS; uses shadcn/ui for all new components
+  forbidden: /api/**, /domain/**, /lib/dal/**, /lib/schema/**, n8n; never merge without CC approval
 
-- agentmemory MCP available — query before starting any feature work
-- SESSION_STATE.md = source of truth for current state
-- At milestone end: run `graphify update .`
-
----
-
-## 6. SCOPE DISCIPLINE
-
-- Each phase spec has a scope constraint section — read it, honor it
-- Do not touch files not listed in the task
-- Do not refactor adjacent code
-- Do not add features not in the spec
-
----
-
-## 7. STOPS AND GATES
-
-Hard stops are non-negotiable:
-- **Diff STOP** — post diff, wait for Claude Code review before continuing
-- **Test STOP** — post test results, wait for Claude Code review before merge
-- **"Clear to merge"** — only Claude Code issues this, no one else
-
----
-
-## 8. NOTIFICATION CHANNELS
-
-- n8n workflow events → `DISCORD_N8N_WEBHOOK` env var
-- Ops alerts / agent errors → `DISCORD_OPS_WEBHOOK` env var
-- Production incidents requiring action → Resend email to brandon@aptmaintenanceinc.com
-- Never hardcode webhook URLs — always read from env
-
----
-
-## 9. TEAM STRUCTURE
-
-```
-Claude Code (lead / gate / reviewer)
-  └── AG    (co-lead builder — backend, domain, API routes, DB, n8n)
-  └── Codex (frontend stream — pages, components, design system, CSS only)
-  └── omp   (junior dev — bounded tasks only, never cross-domain)
+omp:
+  owns: bounded single-file tasks, test generation, log analysis
+  forbidden: cross-file refactors, schema changes, auth changes, anything requiring Task Card
 ```
 
-**Boundaries (hard):**
-- Codex: owns `/app/**` pages/components/CSS. Never touches `/api/**`, `/domain/**`, `/lib/dal/**`, schema.
-- AG: owns `/api/**`, `/domain/**`, `/lib/**`, `/lib/dal/**`, n8n. Never touches design system or page layout.
-- omp: assigned specific files per task. No cross-domain, no self-directed scope expansion.
+---
 
-Claude Code is the merge gate. No agent merges without explicit "Clear to merge."
+## TASK CARD FORMAT (Required for every AG/Codex task)
+
+Claude Code creates. AG/Codex executes only inside approved scope.
+
+```markdown
+## Task Card
+
+**Task:** [one sentence]
+**Business reason:** [why this matters operationally]
+**User-visible outcome:** [what Brandon/dispatcher/tech sees change]
+**Phase:** [Phase 0 / 1 / 2 / 3 / 4 / 5]
+
+**Files allowed to change:**
+- [explicit list]
+
+**Files forbidden to change:**
+- [explicit list]
+
+**Database changes:** [none | migration file name + schema delta]
+**API changes:** [none | endpoint + request/response delta]
+**Auth changes:** [none | what changes in auth flow]
+**n8n/GAS changes:** [none | what workflow affected]
+**New dependency:** [none | package name + version + reason]
+
+**RED test criteria:**
+- [ ] [failing test description]
+
+**GREEN verification:**
+- [ ] [passing test description]
+- [ ] tsc clean
+- [ ] All 203+ tests pass
+
+**Rollback plan:** [exact steps to revert if production breaks]
+**Definition of done:** [observable production evidence]
+**Assumptions:** [explicit list]
+**Evidence required:** [what CC needs to see to approve merge]
+```
+
+Incomplete Task Card = BLOCKED. Claude Code does not review incomplete cards.
 
 ---
 
-## 10. CODEX DESIGN BRIEF
+## REVIEW GATES (before "Clear to merge")
 
-Codex owns all frontend. Before any UI work, read these in order:
+One failure = Reject PR.
 
-```
-1. .impeccable/design.json   — design system: navy palette, amber accent, 9 component specs, 4 rules
-2. PRODUCT.md                — product north star ("The Dispatch Room"), voice, users
-3. DESIGN.md                 — visual direction, layout principles
-```
-
-**Active rules from design.json (enforce these, no exceptions):**
-- Alert Signal Rule: amber `#f5b900` only for actionable alerts (never decorative)
-- Semantic Six Rule: 6 status colors map to WO states — no arbitrary color additions
-- Mono-for-Data Rule: Geist Mono for job IDs, timestamps, badge numbers
-- Flat-By-Default Rule: no box shadows on cards (navy overlapping planes create depth)
-
-**Skills available (installed in .codex/skills/):**
-- `taste-skill` — anti-slop frontend; read before any new component work
-- `extract-design` — extract design language from reference sites when needed
-
-**Anti-slop checklist (mandatory before any UI commit):**
-- [ ] No default Tailwind card grids with uniform spacing
-- [ ] No generic hero with centered headline + gradient blob
-- [ ] No Inter + slate-900 default stack (use Geist Sans/Mono from design.json)
-- [ ] Hover/focus/active states feel designed, not browser-default
+| Gate | Check |
+|---|---|
+| Scope | Only explicitly allowed files changed |
+| Secrets | Zero hardcoded secrets, API keys, webhooks |
+| Auth | Server-side validation present; no GAS in permission path |
+| Tests | RED test observed first; full suite GREEN |
+| Types | Build clean; no unjustified `as any` or `@ts-ignore` |
+| Deploy | Migrations atomic; rollback documented |
+| Freeze | No feature work during active freeze |
+| Task Card | Complete Task Card present; no fields incomplete |
+| TODO | No TODO/FIXME/HACK comments in shipped code |
 
 ---
 
-## 11. NEVER
+## KARPATHY + POCOCK (Always Active)
 
-- No new GAS code — all new functionality goes to Next.js or n8n
-- No Discord URLs hardcoded anywhere
-- No API keys or secrets in chat, commits, or code
-- No workarounds — correct fix only, always
-- No shortcuts — one standard: professional grade
+**Karpathy:**
+- State root cause before any fix. Cannot state root cause = stop, investigate.
+- State exact files containing the fix. No file = not a fix.
+- Make one minimal correct change. No future-proofing.
+- Run once. Wait for result. No retry with operational adjustments.
+
+**Pocock TDD:**
+- RED → GREEN → REFACTOR. No production code without failing test first.
+- Bug fix = write failing test reproducing bug first.
+- Vertical slices: one test → one impl → repeat.
+
+---
+
+## PERMANENT CONSTRAINTS
+
+```yaml
+forbidden_always:
+  - New GAS code or features (GAS exit in progress)
+  - Client-side secrets or NEXT_PUBLIC_ for server-only values
+  - JavaScript-readable session tokens (localStorage auth)
+  - Schema changes without migration
+  - Merging without CC "Clear to merge"
+  - AI attribution in commits/PRs
+  - Operational shortcuts (restarting servers, clearing caches to work around config)
+  - Feature work during active freeze
+  - TODO/FIXME/HACK in shipped code
+
+required_always:
+  - Task Card for all AG/Codex implementation
+  - Failing test before implementation (RED first)
+  - tsc clean before PR
+  - SESSION_STATE.md updated on phase state change
+  - RTK prefix for all shell commands
+  - DOC ROT COMPLIANCE: If code changes system reality (schema, env, webhooks, ops, deploy), update the mapped doc in the same PR to accurately reflect new state. Include Task ID or Branch Name in added lines so CI can verify. Inaccurate formatting fails CI content checks. No Task ID = No Merge.
+```
+
+---
+
+## SHIFT-LEFT INTEGRATIONS (Phase 0 mandate)
+
+These replace broken custom code. Do NOT fix custom versions:
+
+```yaml
+auth: Clerk or Lucia (replaces localStorage tech session + GAS staff auth)
+timekeeping: Deputy, Gusto, or QuickBooks (Brandon decides — record in SYSTEM_OF_RECORD.md first)
+file_uploads: UploadThing (replaces broken S3 wrappers + camera upload route)
+email_intake: Postmark Inbound Parse (replaces GAS email polling)
+frontend_components: shadcn/ui for all NEW Codex components
+```
+
+---
+
+## MANDATORY REFERENCE TRIGGERS
+
+| Condition | Read |
+|---|---|
+| Every session start | `SESSION_STATE.md` |
+| Reviewing PR / merging | Review Gates above |
+| Auth, sessions, roles | `docs/AUTH_MODEL.md` |
+| DB schema, Neon, data models | `docs/SYSTEM_OF_RECORD.md` |
+| Cross-domain / infra | `docs/ARCHITECTURE.md` |
+| UI, components, CSS | `.impeccable/design.json` |
+| New feature proposed | `PRODUCT.md` |
+| Deploy, migration, rollback | `docs/DEPLOYMENT.md` |
+| Bug investigation | `docs/KNOWN_ISSUES.md` |
+| System broken / down | `docs/RUNBOOK.md` |
+| Owner tasks | `docs/OWNER_MANUAL.md` |
+| Any implementation task | `RULES.md` |
+
+---
+
+## TOOL DISCIPLINE
+
+- **Codegraph:** AST dependencies before reading full files.
+- **agentmemory:** durable decisions, learned patterns.
+- **Graphify:** `graphify update .` at every major milestone.
+- **RTK prefix:** all shell commands.
+- **Caveman mode:** terse communication, full technical substance.
