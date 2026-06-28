@@ -16,6 +16,11 @@ vi.mock('@/lib/fieldAuth', () => ({
   verifyFieldSession: vi.fn(),
 }));
 
+type UT_InternalRouter = {
+  middleware: (args: { req: Request; input: { jobId: string; photoType: string } }) => Promise<Record<string, unknown>>;
+  onUploadComplete: (args: { metadata: Record<string, unknown>; file: { name: string; url: string } }) => Promise<unknown>;
+};
+
 describe('UploadThing core file router', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -33,7 +38,7 @@ describe('UploadThing core file router', () => {
   });
 
   test('middleware throws UNAUTHORIZED with no session', async () => {
-    const middleware = (ourFileRouter.jobPhoto as any).middleware;
+    const middleware = (ourFileRouter.jobPhoto as unknown as UT_InternalRouter).middleware;
     const req = new Request('http://localhost');
     vi.mocked(verifyFieldSession).mockResolvedValue(null);
 
@@ -42,7 +47,7 @@ describe('UploadThing core file router', () => {
   });
 
   test('middleware returns metadata with valid session', async () => {
-    const middleware = (ourFileRouter.jobPhoto as any).middleware;
+    const middleware = (ourFileRouter.jobPhoto as unknown as UT_InternalRouter).middleware;
     const req = new Request('http://localhost');
     
     vi.mocked(verifyFieldSession).mockResolvedValue({
@@ -62,7 +67,7 @@ describe('UploadThing core file router', () => {
   });
 
   test('onUploadComplete inserts into jobPhotos', async () => {
-    const onUploadComplete = (ourFileRouter.jobPhoto as any).onUploadComplete;
+    const onUploadComplete = (ourFileRouter.jobPhoto as unknown as UT_InternalRouter).onUploadComplete;
     
     const metadata = {
       employeeId: 42,
