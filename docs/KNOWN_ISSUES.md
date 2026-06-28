@@ -36,6 +36,7 @@
 | P1-005 | n8n email intake: Apple Mail forward format not detected by Lapham parser | `src/lib/parsers/lapham.ts` | DIAGNOSED, UNCOMMITTED | Phase 3 |
 | P1-006 | n8n owns event memory — events lost on n8n restart | n8n workflows | OPEN | Phase 4 |
 | P1-007 | `INTAKE_COMMS_ENABLED` ghost flag — zero code gates in tech-pwa/src | codebase-wide | OPEN | Phase 4 |
+| P1-008 | E2E dispatch tests flaky on preview env ("shows all seeded TEST jobs" & "list to emailType inspection" fail with element not found); no CI baseline on main to confirm pre-existing | E2E Tests | OPEN (branch fix/s171-ut-ag noted) | Unrelated to UploadThing changes |
 
 ---
 
