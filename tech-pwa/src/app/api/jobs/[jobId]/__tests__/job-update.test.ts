@@ -13,6 +13,7 @@ describe('JobUpdate Module - apply()', () => {
   });
 
   const setupJob = async (jobId: string, overrides: Partial<typeof jobs.$inferInsert>) => {
+    await cleanupJob(jobId);
     await db.insert(jobs).values({
       jobId,
       orgId: 'APT-CA',

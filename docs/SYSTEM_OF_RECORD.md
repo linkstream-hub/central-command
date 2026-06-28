@@ -15,7 +15,7 @@
 | Tech Roster | Neon Postgres (`employees` table, `pin_hash` column) | None | 32 techs backfilled, 3 non-numeric badges |
 | Email Intake | **Cloudflare Email Routing** (transitional — pending live test) | None | TARGET: live after Gmail auto-forward to apt-main.com + MX confirmed (Phase 0) | <!-- fix/s171-field-fixes -->
 | Push Subscriptions | **GAS** (transitional) | None | TARGET: Neon (Phase 3) |
-| File/Photo Uploads | **Broken** (S3 wrapper throws) | None | TARGET: UploadThing (Phase 0) |
+| File/Photo Uploads | **UploadThing** | None | Replaced broken S3 wrappers | <!-- S171-UT-AG -->
 | Dispatch Queue | Neon Postgres | None | Dispatcher reads from Neon |
 | Scheduling | Google Sheets + Buildertrend ICS | None | CC is NOT scheduling source of truth; dispatcher uses Sheets |
 | Domain Events | n8n memory (transitional) | None | TARGET: Neon `domain_events` outbox (Phase 4) |
@@ -89,8 +89,8 @@ Rule: Server-only secrets use `VARIABLE_NAME` (no `NEXT_PUBLIC_` prefix). Client
 ## DATA MIGRATION STATE
 
 ```yaml
-migrations_applied: 7 (0001–0007)
-migration_0008: NOT in prod (dispatch_sent_at removed, column dropped PR #22)
+migrations_applied: 11 (0000–0010) <!-- S171-UT-AG -->
+migration_0010: job_photos UploadThing migration applied manually <!-- S171-UT-AG -->
 pending_migrations: none
 migration_process: MANUAL — must be fixed in Phase 2 (atomic build-time migration)
 ```

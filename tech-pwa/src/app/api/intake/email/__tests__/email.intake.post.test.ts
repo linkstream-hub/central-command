@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { POST } from '../route';
 import { NextRequest } from 'next/server';
 import { parseEmailToWO } from '@/lib/intake/parseEmailToWO';
+import type { ParseEmailResult } from '@/lib/intake/parseEmailToWO';
 
 // Mock dependencies
 vi.mock('@/lib/db', () => ({
@@ -40,7 +41,7 @@ describe('POST /api/intake/email', () => {
     process.env = originalEnv;
   });
 
-  const createRequest = (body: any, token: string | null = 'test-secret-token') => {
+  const createRequest = (body: Record<string, unknown>, token: string | null = 'test-secret-token') => {
     return new NextRequest('http://localhost:3000/api/intake/email', {
       method: 'POST',
       headers: token ? { 'x-email-token': token } : {},
@@ -80,7 +81,7 @@ describe('POST /api/intake/email', () => {
       senderType: 'Property Manager',
       senderEmail: 'test@example.com'
     };
-    (parseEmailToWO as any).mockResolvedValue(mockResult);
+    vi.mocked(parseEmailToWO).mockResolvedValue(mockResult as ParseEmailResult);
 
     const payload = {
       subject: 'Leaking pipe',
@@ -106,7 +107,7 @@ describe('POST /api/intake/email', () => {
   });
 
   it('inserts raw email as WO if parseEmailToWO throws (fallback)', async () => {
-    (parseEmailToWO as any).mockRejectedValue(new Error('AI parsing failed'));
+    vi.mocked(parseEmailToWO).mockRejectedValue(new Error('AI parsing failed'));
 
     const payload = {
       subject: 'Bad Email',
