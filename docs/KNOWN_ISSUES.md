@@ -57,7 +57,7 @@
 vercel_runtime_logs: always 403 Forbidden — surface errors in API response body instead
 neon_branch_status: healthy
 auto_deploy: LIVE (merge to main → READY ~90s)
-ci_cd: GitHub Actions, coverage enforced, E2E gated on PR
+ci_cd: GitHub Actions, coverage enforced, E2E nightly/manual only <!-- CI-001 -->
 ```
 
 ---
