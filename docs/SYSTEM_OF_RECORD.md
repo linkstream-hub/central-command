@@ -13,7 +13,7 @@
 | Staff Permissions | **GAS** (transitional) | None | TARGET: Neon `staff_permissions` (Phase 1 after auth) |
 | Tech (field) Sessions | localStorage (transitional) | None | TARGET: Clerk sessions (Phase 0) |
 | Tech Roster | Neon Postgres (`employees` table, `pin_hash` column) | None | 32 techs backfilled, 3 non-numeric badges |
-| Email Intake | **Cloudflare Email Routing** (transitional — pending live test) | None | TARGET: live after Gmail auto-forward + MX confirmed (Phase 0) | <!-- fix/s171-field-fixes -->
+| Email Intake | **Cloudflare Email Routing** (transitional — pending live test) | None | TARGET: live after Gmail auto-forward to apt-main.com + MX confirmed (Phase 0) | <!-- fix/s171-field-fixes -->
 | Push Subscriptions | **GAS** (transitional) | None | TARGET: Neon (Phase 3) |
 | File/Photo Uploads | **Broken** (S3 wrapper throws) | None | TARGET: UploadThing (Phase 0) |
 | Dispatch Queue | Neon Postgres | None | Dispatcher reads from Neon |

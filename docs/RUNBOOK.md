@@ -160,7 +160,7 @@
 **Route:** `POST /api/intake/email` (`tech-pwa/src/app/api/intake/email/route.ts`)
 
 **Check sequence:**
-1. Cloudflare dashboard → Email Routing → Routing rules → verify `workorder@inbound.aptmaintenanceinc.com` routes to Worker.
+1. Cloudflare dashboard → Email Routing → Routing rules → verify `workorder@apt-main.com` routes to Worker.
 2. Cloudflare dashboard → Workers & Pages → `email-intake` → Logs / Metrics
    - `401` → token mismatch: check `EMAIL_INBOUND_TOKEN` in Vercel matches Worker secret
    - `500` → check Vercel function logs (Vercel → central-command → Functions → `/api/intake/email`)
