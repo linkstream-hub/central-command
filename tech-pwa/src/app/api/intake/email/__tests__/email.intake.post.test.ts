@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { POST } from '../route';
 import { NextRequest } from 'next/server';
 import { parseEmailToWO } from '@/lib/intake/parseEmailToWO';
+import type { ParseEmailResult } from '@/lib/intake/parseEmailToWO';
 
 // Mock dependencies
 vi.mock('@/lib/db', () => ({
@@ -80,7 +81,7 @@ describe('POST /api/intake/email', () => {
       senderType: 'Property Manager',
       senderEmail: 'test@example.com'
     };
-    vi.mocked(parseEmailToWO).mockResolvedValue(mockResult);
+    vi.mocked(parseEmailToWO).mockResolvedValue(mockResult as ParseEmailResult);
 
     const payload = {
       subject: 'Leaking pipe',
