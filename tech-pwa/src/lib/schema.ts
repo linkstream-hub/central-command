@@ -175,11 +175,11 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
 export const jobPhotos = pgTable('job_photos', {
   id: serial('id').primaryKey(),
   orgId: text('org_id').notNull().default('APT-CA'),
-  jobId: integer('job_id').notNull(),
+  jobId: text('job_id').notNull(),
   employeeId: integer('employee_id').notNull(),
   photoType: text('photo_type').notNull(),
   fileName: text('file_name').notNull(),
-  photoData: text('photo_data').notNull(),
+  photoUrl: text('photo_url').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

@@ -30,6 +30,8 @@ Fix: Rename to `DASHBOARD_API_URL` (no NEXT_PUBLIC_ prefix) in Vercel + code.
 | `VERCEL_ENV` | Server | Vercel environment | Vercel | OK |
 | `NODE_ENV` | Server | Node environment | All | OK |
 | `EMAIL_INBOUND_TOKEN` | Server | Validate Cloudflare inbound webhook (`POST /api/intake/email`) | All | REQUIRED — add to Vercel prod+preview | <!-- fix/s171-field-fixes -->
+| `UPLOADTHING_SECRET` | Server | Server UploadThing validation | All | OK | <!-- S171-UT-AG -->
+| `NEXT_PUBLIC_UPLOADTHING_APP_ID` | Client | Client UploadThing init | All | OK | <!-- S171-UT-AG -->
 
 ---
 
@@ -42,8 +44,6 @@ When Shift-Left integrations complete, add:
 | `CLERK_SECRET_KEY` | Server-side Clerk auth | Clerk |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Client Clerk init | Clerk |
 | `EMAIL_INBOUND_TOKEN` | Validate Cloudflare webhooks | Cloudflare | <!-- DEPLOYED fix/s171-field-fixes — add to Vercel env before cutover --> |
-| `UPLOADTHING_SECRET` | Server UploadThing validation | UploadThing |
-| `NEXT_PUBLIC_UPLOADTHING_APP_ID` | Client UploadThing init | UploadThing |
 | `TIMEKEEPING_API_KEY` | Vendor timekeeping API | Deputy/Gusto/QBO |
 
 ---
