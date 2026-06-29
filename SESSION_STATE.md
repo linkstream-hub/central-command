@@ -18,7 +18,7 @@ Emergency production fixes only, with explicit Claude Code approval.
 
 ```yaml
 branch: main
-phase: PHASE_0 — Foundational Setup
+phase: PHASE_0 — COMPLETE → PHASE_1 next
 program: Audit Recovery (6-phase gated program)
 status: IN_PROGRESS — TC-PURGE-001 + TC-AUDIT-002 MERGED (638b944f, 2026-06-28)
 freeze: ACTIVE
@@ -148,6 +148,8 @@ Gates:
 
 ### Phase 3 — Core Dispatch Loop Proof
 _Dependency trigger: All Phase 2 gates confirmed._
+
+**MANDATORY READ BEFORE ANY PHASE 3 TIMEKEEPING TASK CARD:** `docs/Wage_Hour_PAGA_Compliance.md` — CA wage/hour/PAGA authoritative spec. Compliance gaps CG-001–008 must be resolved before pilot rollout to real techs.
 
 Gates:
 - [ ] Core loop E2E Playwright test passes in CI (intake → WO → dispatch → assign → clock in/out → completion)

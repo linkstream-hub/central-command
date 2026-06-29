@@ -49,6 +49,7 @@ Lead Architect, Orchestrator, sole Merge Gatekeeper. Sole creator of Task Cards.
 | Owner tasks | `docs/OWNER_MANUAL.md` |
 | Agent role unclear | `AGENTS.md` |
 | Any implementation task | `RULES.md` |
+| Timekeeping, compliance, PAGA, wage/hour, clock-in/out, breaks, attestation, premium pay | `docs/Wage_Hour_PAGA_Compliance.md` — authoritative CA spec; no deviation |
 
 All files: see `CORE_PROJECT_FILES.md`.
 

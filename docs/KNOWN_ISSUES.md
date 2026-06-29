@@ -55,7 +55,7 @@
 | CG-007 | No premium pay flag — LC §226.7 premium not computed or stored; no daily 2-hour cap | §4.1/4.2 | Phase 4 |
 | CG-008 | RROP not tagged — premiums must use Regular Rate of Pay per *Ferra* decision | §4.3 | Phase 4 (payroll integration) |
 
-**Rationale for deferral:** CC never used in production. Zero techs have clocked in. Zero PAGA exposure. Will resolve before select-tech pilot. Source of record: `Wage_Hour_PAGA_Compliance.md` (project root).
+**Rationale for deferral:** CC never used in production. Zero techs have clocked in. Zero PAGA exposure. Will resolve before select-tech pilot. Source of record: `docs/Wage_Hour_PAGA_Compliance.md`.
 
 ---
 
