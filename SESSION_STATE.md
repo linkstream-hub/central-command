@@ -51,7 +51,7 @@ vercel_runtime_errors_7d:
     status: RESOLVED (deployment retired)
   active_issues:
     - "Missing Google AI API Key" on /api/webhooks/n8n/gmail (count=4, 2026-06-24, deployment dpl_7M6sAPwsY2t5XWjni1HSrXqNXw5s)
-    - "Vercel timeout 300s" on /api/gas (count=1, 2026-06-25) — GAS instability, confirms Phase 0 Postmark urgency
+    - "Vercel timeout 300s" on /api/gas (count=1, 2026-06-25) — GAS instability; Cloudflare Email Routing now handles inbound (WF-006 done)
 
 uptime_7d: NOT_YET_MEASURED  # UptimeRobot not yet configured (Phase 3 gate)
 rollback_proven: NOT_YET_PROVEN  # Phase 0 gate — must do rollback drill before Phase 1
@@ -90,7 +90,7 @@ env_notes:
 
 ## 6-PHASE RECOVERY PROGRAM
 
-**Canonical plan:** `C:\Users\Aldrick\.gemini\antigravity\brain\9f4ae946-e172-46dd-9a27-8d376cf2c6de\implementation_plan.md`
+**Canonical plan:** `C:\PTOW\1_APT_Central_Command\IMPLEMENTATION_PLAN.md`
 
 Each phase gates the next. No phase begins until prior phase gates are ALL confirmed true.
 
@@ -100,11 +100,12 @@ _Dependency trigger: Plan approval (DONE). No code changes except emergency fixe
 Gates:
 - [ ] Rollback procedure tested and proven (< 5 mins)
 - [ ] Foundational docs created and approved (KNOWN_ISSUES, SYSTEM_OF_RECORD, ENVIRONMENT_MAP, AUTH_MODEL, ACTIVE_WORKFLOWS, DEPLOYMENT, OWNER_MANUAL, RUNBOOK, AGENT_PLAYBOOK, RISK_REGISTER)
-- [ ] Shift-Left tools integrated: Auth (Clerk/Lucia), Timekeeping vendor, UploadThing, Postmark Inbound
+- [ ] Shift-Left tools integrated: Auth (Clerk/Lucia), Timekeeping vendor, UploadThing, Cloudflare Email Routing (WF-006 — DONE: f0af7347)
 - [ ] shadcn/ui adopted for all new Codex components
 - [ ] Agent governance files updated (AGENTS.md, CLAUDE.md, AG.md)
 - [ ] Baselines measured: Sentry errors/day + 7-day uptime
 - [ ] Task Card format enforced for all AG/Codex tasks
+- [ ] PROJECT_STATUS.md created (Brandon plain-English dashboard — gates, evidence links, open decisions)
 
 ### Phase 1 — Security & Auth Hardening
 _Dependency trigger: All Phase 0 gates confirmed._
@@ -113,6 +114,14 @@ Gates:
 - [ ] Zero secrets in client bundles/page source (NEXT_PUBLIC_ removed)
 - [ ] API keys scoped and enforced at route level (401 bad key, 403 wrong route)
 - [ ] DEV bypass requires dual guards (env check + DEV_BYPASS_SECRET)
+- [ ] SyncQueue migrated from localStorage → IndexedDB (Dexie.js) — GAP-01
+- [ ] Field auth token rotation on each verified request — GAP-02
+- [ ] next-auth REMOVED (not just Clerk added alongside) — GAP-03
+- [ ] NEXT_PUBLIC_VAPID_PUBLIC_KEY exempted from NEXT_PUBLIC_ sweep (VAPID public key is spec-public) + documented — GAP-04
+- [ ] Gemini API key env var verified present in all deployment contexts — GAP-07
+- [ ] ESLint no-empty-catch enforced; all catch blocks audited → structured log + Sentry capture
+- [ ] lib/contracts/ Zod schemas established for all AG/Codex API seams
+- [ ] PROJECT_STATUS.md live — Brandon dashboard active from Phase 1
 
 ### Phase 2 — CI/CD Safety & Pipeline Integrity
 _Dependency trigger: All Phase 1 gates confirmed._
@@ -121,6 +130,8 @@ Gates:
 - [ ] Next.js pinned to stable 15.x; full test suite passes
 - [ ] Atomic migrations: prod DB migrates on prod deploy; preview builds isolated
 - [ ] CI/CD blocks merge on failing unit/integration/E2E tests
+- [ ] @ducanh2912/next-pwa verified compatible with Next.js 15 (or migrated to @serwist/next) — GAP-05
+- [ ] Behavioral parity checklist complete for every library replacement (all old flows verified with new)
 
 ### Phase 3 — Core Dispatch Loop Proof
 _Dependency trigger: All Phase 2 gates confirmed._
@@ -129,12 +140,16 @@ Gates:
 - [ ] Core loop E2E Playwright test passes in CI (intake → WO → dispatch → assign → clock in/out → completion)
 - [ ] 10 manual jobs completed successfully without GAS fallback
 - [ ] /api/health live and monitored by UptimeRobot
+- [ ] Push notifications Task Card complete — subscribe → Neon → send working — GAP-04
+- [ ] 138 FSM-dead WOs: per-WO classification table (old→new state→justification) CC-reviewed + Brandon-approved before script runs; post-run query confirms 0 FSM-dead
+- [ ] Synthetic heartbeat deployed: full core loop every 15 min; /api/health/synthetic-last-run monitored by UptimeRobot
 
 ### Phase 4 — Event Durability & Codebase Cleanup
 _Dependency trigger: All Phase 3 gates confirmed._
 
 Gates:
 - [ ] domain_events outbox in Neon; events survive infrastructure restarts
+- [ ] Vercel cron outbox poller consuming pending events (Task Card required) — GAP outbox-poller
 - [ ] Ghost flags and orphaned routes completely removed
 - [ ] Code.js reduced to <= 200 lines
 

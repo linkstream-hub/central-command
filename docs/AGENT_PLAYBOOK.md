@@ -83,12 +83,22 @@
 ## TASK CARD LIFECYCLE
 
 ```
-Claude Code creates → AG/Codex receives → implements in scope → posts diff+evidence → CC reviews → BLOCK or Clear to merge
+Claude Code creates → CC sets Tier (0/1/2/3) → AG/Codex receives → implements in scope →
+posts diff + evidence → [Tier 3: omp scout + red-team run first] → CC reviews → BLOCK or Clear to merge
 ```
 
 No step may be skipped. No merge without "Clear to merge."
 
 If Task Card scope is ambiguous: AG/Codex STOP and ask Claude Code before coding.
+
+### Risk Tiers (CC sets on creation — agent cannot self-downgrade)
+
+```
+Tier 0: doc-only — short card, markdown lint only, diff as evidence
+Tier 1: low-risk single-domain, no schema/auth — targeted tests, CI link
+Tier 2: standard multi-file — full card, full CI, full evidence package
+Tier 3: auth/schema/data/compliance — full card + ag-plan-reviewer + omp scout + red-team
+```
 
 ---
 
@@ -161,3 +171,136 @@ Any finding surfaced during audit, review, diff, or runtime check must be captur
 - Report format: `[DONE/BLOCK/RISK] — [specific finding] — [file:line if applicable]`
 - No "I believe", "It seems", "probably" — state facts or stop and ask
 - Errors: quote exact error text, exact file, exact line
+
+---
+
+## BANNED PHRASES
+
+These phrases in any agent output = automatic BLOCK, same as a failed gate:
+
+- "should work"
+- "likely works"
+- "probably"
+- "I assume"
+- "tests pass" (without CI link or pasted output)
+- "looks good"
+- "I think"
+- "appears to"
+- "this will handle"
+
+Replace with: specific evidence OR "BLOCKED — cannot confirm without [X]"
+
+---
+
+## QUESTION BEFORE CODE — MANDATORY STOP LIST
+
+If any of these are unclear, AG/Codex STOP and ask Claude Code before writing a line:
+
+- Source of truth for this data (Neon? GAS? n8n? Sheets?)
+- Auth boundary (who can call this route, who cannot)
+- Data migration direction (which system is authoritative)
+- Production behavior under the exact deployment context
+- File ownership (is this file in my allowed scope?)
+- Rollback path for this specific change
+- Whether a fallback is allowed or forbidden
+- Whether an env var is server-only or client-safe
+- Whether this touches auth, migrations, or outbox (requires ag-plan-reviewer)
+
+"I'll make a reasonable assumption" is not allowed. Stop and ask.
+
+---
+
+## EVIDENCE PACKAGE — REQUIRED ON EVERY PR
+
+PR template in `.github/pull_request_template.md` is mandatory. Every item must be filled.
+
+Evidence types accepted:
+- CI run link with pass/fail output
+- Playwright run video or screenshot
+- DB query result with actual row counts
+- Sentry screenshot showing 0 new errors 24h post-deploy
+- Timed rollback drill log (< 5 min)
+- Vercel deployment URL + health check response
+
+Evidence types NOT accepted:
+- Prose description of what should happen
+- Agent's assertion that tests pass without output
+- "No errors seen" without a Sentry link
+
+---
+
+## CROSS-AGENT VERIFICATION PROTOCOL
+
+For any task that touches a domain boundary:
+
+1. AG touching UI-adjacent code → must tag Codex in PR with specific question
+2. Codex touching API contract → must tag AG in PR with specific question
+3. Either touching auth, schema, or outbox → ag-plan-reviewer runs BEFORE implementation begins
+
+Tagged agent must reply with written confirmation or counter-evidence. CC does not issue "Clear to merge" until all cross-agent questions have written answers — not emoji acknowledgment, written answers.
+
+---
+
+## OMP PRE-MERGE SCOUT (Tier 3 only)
+
+Before CC reviews any Tier 3 diff, omp runs a bounded pre-merge audit:
+1. Codegraph call on all deleted/modified symbols — find unexpected call edges
+2. grep for scope violations (files touched outside allowed list)
+3. Check cross-domain boundary (AG touched /app? Codex touched /api?)
+
+Output format (one line per finding):
+```
+PASS — no scope violations, no unexpected edges
+FLAG [file:line] — [description] — not blocking but note for CC
+BLOCK [file:line] — [description] — CC must resolve before merge
+```
+
+omp posts this block before CC issues any verdict. CC cannot skip omp output.
+
+---
+
+## RED-TEAM PASS (Tier 3 auth/schema/compliance only)
+
+Non-implementing agent is explicitly tasked: **find gaps, NOT verify correctness.**
+
+- AG implemented → Codex runs red-team (and vice versa)
+- omp can run red-team if domain agent is not relevant
+
+Red-team must name minimum 3 failure scenarios in writing before CC can issue "Clear to merge."
+Format: `[FAILURE MODE] [how it manifests] [undetected by current evidence?]`
+
+---
+
+## INTER-AGENT CONTRACT PROTOCOL
+
+AG/Codex API seam is highest drift risk. Controls:
+
+1. `lib/contracts/` — shared Zod schemas, single source of truth for all API response shapes
+2. AG defines contract in Task Card AND commits schema to lib/contracts/ as first commit
+3. Codex posts written acknowledgment before any consumption:
+   > "Contract read at lib/contracts/[name]. My expected request: [x]. Response: [y]. Mismatch = CONTRACT BREACH on this Task Card."
+4. CC does not issue "Clear to merge" until both agents have written acknowledgments (not emoji)
+5. Contract mismatch = BLOCK; CC decides correct shape; AG updates lib/contracts/ first
+
+---
+
+## AG-PLAN-REVIEWER INTEGRATION
+
+ag-plan-reviewer runs on every Task Card that touches:
+- auth (any file)
+- schema (schema.ts, drizzle migrations)
+- columns (DB column changes)
+- cross-system (any call to n8n, GAS, Cloudflare, Resend, external API)
+
+Claude Code spawns ag-plan-reviewer with the plan before issuing the Task Card. PASS verdict required. BLOCK verdict = Task Card revised before issuance.
+
+This is the "devil's advocate" step. It cannot be skipped for in-scope tasks.
+
+---
+
+## COMPLIANCE ENGINE NOTE
+
+`src/lib/compliance.ts` has a DOCUMENTED divergence from GAS (see A-003 in ASSUMPTION_LEDGER.md). Until A-003 is CONFIRMED:
+- compliance.ts output MUST NOT be used as legal source of truth for payroll/premiums
+- Any task touching compliance.ts requires CC explicit approval
+- Compliance divergence audit must complete in Phase 0 before Phase 1 begins

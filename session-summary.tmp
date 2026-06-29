@@ -1,28 +1,24 @@
-# Session Summary - Email Intake Pivot Failure
-
 ## Objective
-Migrate Email Intake from Postmark to Cloudflare Email Routing using a subdomain (`inbound.aptmaintenanceinc.com`) to preserve the root domain's Google Workspace MX records.
+Phase 0 foundational governance complete. TC-PURGE-001 + TC-AUDIT-002 reviewed, CLEAR TO MERGE issued. Committing 244-file purge + governance hardening. Next: graphify re-run post-commit, then Phase 0 remaining gates.
 
 ## What Worked
-- Cloudflare Worker (`workers/email-intake`) was successfully initialized and deployed.
-- Next.js API route (`/api/intake/email`) was written, passing all tests.
-- Doc Rot was updated across all 4 required files.
-- The PR was merged to `main` and deployed to Vercel.
+- TC-PURGE-001: GAS root files deleted (Code.js, SuggestTechs.js, TechPWA.gs). Agents/artifacts/specs/scripts/design-extract archived. 100k+ legacy lines removed.
+- TC-AUDIT-002: CLAUDE.md canonical path fixed. GATES.md → AGENT_PLAYBOOK.md redirect. AGENTS.md + AG.md + CODEX_FRONTEND_BRIEF.md hardened with explicit core stacks. SESSION_STATE.md synced Phase 1-4 gates.
+- Diff review: All 8 gates PASS. Verdict: CLEAR TO MERGE.
+- Graphify updated Jun 28 18:09: 1133 nodes, 1804 edges, 127 communities. 49 governance doc nodes confirmed.
+- New untracked governance docs staged: IMPLEMENTATION_PLAN.md, PROJECT_STATUS.md, DRAFT_TASK_CARDS_2026-06-28.md, docs/ASSUMPTION_LEDGER.md, docs/EVIDENCE_REGISTER.md, docs/DATA_INTEGRITY_AUDIT.md.
+- .github/pull_request_template.md created (evidence package enforcement at GitHub PR level).
 
 ## What Failed
-**Architectural Hallucination regarding Cloudflare Email Routing:**
-Claude Code's plan assumed Cloudflare Email Routing could be enabled exclusively on a subdomain without touching the apex domain's MX records. 
-
-However, Cloudflare's UI dictates: *"Subdomains are dependent on the domain. If the domain is disabled, subdomains will be disabled too."*
-To enable Email Routing to process the worker rules, Cloudflare forces the apex domain to "Enable" Email Routing, which automatically injects and "Locks" Cloudflare's MX records (`route1.mx.cloudflare.net`) on the apex domain. 
-
-Because `aptmaintenanceinc.com` uses Google Workspace for staff email, activating Cloudflare Email Routing hijacked the root MX records, causing immediate conflict. We have clicked "Disable" in Cloudflare to safely revert the MX records back to Google Workspace.
+- RULES.md unique content NOT migrated: AGENT_PLAYBOOK.md was in TC-AUDIT-002 forbidden list. Content stranded but not blocking — AGENT_PLAYBOOK.md already has all protocols.
+- graphify needs re-run post-commit: 244 files changed will shift graph topology. Archive dirs now live; deleted files should drop from graph.
 
 ## Next Steps
-**Claude Code must rethink the Email Intake architecture.**
-Options:
-1. **Revert to Postmark:** Accept the 100/mo free limit and use the code that was deleted in this PR.
-2. **Dedicated Cloudflare Zone:** Purchase or use a completely separate domain (e.g., `apt-intake.com`) strictly for Cloudflare Email Routing.
-3. **Alternative Provider:** Use a provider that natively supports subdomain-only inbound parsing without apex domain hijacking (e.g., SendGrid Inbound Parse, Mailgun).
-
-Please advise on the new architectural path.
+1. Graphify re-run after commit (scope all, capture purged state).
+2. Phase 0 remaining gates:
+   - Rollback drill: timed test < 5 min, produce log as evidence.
+   - A-003 compliance audit (compliance.ts vs GAS parity) — Brandon decision on PAGA risk scope.
+   - docs/AUTH_DECISION.md — Clerk vs Lucia explicit decision required.
+   - Sentry errors/day + 7-day uptime baselines measured.
+3. Phase 0 close requires ALL gates green before Phase 1 Task Cards issued.
+4. Branch: main (no open feature PRs; feature freeze active).

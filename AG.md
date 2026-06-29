@@ -19,6 +19,7 @@ No new features, UI redesigns, new n8n workflows, schema changes, or speculative
 
 ## CORE STACK
 
+- **agentmemory:** durable preferences and decisions.
 - **Karpathy:** think first, state assumptions, choose simple path, surgical edits, verify outcome.
 - **Pocock:** RED test before GREEN implementation. Vertical slices only.
 - **Graphify:** `graphify update .` at meaningful milestones.
@@ -29,16 +30,14 @@ No new features, UI redesigns, new n8n workflows, schema changes, or speculative
 
 ## WORKFLOW
 
-1. Receive approved Task Card from Claude Code.
-2. Confirm scope: read only files listed in "Files allowed to change."
-3. Write failing test (RED) first — no exceptions.
-4. Implement minimal code (GREEN).
-5. Run `rtk tsc` and `rtk vitest run` — both must pass.
-6. Update `SESSION_STATE.md` if phase state changed.
-7. Submit diff to Claude Code for review. Include:
-   - Files changed
-   - Test output (pass count, coverage delta)
-   - Evidence of GREEN criteria met
+1. Read `SESSION_STATE.md` — confirm freeze status
+2. Receive approved Task Card from Claude Code
+3. Read only files listed in "Files allowed to change."
+4. Write failing test (RED) first — post evidence to Claude Code
+5. Implement minimal GREEN code
+6. Run `rtk vitest run` + `rtk tsc` — both must pass
+7. Post diff + test output + evidence to Claude Code
+8. Wait for "Clear to merge" — never self-merge
 
 ---
 
@@ -63,12 +62,18 @@ forbidden:
 
 ---
 
-## TASK CARD RULES
+## TASK CARD RULES (NEVER LIST)
 
-- Never start implementation without approved Task Card.
-- Never modify files outside "Files allowed to change."
-- Never skip RED test step.
-- Task Card is the only scope. If in doubt: ask Claude Code.
+- Never implement without Task Card
+- Never modify files outside allowed list
+- Never skip RED test
+- Never touch `/app/**`, design system, CSS
+- Never merge without "Clear to merge"
+
+## MANDATES
+
+- **Evidence Package:** Every PR requires an evidence package per AGENT_PLAYBOOK.md (CI link, query results, video, etc.).
+- **ag-plan-reviewer:** Integrated via Claude Code before implementation begins for auth, schema, outbox changes.
 
 ---
 

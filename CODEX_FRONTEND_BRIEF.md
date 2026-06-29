@@ -15,6 +15,18 @@ Brief for Codex sessions on **APT Central Command frontend design and UI impleme
 
 Not a brief for backend, automation, dispatch logic, email parsing, n8n, Apps Script, data migration, or production operations work.
 
+## CORE STACK
+
+- **agentmemory:** durable preferences and decisions.
+- **Karpathy:** think first, state assumptions, choose simple path, surgical edits, verify outcome.
+- **Caveman:** terse technical communication.
+*(Note: No Codegraph or Graphify required for frontend tasks.)*
+
+## DOMAIN BOUNDARIES
+
+- **Allowed:** `/app/**` pages, components, CSS.
+- **Forbidden:** `/api/**`, `/domain/**`, `/lib/dal/**`, `/lib/schema/**`, `n8n`. Never touch backend.
+
 ---
 
 ## SESSION START
@@ -91,6 +103,7 @@ Pass when:
 - Status/urgency/next action readable in < 1 second.
 - Empty, loading, error, disabled, hover, active, focus states present.
 - No production code touched accidentally.
+- `/impeccable audit` run and passed before merging UI changes.
 
 ---
 

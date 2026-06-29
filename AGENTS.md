@@ -41,18 +41,22 @@ Claude Code (lead / reviewer / sole Task Card creator / sole merge authority)
 Claude Code:
   owns: planning, architecture decisions, merge gate, Task Card creation, security review
   forbidden: implementing tasks solo without reason; merging own code
+  stack: agentmemory, caveman, karpathy, pocock, graphify, codegraph
 
 AG:
   owns: /api/**, /domain/**, /lib/dal/**, /lib/schema/**, /db/migrations/**, n8n workflows
   forbidden: /app/** design/layout, design system changes, merging without CC approval
+  stack: agentmemory, caveman, karpathy, pocock, graphify, codegraph
 
 Codex:
   owns: /app/** pages, components, CSS; uses shadcn/ui for all new components
   forbidden: /api/**, /domain/**, /lib/dal/**, /lib/schema/**, n8n; never merge without CC approval
+  stack: agentmemory, caveman, karpathy, pocock
 
 omp:
   owns: bounded single-file tasks, test generation, log analysis
   forbidden: cross-file refactors, schema changes, auth changes, anything requiring Task Card
+  stack: caveman, karpathy, pocock
 ```
 
 ---

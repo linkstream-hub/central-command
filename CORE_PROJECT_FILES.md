@@ -12,6 +12,8 @@
 | `CLAUDE.md` | Claude Code operating instructions + reference triggers | Every session |
 | `AGENTS.md` | Team contract, Task Card format, boundaries | All agents at session start |
 | `AG.md` | AG-specific playbook | AG at session start |
+| `CODEX_FRONTEND_BRIEF.md` | Codex frontend implementation playbook | Codex at session start |
+| `IMPLEMENTATION_PLAN.md` | Canonical plan for the 6-phase recovery program | When reviewing phases |
 | `RULES.md` | Hard constraints — Karpathy/Pocock, never override | Any implementation task |
 | `GATES.md` | Zero-trust PR merge checklist — 8 gates, CLEAR or BLOCK | Every PR review |
 | `PRODUCT.md` | What to build / what NOT to build | Feature decisions |
@@ -39,6 +41,10 @@
 | `docs/RUNBOOK.md` | Incident response playbook |
 | `docs/AGENT_PLAYBOOK.md` | Per-agent rules, Task Card workflow, merge gate |
 | `docs/RISK_REGISTER.md` | Active risks with owner, likelihood, mitigation |
+| `docs/ASSUMPTION_LEDGER.md` | Tracking unverified assumptions |
+| `docs/EVIDENCE_REGISTER.md` | Evidence of green verification items |
+| `docs/DATA_INTEGRITY_AUDIT.md` | Tracking data integrity states |
+| `docs/PHASE_REPORTS/TEMPLATE.md` | Template for phase completion reports |
 
 ## Reference (load on demand)
 
@@ -47,10 +53,8 @@
 | `docs/ORTHOGONALITY.md` | Cross-domain boundary enforcement |
 | `docs/TESTING.md` | Test standards and coverage targets |
 | `docs/PROFESSIONAL_BASELINE.md` | Professional-grade definition for this project |
-| `docs/PRODUCT_VISION.md` | Long-term product direction |
 | `docs/ORG.md` | Org structure, staff roles |
 | `docs/DISPATCH_GUIDE.md` | Dispatch operations reference |
-| `specs/TECH_PWA_API_SPEC.md` | API contracts |
 | `docs/guides/` | Dev setup, deployment, testing, configuration |
 | `docs/agents/` | Domain agent definitions |
 | `docs/api/` | API reference |

@@ -14,7 +14,7 @@ dev: cd tech-pwa && npm run dev
 
 No new features. No UI redesigns. No new n8n workflows. No schema changes outside approved recovery scope. Freeze lifts only when all Phase 0–5 gates are verified green.
 
-Recovery plan (canonical): `C:\Users\Aldrick\.gemini\antigravity\brain\9f4ae946-e172-46dd-9a27-8d376cf2c6de\implementation_plan.md`
+Recovery plan (canonical): `C:\PTOW\1_APT_Central_Command\IMPLEMENTATION_PLAN.md`
 
 ## Core Stack — Always Active
 
@@ -54,19 +54,9 @@ All files: see `CORE_PROJECT_FILES.md`.
 
 ## Review Gates (before "Clear to merge")
 
-One failure = Reject PR.
+See `docs/AGENT_PLAYBOOK.md` for the full Diff Review Protocol (Scope, Secrets, Auth, Tests, Types, Deploy, Freeze, TODO).
 
-| Gate | Check |
-|---|---|
-| Scope | Only explicitly allowed files changed |
-| Secrets | Zero hardcoded secrets, API keys, webhooks |
-| Auth | Server-side validation present; no GAS in permission path |
-| Tests | RED test observed first; full suite GREEN |
-| Types | Build clean; no unjustified `as any` or `@ts-ignore` |
-| Deploy | Migrations atomic; rollback documented |
-| Freeze | No feature work during active freeze |
-| Task Card | Complete Task Card present; no fields incomplete |
-| Doc Rot | If changes affect schema/env/webhooks/ops/deploy, mapped doc updated in same PR with Task ID or Branch Name |
+(Note: See `AGENTS.md` for Doc Rot compliance rules.)
 
 ## Team Structure
 
