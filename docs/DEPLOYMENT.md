@@ -68,9 +68,9 @@ rtk npm run db:migrate:rollback
 
 If no rollback command: manually write SQL to undo, apply via Neon console.
 
-### GAS (transitional only)
+### GAS (transitional only — CI workflow REMOVED)
 
-Vercel rollback handles CC2.0. GAS scripts independent — see old RUNBOOK.md for GAS-specific rollback if needed.
+Vercel rollback handles CC2.0. GAS CI deploy workflow (`deploy-apps-script.yml`) removed 2026-06-29 — `dashboard-api/` deleted in TC-PURGE-001, no `.gs` files remain, Phase 1 plans full GAS exit. Live GAS app at Google unaffected (CI deploy ≠ running deployment). No manual GAS deploys under "no GAS new code" rule.
 
 ---
 
