@@ -21,7 +21,7 @@
 | ID | Finding | Source | Status | Blocks |
 |---|---|---|---|---|
 | AF-001 | NEXT_PUBLIC_ scope 10x worse than mapped: 200 symbols across 68 files. Cannot scrub blindly — must categorize legitimately-public vs. server-only vs. ghost vars first | AG Codegraph Audit 2026-06-26 | OPEN — categorization audit required | Phase 1 Task Card for secret removal |
-| AF-002 | GAS calls route through Cloudflare Worker proxy (`Sentinels/worker.js` → `DASHBOARD_API_URL`). Phase 1 env var rename is not enough — worker must be decommissioned or rerouted | AG Codegraph Audit 2026-06-26 | OPEN — architecture decision required | Phase 1 GAS exit path |
+| AF-002 | GAS calls route through Cloudflare Worker proxy (`Sentinels/worker.js` → `DASHBOARD_API_URL`). Phase 1 env var rename is not enough — worker must be decommissioned or rerouted | AG Codegraph Audit 2026-06-26 | **RESOLVED 2026-06-29** — Decision: decommission Sentinels/worker.js when GAS exits. GAS URL is hardcoded in Worker (not env var); Next.js API routes eliminate cross-origin problem; no logic worth preserving. Scope into Phase 1 GAS exit Task Card. | Phase 1 GAS exit path |
 
 ---
 
@@ -108,6 +108,14 @@ ci_cd: GitHub Actions, coverage enforced, E2E nightly/manual only <!-- CI-001 --
 | GAS email polling (15-min cycle) | Postmark Inbound (push) | Phase 0 Postmark complete |
 | localStorage tech session | HttpOnly cookie (Phase 0 Clerk/Lucia) | Phase 0 auth complete |
 | Manual `db:migrate` before deploy | Atomic migration in build | Phase 2 complete |
+
+---
+
+## SECURITY INCIDENTS (resolved)
+
+| ID | Incident | Root Cause | Resolution | Date |
+|---|---|---|---|---|
+| CINC-001 | Neon PostgreSQL URI exposed in GitHub — `archive/agents/hook_logs/ae5744aa-.../UserPromptSubmit.jsonl` and 2 other files (1 context bundle) committed in TC-PURGE-001 (638b944f). GitGuardian alert received. | TC-PURGE-001 swept entire working directory into `archive/` including live agent session hook logs which captured `DATABASE_URL` from hook environment context. | (1) Neon prod + dev `neondb_owner` passwords rotated; (2) Vercel env vars deleted + recreated with new strings; (3) local `.env.local` updated; (4) git history purged via `git filter-repo` — all 1136 commits rewritten, `archive/agents/` removed; (5) force pushed to main (17bca513); (6) `.gitignore` permanently blocks `archive/agents/{hook_logs,context_bundles,security_logs}` and `session-summary.tmp`. New Vercel deployment `dpl_HZaXvnRTq2XvHX3gX6eqjZU3PAfq` READY. | 2026-06-29 |
 
 ---
 

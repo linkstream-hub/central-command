@@ -20,9 +20,14 @@ Emergency production fixes only, with explicit Claude Code approval.
 branch: main
 phase: PHASE_0 — COMPLETE → PHASE_1 next
 program: Audit Recovery (6-phase gated program)
-status: PHASE_0 COMPLETE 2026-06-29 — all 13 gates green; Phase 1 ready
+status: PHASE_0 COMPLETE 2026-06-29 — all 13 gates green. Phase 1 BLOCKED on AF-001 only (NEXT_PUBLIC_ categorization audit).
 freeze: ACTIVE
-last_commit: 4140e820
+last_commit: 17bca513
+vercel_deployment: dpl_HZaXvnRTq2XvHX3gX6eqjZU3PAfq  # post-credential-rotation redeploy, READY 2026-06-29
+security_incident: CINC-001 RESOLVED 2026-06-29 — Neon URI exposed via committed hook logs; credential rotated; git history purged (1136 commits rewritten); gitignore hardened
+phase1_blockers:
+  AF-001: OPEN — NEXT_PUBLIC_ categorization audit (200 symbols / 68 files) required before Phase 1 Task Cards
+  AF-002: RESOLVED — Decommission Sentinels/worker.js (scope into Phase 1 GAS exit Task Card)
 ```
 
 ---
