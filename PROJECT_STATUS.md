@@ -56,7 +56,7 @@ _This section updated by CC when Brandon input is required._
 3. ~~TC-MIGRATE-009-010~~ — DONE 2026-06-29
 4. ~~TC-MIGRATE-0007~~ — DONE 2026-06-29
 5. ~~A-003 compliance audit~~ — DONE 2026-06-29. 8 gaps deferred to Phase 3/4. No exposure (CC never used).
-6. Is 'Archived' job status an intentional terminal state? (affects Phase 3 FSM-dead remediation scope — 15 records vs 485)
+6. ~~Archived job status~~ — RESOLVED 2026-06-29. Not a real FSM state — display filter only (removed old WOs from CC view). Those WOs are effectively Completed. Phase 3 scope: bulk-reclassify 485 Archived→Completed (no per-WO review). True FSM-dead remediation = 15 records only.
 7. **P2-005** — Set `GOOGLE_GENERATIVE_AI_API_KEY` in Vercel env (Settings → Environment Variables). Fixes 4 errors on `/api/webhooks/n8n/gmail`. This is the only var actually used in the API call at route.ts:67.
 8. **workers/email-intake/package-lock.json** — untracked. Commit (reproducible builds) or add to .gitignore?
 

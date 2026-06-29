@@ -93,5 +93,12 @@ gsd-core/
 fix_tavily_pkg.js
 ROSTER_PROOF.txt
 
+# Session temp files — never commit
+session-summary.tmp
+
+# Archived agent session logs — contain env context (DATABASE_URL etc), never commit
+archive/agents/hook_logs/
+archive/agents/context_bundles/
+archive/agents/security_logs/
 
 .vercel

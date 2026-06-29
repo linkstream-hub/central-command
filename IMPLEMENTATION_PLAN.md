@@ -9,7 +9,7 @@
 
 ```yaml
 type: Incident-grade forensic recovery
-status: ACTIVE — Phase 0 in progress
+status: ACTIVE — Phase 0 COMPLETE 2026-06-29; Phase 1 next
 freeze: ACTIVE — no features until all Phase 0–5 gates green
 principle: Assume nothing. Prove everything. Fix only what was diagnosed.
 law: Architecture names are not evidence. Only observed behavior counts.
@@ -224,6 +224,10 @@ gates:
 ## PHASE 3 — CORE DISPATCH LOOP PROOF
 _Trigger: All Phase 2 gates confirmed._
 _Goal: First real evidence the business workflow functions end-to-end._
+
+**Locked reference docs (read before writing any Phase 3 Task Cards):**
+- `artifacts/TC-WO-PARSING-phase3-implementation-plan.md` — WO parsing bugs (commsMessages, sender regex, workOrderNumber schema, JobDetailModal display). Multi-AI audited. Migration must use 0011+.
+- `docs/Wage_Hour_PAGA_Compliance.md` — CA wage/hour spec; CG-001–008 must be resolved before pilot rollout.
 
 ```yaml
 pre_phase_required:

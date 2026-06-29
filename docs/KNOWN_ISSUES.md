@@ -12,7 +12,7 @@
 | P0-002 | Tech session stored in `localStorage['apt_tech_session']` — XSS-exploitable, no expiry enforcement | `src/lib/auth.ts`, `src/lib/tech-session.ts` | OPEN | Phase 0 (Clerk/Lucia) |
 | P0-003 | GAS controls staff permissions on every login — single point of failure, unstable | `src/auth.ts:fetchStaffPermissions()` | OPEN | Phase 0 (Clerk/Lucia) |
 | P0-004 | Next.js version `16.2.6` is phantom (does not exist) — unverified package ecosystem | `tech-pwa/package.json` | OPEN | Phase 2 |
-| P0-005 | 138 WOs with FSM-dead status `Needs Info` in prod — converted from broken states | `domain` layer, Neon `work_orders` table | OPEN | Phase 3 |
+| P0-005 | 138 WOs with FSM-dead status `Needs Info` in prod — converted from broken states. Also: 485 WOs with `Archived` status — per Brandon 2026-06-29: not a real FSM state (display filter only, effectively Completed). Phase 3 plan: bulk-reclassify 485 Archived→Completed; per-WO CC+Brandon review required only for the 15 true FSM-dead non-Archived WOs. | `domain` layer, Neon `work_orders` table | OPEN | Phase 3 |
 
 ---
 
@@ -39,6 +39,18 @@
 | P1-006 | n8n owns event memory — events lost on n8n restart | n8n workflows | OPEN | Phase 4 |
 | P1-007 | `INTAKE_COMMS_ENABLED` ghost flag — zero code gates in tech-pwa/src | codebase-wide | OPEN | Phase 4 |
 | P1-008 | E2E dispatch tests flaky on preview env ("shows all seeded TEST jobs" & "list to emailType inspection" fail with element not found); no CI baseline on main to confirm pre-existing | E2E Tests | OPEN (branch fix/s171-ut-ag noted) | Unrelated to UploadThing changes |
+
+---
+
+## WO PARSING BUGS (deferred — Phase 3, pipeline bugs not features)
+
+| ID | Bug | Location | Status | Phase |
+|---|---|---|---|---|
+| WO-P3-001 | `commsMessages` never written on intake → Comms tab blank → dead GAS fallback fires | `lib/intake/parseEmailToWO.ts` | OPEN — locked in `artifacts/TC-WO-PARSING-phase3-implementation-plan.md` | Phase 3 |
+| WO-P3-002 | Sender regex fails on bare email addresses (no `<>` brackets) → wrong requester name/email | `lib/intake/parseEmailToWO.ts` | OPEN — same doc | Phase 3 |
+| WO-P3-003 | `EMAIL-<GUID>` rendered as job ID in JobDetailModal → needs `workOrderNumber` schema + display fix | `components/dashboard/JobDetailModal.tsx`, `lib/schema.ts` | OPEN — FROZEN (schema change) | Phase 3 (after schema gate opens) |
+
+**Source doc:** `artifacts/TC-WO-PARSING-phase3-implementation-plan.md` — multi-AI audited (ChatGPT 5.5, Claude, DeepSeek V4 Pro, Grok 4.2). Migration slot: 0011+ (0010 taken by UploadThing).
 
 ---
 
