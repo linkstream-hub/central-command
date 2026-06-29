@@ -178,6 +178,48 @@
 
 ---
 
+## SCENARIO 11 — Neon sequence drift (duplicate key on INSERT)
+
+**Symptom:** `NeonDbError: duplicate key value violates unique constraint "<table>_pkey"` on a table with a serial/integer PK — despite the row not existing.
+
+**Cause:** Sequence `last_value` is behind `MAX(id)` in the table. Happens when data is migrated to a new Neon project without syncing sequences. Root cause of how the drift originates may be unknown — fix is the same regardless.
+
+**Confirmed instance:** 2026-06-29 — `drizzle.__drizzle_migrations_id_seq` (last_value=2, max_id=7).
+
+**Diagnosis:**
+
+```sql
+-- Find drifted sequences
+SELECT s.schemaname, s.sequencename, s.last_value, t.relname AS owned_by_table
+FROM pg_sequences s
+JOIN pg_class c ON c.relname = s.sequencename
+  AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = s.schemaname)
+LEFT JOIN pg_depend d ON d.objid = c.oid AND d.deptype = 'a'
+LEFT JOIN pg_class t ON t.oid = d.refobjid
+WHERE s.schemaname IN ('public', 'drizzle')
+ORDER BY s.schemaname, s.sequencename;
+
+-- Then compare last_value against actual MAX(id) for suspect tables
+SELECT MAX(id) FROM <table>;
+```
+
+**Fix:**
+
+```sql
+-- Reset sequence to current max — safe, non-destructive, immediate
+SELECT setval('drizzle.__drizzle_migrations_id_seq',
+  (SELECT MAX(id) FROM drizzle.__drizzle_migrations));
+
+-- General form for any table:
+SELECT setval('<schema>.<seq_name>', (SELECT MAX(id) FROM <schema>.<table>));
+```
+
+**Verify:** next INSERT succeeds; no PK violation.
+
+**Prevention:** Run sequence audit after every Neon project migration — see `docs/DEPLOYMENT.md §NEON PROJECT MIGRATION`.
+
+---
+
 ## ESCALATION CONDITIONS
 
 Escalate to Claude Code (file GitHub issue) when:

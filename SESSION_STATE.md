@@ -46,16 +46,23 @@ next_js_version: "16.2.6"  # PHANTOM — must pin to 15.x (Phase 2)
 typescript: clean  # 0 errors at last merge
 
 vercel_runtime_errors_7d:
-  current_deployment: ~0 active errors (clean since 2026-06-25)
+  baseline_measured: 2026-06-29 (Vercel MCP 48h window)
+  current_production: dpl_2ioo2CRH9UQA5eE993NDzpDXhLw3 (commit d2c7328d) — manually promoted 2026-06-29
   historical_storm: 4,000+ errors from bad deployment dpl_B2nqjhvZyHxRiZNbJAtqnD3Bp58j
     root_cause: NeonDbError password authentication failed — wrong DATABASE_URL during infra migration 2026-06-21→23
     status: RESOLVED (deployment retired)
   active_issues:
-    - "Missing Google AI API Key" on /api/webhooks/n8n/gmail (count=4, 2026-06-24, deployment dpl_7M6sAPwsY2t5XWjni1HSrXqNXw5s)
-    - "Vercel timeout 300s" on /api/gas (count=1, 2026-06-25) — GAS instability; Cloudflare Email Routing now handles inbound (WF-006 done)
+    - P2-003: Neon cold start — NeonDbError "Couldn't connect to compute node" on /api/health (1x 2026-06-29T02:57Z). Fix: Phase 3 synthetic heartbeat.
+    - P2-007: next-auth PKCE InvalidCheck on /api/auth/[...nextauth] (1x 2026-06-29T10:02:23Z). Transient — likely session disrupted by rollback transition. Monitor for recurrence.
+    - P2-005: "Missing Google AI API Key" on /api/webhooks/n8n/gmail (count=4, 2026-06-24) — GEMINI_API_KEY unset in Vercel
+  resolved:
+    - Resend "Missing API key" on /intake — 0 occurrences in 48h (PR #25 fallback + key confirmed set)
+    - "Vercel timeout 300s" on /api/gas — GAS email replaced by Cloudflare Email Routing (WF-006)
+  rollback_freeze_warning: Instant Rollback suspends auto-deploy promotion. After drill 2026-06-29,
+    d2c7328d required manual "Promote to Production". KNOWN_ISSUES.md infra notes updated.
 
 uptime_7d: NOT_YET_MEASURED  # UptimeRobot not yet configured (Phase 3 gate)
-rollback_proven: NOT_YET_PROVEN  # Phase 0 gate — must do rollback drill before Phase 1
+rollback_proven: PROVEN 2026-06-29 (sub-second, Vercel Instant Rollback — see docs/DEPLOYMENT.md)
 
 known_gas_call_paths:
   - src/auth.ts → fetchStaffPermissions() → NEXT_PUBLIC_DASHBOARD_API_URL
@@ -104,10 +111,14 @@ Gates:
 - [x] Shift-Left tools: UploadThing MERGED (PR #25, 2319af8f) · Cloudflare Email (WF-006, f0af7347) · Auth (Clerk/Deputy — decision pending docs/AUTH_DECISION.md)
 - [x] shadcn/ui adopted for all new Codex components — enforced in CODEX_FRONTEND_BRIEF.md
 - [x] Agent governance files updated — TC-AUDIT-002 MERGED (638b944f): AGENTS.md, CLAUDE.md, AG.md, CODEX_FRONTEND_BRIEF.md, AGENT_PLAYBOOK, GATES.md, CORE_PROJECT_FILES.md
-- [ ] Baselines measured: Sentry errors/day + 7-day uptime — PENDING
+- [x] Baselines measured: Sentry/Vercel errors baseline documented 2026-06-29 (docs/EVIDENCE_REGISTER.md + KNOWN_ISSUES.md P2-003/P2-007). Uptime: no monitoring tool yet — "NOT_YET_MEASURED" is the baseline. UptimeRobot is Phase 3 gate.
 - [x] Task Card format enforced — .github/pull_request_template.md + AGENT_PLAYBOOK.md protocol live
 - [x] PROJECT_STATUS.md created — MERGED (638b944f)
 - [x] docs/AUTH_DECISION.md — Clerk selected — DONE 2026-06-29
+- [x] Production fingerprint documented — DONE 2026-06-29 (docs/PRODUCTION_FINGERPRINT.md): SHA d2c7328d, Next.js 16.2.6 PHANTOM, migrations 0000-0006 tracked + 0007/0009/0010 gaps confirmed, env var inventory. CRITICAL gaps: job_photos ABSENT (P1-009), workflow_events ABSENT (P1-010 escalated).
+- [x] A-003 compliance audit — DONE 2026-06-29. Audit complete: compliance.ts implements meal period detection only (~20% of Wage_Hour_PAGA_Compliance.md spec). Gaps: rest break engine, recovery break, attestation Option A/B, premium pay flag, daily cap. Zero exposure — CC never used in production. Remediation deferred to Phase 3/4 Task Cards. Will test with select techs/office staff before full rollout. Source of record: Wage_Hour_PAGA_Compliance.md (project root).
+- [x] TC-MIGRATE-009-010 — DONE 2026-06-29. job_photos created; job_id=text; idx_job_photos_job_id; drizzle 10 rows. P1-009 CLOSED. Sequence bug (last_value=2, max_id=7) discovered+fixed during execution (C-009).
+- [x] TC-MIGRATE-0007 — DONE 2026-06-29. workflow_events created; idx_workflow_events_status; drizzle 8 rows. P1-010 CLOSED. EventBus.publish() now has live table.
 
 ### Phase 1 — Security & Auth Hardening
 _Dependency trigger: All Phase 0 gates confirmed._

@@ -40,3 +40,13 @@ Command center energy. The interface speaks in facts, not suggestions. Informati
 - Touch targets ≥ 44px on the tech PWA.
 - Reduced motion: Framer Motion animations need `prefers-reduced-motion` alternatives — typically instant transitions.
 - No color-only status encoding: each status chip needs both color AND a text label.
+
+---
+
+## Phase 2 Architecture & Workflow Ideas (USER REQUESTED)
+*Note: Do not auto-correct or remove these items. They are logged for discussion following Phase 0 recovery.*
+
+1. **CRM Synchronization & Drift Detection:** When incoming WO emails from Lapham/RMs contain new Resident Manager names, emails, or access codes (e.g. gate codes/lockboxes) that conflict with the Neon DB property records, the system should flag the discrepancy. Consider an auto-response loop to request confirmation to update APT's DB records, enforcing Neon as the strict source of truth.
+2. **Auto-Acknowledgements:** Implement automatic response emails to clients confirming their work order was received and logged internally.
+3. **PTE Coordination Auto-Responses:** If a Lapham Form is attached, PTE is not granted, and the unit is occupied, trigger an automated SMS/email to the tenant (using the info on the form) to coordinate scheduling. This eliminates a major dispatcher bottleneck.
+4. **Buy vs Build Discussion:** Given the complexity of the above "massive new features" (multi-channel syncs, state machines, automated client outreach), conduct a formal architecture discussion comparing fully custom-coding these functions vs integrating with an open-source CMMS foundation, explicitly factoring in the LLM/Agentic maintenance burden for a non-dev manager.

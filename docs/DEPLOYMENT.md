@@ -126,6 +126,35 @@ verify_after_deploy:
 
 ---
 
+## NEON PROJECT MIGRATION (moving to a new Neon project)
+
+**WARNING:** Sequence drift is a known risk when migrating Neon data to a new project.
+Confirmed incident: 2026-06-29 — `drizzle.__drizzle_migrations_id_seq` had last_value=2, max_id=7 after migration to purple-dust-72858226. Root cause unknown. Public schema sequences were unaffected. See C-009 in KNOWN_ISSUES.md.
+
+**Required after every Neon project migration — before any INSERT:**
+
+```sql
+-- Step 1: Audit all sequences in affected schemas
+SELECT s.schemaname, s.sequencename, s.last_value, t.relname AS owned_by_table
+FROM pg_sequences s
+JOIN pg_class c ON c.relname = s.sequencename
+  AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = s.schemaname)
+LEFT JOIN pg_depend d ON d.objid = c.oid AND d.deptype = 'a'
+LEFT JOIN pg_class t ON t.oid = d.refobjid
+WHERE s.schemaname IN ('public', 'drizzle')
+ORDER BY s.schemaname, s.sequencename;
+```
+
+```sql
+-- Step 2: For each table with non-null last_value, verify sequence >= MAX(id)
+-- If last_value < MAX(id): sequence is drifted — fix with:
+SELECT setval('<schema>.<sequence_name>', (SELECT MAX(id) FROM <table>));
+```
+
+Fix must run before the first INSERT to any serial column in the new project.
+
+---
+
 ## ROLLBACK DRILL EVIDENCE (Phase 0 gate)
 
 Must test and prove rollback < 5 minutes before any risky security/auth/schema work.
