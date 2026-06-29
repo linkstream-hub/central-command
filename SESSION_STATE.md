@@ -1,6 +1,6 @@
 # SESSION_STATE.md — APT Central Command
 # READ THIS FIRST. Every session. Every agent.
-# Last updated: 2026-06-26
+# Last updated: 2026-06-28
 
 ---
 
@@ -17,11 +17,12 @@ Emergency production fixes only, with explicit Claude Code approval.
 ## CURRENT STATE
 
 ```yaml
-branch: fix/s171-field-fixes
+branch: main
 phase: PHASE_0 — Foundational Setup
 program: Audit Recovery (6-phase gated program)
-status: IN_PROGRESS
+status: IN_PROGRESS — TC-PURGE-001 + TC-AUDIT-002 MERGED (638b944f, 2026-06-28)
 freeze: ACTIVE
+last_commit: 638b944f
 ```
 
 ---
@@ -98,14 +99,15 @@ Each phase gates the next. No phase begins until prior phase gates are ALL confi
 _Dependency trigger: Plan approval (DONE). No code changes except emergency fixes._
 
 Gates:
-- [ ] Rollback procedure tested and proven (< 5 mins)
-- [ ] Foundational docs created and approved (KNOWN_ISSUES, SYSTEM_OF_RECORD, ENVIRONMENT_MAP, AUTH_MODEL, ACTIVE_WORKFLOWS, DEPLOYMENT, OWNER_MANUAL, RUNBOOK, AGENT_PLAYBOOK, RISK_REGISTER)
-- [ ] Shift-Left tools integrated: Auth (Clerk/Lucia), Timekeeping vendor, UploadThing, Cloudflare Email Routing (WF-006 — DONE: f0af7347)
-- [ ] shadcn/ui adopted for all new Codex components
-- [ ] Agent governance files updated (AGENTS.md, CLAUDE.md, AG.md)
-- [ ] Baselines measured: Sentry errors/day + 7-day uptime
-- [ ] Task Card format enforced for all AG/Codex tasks
-- [ ] PROJECT_STATUS.md created (Brandon plain-English dashboard — gates, evidence links, open decisions)
+- [ ] Rollback procedure tested and proven (< 5 mins) — PENDING
+- [x] Foundational docs created and approved — DONE (KNOWN_ISSUES, SYSTEM_OF_RECORD, ENVIRONMENT_MAP, AUTH_MODEL, ACTIVE_WORKFLOWS, DEPLOYMENT, OWNER_MANUAL, RUNBOOK, AGENT_PLAYBOOK, RISK_REGISTER, ASSUMPTION_LEDGER, EVIDENCE_REGISTER, DATA_INTEGRITY_AUDIT)
+- [x] Shift-Left tools: UploadThing MERGED (PR #25, 2319af8f) · Cloudflare Email (WF-006, f0af7347) · Auth (Clerk/Deputy — decision pending docs/AUTH_DECISION.md)
+- [x] shadcn/ui adopted for all new Codex components — enforced in CODEX_FRONTEND_BRIEF.md
+- [x] Agent governance files updated — TC-AUDIT-002 MERGED (638b944f): AGENTS.md, CLAUDE.md, AG.md, CODEX_FRONTEND_BRIEF.md, AGENT_PLAYBOOK, GATES.md, CORE_PROJECT_FILES.md
+- [ ] Baselines measured: Sentry errors/day + 7-day uptime — PENDING
+- [x] Task Card format enforced — .github/pull_request_template.md + AGENT_PLAYBOOK.md protocol live
+- [x] PROJECT_STATUS.md created — MERGED (638b944f)
+- [ ] docs/AUTH_DECISION.md — Clerk vs Lucia explicit decision — PENDING Brandon input
 
 ### Phase 1 — Security & Auth Hardening
 _Dependency trigger: All Phase 0 gates confirmed._
