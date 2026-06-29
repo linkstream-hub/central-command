@@ -131,9 +131,11 @@ verify_after_deploy:
 Must test and prove rollback < 5 minutes before any risky security/auth/schema work.
 
 ```
-Date tested: [PENDING]
-Change deployed: [trivial — e.g., update a comment in a server component]
-Rollback method: Vercel Instant Rollback
-Time from click to READY: [measure]
-Evidence: [Vercel deployment URL showing previous version live]
+Date tested: 2026-06-29
+Change deployed: 30f36863 (docs(phase0): auth decision, DB snapshot, PROJECT_STATUS)
+Rollback method: Vercel Instant Rollback (three-dot menu → Instant Rollback)
+Time from click to READY: < 5 seconds (sub-second promotion — no rebuild required)
+Evidence: Vercel dashboard — previous deployment promoted to Production instantly
+Tested by: Brandon Bittner
+Note: "Redeploy" != "Instant Rollback" — Redeploy rebuilds from scratch. Always use Instant Rollback.
 ```

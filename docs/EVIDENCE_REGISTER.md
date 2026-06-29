@@ -5,6 +5,9 @@
 
 | Date | Claim | Evidence Type | Link / Output | Verified By | Re-validate By | Invalidation Triggers |
 |---|---|---|---|---|---|---|
+| 2026-06-29 | Rollback proven < 5 min | Timed drill | Vercel Instant Rollback: sub-second promotion, tested by Brandon | CC + Brandon | 2026-09-29 | Any change to Vercel project config or team permissions |
+| 2026-06-29 | Auth vendor: Clerk | Decision doc | docs/AUTH_DECISION.md | CC + Brandon | Never (decision is final unless reversed) | Brandon explicitly reverses decision |
+| 2026-06-29 | DB integrity snapshot: 800 jobs, status breakdown | Neon query | Neon project purple-dust-72858226, docs/DATA_INTEGRITY_AUDIT.md | CC | 2026-07-29 | Any bulk job status mutation |
 | 2026-06-28 | Cloudflare email intake operational | Commit | f0af7347 (WF-006 merged) | CC | 2026-07-28 | Any change to workers/email-intake/ |
 
 ---

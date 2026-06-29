@@ -41,7 +41,9 @@ Canonical FSM states (job-state.ts `JobState`): Needs Info, Awaiting Tenant, Rea
 - Strict (not in `JobState` type): 470 + 15 = **485**
 - Practical (only unprocessable by FSM, excluding intentional archive): **15**
 
-Brandon must decide: is 'Archived' an intentional terminal state outside the FSM, or does it need FSM cleanup? This determines Phase 3 remediation scope.
+**'Archived' = intentional terminal state** — confirmed by Brandon 2026-06-29. Used to hide completed/old WOs from dispatcher board. No remediation needed. Update `JobState` type in Phase 4 cleanup to include 'Archived' as explicit terminal state.
+
+**Phase 3 FSM-dead remediation scope = 15 records** ('Needs Review' only). `normalizeLegacyStatus()` already maps these to 'Needs Info' at read time — users unaffected. Phase 3 option: UPDATE DB to canonical value or leave as-is with normalization in place.
 
 ### Impact Assessment (Required Before Remediation)
 

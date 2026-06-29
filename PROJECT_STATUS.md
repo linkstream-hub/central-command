@@ -17,7 +17,7 @@ last_updated: 2026-06-29
 
 | Phase | Name | Gates Green | Status |
 |---|---|---|---|
-| 0 | Foundational Setup | 5 / 9 | IN PROGRESS |
+| 0 | Foundational Setup | 6 / 9 | IN PROGRESS |
 | 1 | Security & Auth | 0 / 10 | BLOCKED (Phase 0 incomplete) |
 | 2 | CI/CD Safety | 0 / 5 | BLOCKED |
 | 3 | Core Loop Proof | 0 / 7 | BLOCKED |
@@ -31,7 +31,7 @@ last_updated: 2026-06-29
 | Item | Status | Link |
 |---|---|---|
 | Last deploy | — | — |
-| Last rollback drill | IN PROGRESS (2026-06-29) | — |
+| Last rollback drill | PROVEN 2026-06-29 (~instant) | docs/DEPLOYMENT.md |
 | Sentry errors (24h) | NOT YET MEASURED | — |
 | Uptime (7d) | NOT YET MEASURED | — |
 | Open HIGH-risk assumptions | 5 of 6 | docs/ASSUMPTION_LEDGER.md |

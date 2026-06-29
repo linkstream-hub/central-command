@@ -99,7 +99,7 @@ Each phase gates the next. No phase begins until prior phase gates are ALL confi
 _Dependency trigger: Plan approval (DONE). No code changes except emergency fixes._
 
 Gates:
-- [ ] Rollback procedure tested and proven (< 5 mins) — PENDING
+- [x] Rollback procedure tested and proven (< 5 mins) — DONE 2026-06-29 (sub-second, Vercel Instant Rollback)
 - [x] Foundational docs created and approved — DONE (KNOWN_ISSUES, SYSTEM_OF_RECORD, ENVIRONMENT_MAP, AUTH_MODEL, ACTIVE_WORKFLOWS, DEPLOYMENT, OWNER_MANUAL, RUNBOOK, AGENT_PLAYBOOK, RISK_REGISTER, ASSUMPTION_LEDGER, EVIDENCE_REGISTER, DATA_INTEGRITY_AUDIT)
 - [x] Shift-Left tools: UploadThing MERGED (PR #25, 2319af8f) · Cloudflare Email (WF-006, f0af7347) · Auth (Clerk/Deputy — decision pending docs/AUTH_DECISION.md)
 - [x] shadcn/ui adopted for all new Codex components — enforced in CODEX_FRONTEND_BRIEF.md
@@ -107,7 +107,7 @@ Gates:
 - [ ] Baselines measured: Sentry errors/day + 7-day uptime — PENDING
 - [x] Task Card format enforced — .github/pull_request_template.md + AGENT_PLAYBOOK.md protocol live
 - [x] PROJECT_STATUS.md created — MERGED (638b944f)
-- [ ] docs/AUTH_DECISION.md — Clerk vs Lucia explicit decision — PENDING Brandon input
+- [x] docs/AUTH_DECISION.md — Clerk selected — DONE 2026-06-29
 
 ### Phase 1 — Security & Auth Hardening
 _Dependency trigger: All Phase 0 gates confirmed._
