@@ -1,31 +1,47 @@
 # Data Integrity Audit
 
 **Created:** 2026-06-28  
-**Status:** OPEN — snapshot not yet taken  
+**Snapshot taken:** 2026-06-29  
+**Status:** SNAPSHOT COMPLETE — impact assessment pending  
 **Priority:** Phase 0 gate — must complete before Phase 1 begins
 
 ---
 
-## Required: Production Snapshot
+## Production Snapshot (2026-06-29)
 
-Before any code changes, document current production data state.
-
-### Work Orders
+### Work Orders — Status Distribution
 
 ```sql
--- Run against production Neon DB
+-- Run 2026-06-29 via Neon MCP (project: purple-dust-72858226)
 SELECT status, COUNT(*) as count FROM jobs GROUP BY status ORDER BY count DESC;
-SELECT COUNT(*) as fsm_dead FROM jobs WHERE status NOT IN ('Needs Info','Scheduled','In Progress','Completed','Cancelled','On Hold');
-SELECT MIN(timestamp) as oldest_dead, MAX(timestamp) as newest_dead FROM jobs WHERE status NOT IN ('Needs Info','Scheduled','In Progress','Completed','Cancelled','On Hold');
 ```
 
-| Metric | Value | Date Measured |
-|---|---|---|
-| Total WOs | — | — |
-| WOs by valid status | — | — |
-| FSM-dead WO count | 138 (known, 2026-06-26) | 2026-06-26 |
-| Oldest FSM-dead WO | — | — |
-| Dispatcher-visible corrupt records | — | — |
+| Status | Count | In Canonical FSM? | Notes |
+|---|---|---|---|
+| Archived | 470 | NO — not in JobState type | Intentional terminal? Needs classification |
+| Ready to Schedule | 155 | YES | |
+| Needs Info | 142 | YES | |
+| Scheduled | 16 | YES | |
+| Needs Review | 15 | NO — legacy alias | Must normalize → 'Needs Info' (normalizeLegacyStatus) |
+| Complete | 2 | YES | |
+| In Progress | 0 | YES | **ALERT: 0 active jobs in a live system** |
+| **TOTAL** | **800** | | |
+
+Canonical FSM states (job-state.ts `JobState`): Needs Info, Awaiting Tenant, Ready to Schedule, Scheduled, In Progress, Complete
+
+### FSM-Dead Reclassification
+
+**Prior measurement:** 138 (2026-06-26) — **STALE. Do not use.**
+
+**Current non-canonical records:**
+- `Archived` (470): present in `JobStatus` type (types.ts) but NOT in `JobState` FSM (job-state.ts). Oldest: 2026-06-07. Newest: 2026-06-28.
+- `Needs Review` (15): confirmed legacy alias. Oldest/newest both 2026-06-26.
+
+**FSM-dead count depends on definition:**
+- Strict (not in `JobState` type): 470 + 15 = **485**
+- Practical (only unprocessable by FSM, excluding intentional archive): **15**
+
+Brandon must decide: is 'Archived' an intentional terminal state outside the FSM, or does it need FSM cleanup? This determines Phase 3 remediation scope.
 
 ### Impact Assessment (Required Before Remediation)
 
@@ -33,10 +49,12 @@ Answer before writing any remediation script:
 
 - [ ] Do FSM-dead WOs affect billing calculations?
 - [ ] Do they affect tech assignment or scheduling?
-- [ ] Do they appear in dispatcher board (yes — confirmed by Session State)?
+- [ ] Do they appear in dispatcher board?
 - [ ] Do they affect compliance audit trail?
 - [ ] Do they affect any customer-facing comms?
 - [ ] Does owner need to review any records individually?
+- [ ] Is 0 'In Progress' jobs expected (workday timing)? Or data integrity issue?
+- [ ] Is 'Archived' intentional terminal state? If yes: update `JobState` type to include it.
 
 ### Remediation Plan (Phase 3)
 
