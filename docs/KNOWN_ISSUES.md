@@ -20,7 +20,7 @@
 
 | ID | Finding | Source | Status | Blocks |
 |---|---|---|---|---|
-| AF-001 | NEXT_PUBLIC_ scope 10x worse than mapped: 200 symbols across 68 files. Cannot scrub blindly — must categorize legitimately-public vs. server-only vs. ghost vars first | AG Codegraph Audit 2026-06-26 | OPEN — categorization audit required | Phase 1 Task Card for secret removal |
+| AF-001 | NEXT_PUBLIC_ scope 10x worse than mapped: 200 symbols across 68 files. Cannot scrub blindly — must categorize legitimately-public vs. server-only vs. ghost vars first | AG Codegraph Audit 2026-06-26 | **RESOLVED 2026-06-29** — manifest merged PR #28 (artifacts/af_001_nextpublic_manifest.md). 296 occurrences categorized. server-only: NEXT_PUBLIC_DASHBOARD_API_URL (3 src/ routes — rename Phase 1). ghost: NEXT_PUBLIC_DASHBOARD_API_KEY (already renamed), NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SUPABASE_* (Vercel cleanup only). legitimately-public: VAPID, Sentry DSN, Clerk key, UploadThing ID, App URL, Vercel Env, Sandbox Mode, Dev Allow Writes. Phase 1 Task Cards now unblocked. | Phase 1 Task Card for secret removal |
 | AF-002 | GAS calls route through Cloudflare Worker proxy (`Sentinels/worker.js` → `DASHBOARD_API_URL`). Phase 1 env var rename is not enough — worker must be decommissioned or rerouted | AG Codegraph Audit 2026-06-26 | **RESOLVED 2026-06-29** — Decision: decommission Sentinels/worker.js when GAS exits. GAS URL is hardcoded in Worker (not env var); Next.js API routes eliminate cross-origin problem; no logic worth preserving. Scope into Phase 1 GAS exit Task Card. | Phase 1 GAS exit path |
 
 ---

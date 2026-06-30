@@ -18,16 +18,33 @@ Emergency production fixes only, with explicit Claude Code approval.
 
 ```yaml
 branch: main
-phase: PHASE_0 — COMPLETE → PHASE_1 next
+phase: PHASE_1 — READY TO START
 program: Audit Recovery (6-phase gated program)
-status: PHASE_0 COMPLETE 2026-06-29 — all 13 gates green. Phase 1 BLOCKED on AF-001 only (NEXT_PUBLIC_ categorization audit).
+status: PHASE_1 UNBLOCKED 2026-06-29 — AF-001 manifest merged PR #28. All Phase 0 gates green. Phase 1 Task Cards ready to issue.
 freeze: ACTIVE
-last_commit: 17bca513
+last_commit: 365d05fa
 vercel_deployment: dpl_HZaXvnRTq2XvHX3gX6eqjZU3PAfq  # post-credential-rotation redeploy, READY 2026-06-29
 security_incident: CINC-001 RESOLVED 2026-06-29 — Neon URI exposed via committed hook logs; credential rotated; git history purged (1136 commits rewritten); gitignore hardened
 phase1_blockers:
-  AF-001: OPEN — NEXT_PUBLIC_ categorization audit (200 symbols / 68 files) required before Phase 1 Task Cards
-  AF-002: RESOLVED — Decommission Sentinels/worker.js (scope into Phase 1 GAS exit Task Card)
+  AF-001: RESOLVED 2026-06-29 — manifest merged PR #28; 296 occurrences categorized (legitimately-public / server-only / ghost)
+  AF-002: RESOLVED 2026-06-29 — Sentinels/worker.js decommission scoped into Phase 1 GAS exit Task Card
+phase1_scope:
+  code_rename:
+    - NEXT_PUBLIC_DASHBOARD_API_URL → DASHBOARD_API_URL
+    - files: src/auth.ts:13, src/app/api/comms/[jobId]/route.ts:53, src/app/api/gas/route.ts:4, .github/workflows/ci.yml:49, tech-pwa/.env.example:35
+  vercel_env_cleanup_no_code_change:
+    - remove: NEXT_PUBLIC_DASHBOARD_API_KEY (ghost — already renamed to DASHBOARD_API_KEY in all src/)
+    - remove: NEXT_PUBLIC_API_URL (ghost — deprecated)
+    - remove: NEXT_PUBLIC_SUPABASE_* (ghost — Supabase never used)
+  task_cards_needed:
+    - TC-PH1-001: NEXT_PUBLIC_DASHBOARD_API_URL rename + Vercel ghost env cleanup
+    - TC-PH1-002: DEV bypass dual guard (env check + DEV_BYPASS_SECRET)
+    - TC-PH1-003: next-auth removal (Clerk replacement — GAP-03)
+    - TC-PH1-004: SyncQueue → IndexedDB (Dexie.js — GAP-01)
+    - TC-PH1-005: Field auth token rotation on each verified request (GAP-02)
+    - TC-PH1-006: ESLint no-empty-catch + catch block audit
+    - TC-PH1-007: lib/contracts/ Zod schemas for all AG/Codex API seams
+    - TC-PH1-008: Sentinels/worker.js decommission (AF-002 — Phase 1 GAS exit)
 ```
 
 ---
