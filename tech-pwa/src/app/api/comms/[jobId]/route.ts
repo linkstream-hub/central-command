@@ -50,7 +50,7 @@ export async function GET(
 
   // Gmail fallback: when no Neon rows exist and job has a gmailMsgId
   if (rows.length === 0 && job?.gmailMsgId) {
-    const apiUrl = process.env.NEXT_PUBLIC_DASHBOARD_API_URL;
+    const apiUrl = process.env.DASHBOARD_API_URL;
     const apiKey = process.env.DASHBOARD_API_KEY;
     if (apiUrl && apiKey) {
       try {

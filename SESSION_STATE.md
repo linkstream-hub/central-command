@@ -20,10 +20,31 @@ Emergency production fixes only, with explicit Claude Code approval.
 branch: main
 phase: PHASE_1 — READY TO START
 program: Audit Recovery (6-phase gated program)
-status: PHASE_1 UNBLOCKED 2026-06-29 — AF-001 manifest merged PR #28. All Phase 0 gates green. Phase 1 Task Cards ready to issue.
+status: PHASE_1 IN PROGRESS — TC-PH1-001 code complete (fix/ph1-001-nextpublic-rename). BLOCKED on Vercel env ops before merge. TC-PH1-002–008 pending Brandon approval.
 freeze: ACTIVE
-last_commit: 365d05fa
+last_commit: 365d05fa  # main; AG branch fix/ph1-001-nextpublic-rename not yet merged
 vercel_deployment: dpl_HZaXvnRTq2XvHX3gX6eqjZU3PAfq  # post-credential-rotation redeploy, READY 2026-06-29
+tc_ph1_001:
+  status: CODE COMPLETE — pending merge (Vercel env pre-req met)
+  branch: fix/ph1-001-nextpublic-rename
+  tests: 219 GREEN
+  vercel_blocker: >
+    RESOLVED — DASHBOARD_API_URL confirmed present in Vercel (Preview + Production,
+    `vercel env ls production`, checked 2026-07-07). Auto-deploy fires on merge — code
+    reads DASHBOARD_API_URL immediately, value already there.
+    After merge + health confirmed: delete NEXT_PUBLIC_DASHBOARD_API_URL only.
+    NEXT_PUBLIC_DASHBOARD_API_KEY, NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SUPABASE_* are
+    already absent from Vercel (confirmed 2026-07-07) — no action needed on those,
+    the "4 ghost vars to remove" note from 2026-06-29 was stale.
+  doc_rot_note: >
+    AG bypassed DOC-ROT hook on commit e36a0ef3 (--no-verify) citing "Task Card scoped out docs."
+    No Task Card artifact exists for TC-PH1-001, so that justification could not be verified.
+    Checked independently 2026-07-07: 3 hook trigger pairs were skipped (deploy-config, env-var,
+    auth), and 8 docs were confirmed stale beyond the hook's own scope — including
+    docs/guides/configuration.md, which asserted the false claim "NEXT_PUBLIC_ — visible in
+    client bundle, contains no secrets." All 8 fixed in a follow-up commit on this branch.
+    docs/PRODUCTION_FINGERPRINT.md intentionally NOT updated — it snapshots live deployed state,
+    which hasn't changed yet. Update it post-merge, alongside the /api/health check below.
 security_incident: CINC-001 RESOLVED 2026-06-29 — Neon URI exposed via committed hook logs; credential rotated; git history purged (1136 commits rewritten); gitignore hardened
 phase1_blockers:
   AF-001: RESOLVED 2026-06-29 — manifest merged PR #28; 296 occurrences categorized (legitimately-public / server-only / ghost)

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 
-const API_URL = process.env.NEXT_PUBLIC_DASHBOARD_API_URL;
+const API_URL = process.env.DASHBOARD_API_URL;
 const API_KEY = process.env.DASHBOARD_API_KEY;
 
 export async function POST(request: NextRequest) {

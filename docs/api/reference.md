@@ -1065,7 +1065,7 @@ Runs `SELECT 1` against Neon. Returns `200` with `status: 'ok'` on success, `500
 | `DASHBOARD_API_KEY` | Dual-auth routes, internal proxies, n8n webhook |
 | `GAS_INTERNAL_SECRET` | `/api/gas/validate-token` |
 | `CRON_SECRET` | `/api/cron/sync-gmail-history` |
-| `NEXT_PUBLIC_DASHBOARD_API_URL` | GAS proxy, comms Gmail fallback |
+| `DASHBOARD_API_URL` | GAS proxy, comms Gmail fallback |
 | `RESEND_API_KEY` | Outbound email via Resend |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini parsing in n8n webhook |
 | `GMAIL_WATCH_EMAIL` | Gmail history sync cron |

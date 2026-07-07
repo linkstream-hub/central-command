@@ -18,8 +18,8 @@ My mission: generate implementation-ready specs for Antigravity, audit code qual
 
 **Key URLs:**
 - Dashboard (CC2.0): https://central-command-pi.vercel.app
-- DashboardAPI exec: set as `NEXT_PUBLIC_DASHBOARD_API_URL` in Vercel
-- TechPWA exec: set as `NEXT_PUBLIC_API_URL` in Vercel
+- DashboardAPI exec: set as `DASHBOARD_API_URL` in Vercel (server-only — renamed off `NEXT_PUBLIC_` prefix, TC-PH1-001)
+- TechPWA exec: `NEXT_PUBLIC_API_URL` is a ghost var (deprecated, unused in src/) — do not treat as live
 
 ---
 

@@ -10,7 +10,7 @@ if (process.env.NODE_ENV === 'test') {
 
 async function fetchStaffPermissions(email: string): Promise<StaffPermissions | null> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_DASHBOARD_API_URL;
+    const apiUrl = process.env.DASHBOARD_API_URL;
     if (!apiUrl) return null;
     const res = await fetch(apiUrl, {
       method: 'POST',

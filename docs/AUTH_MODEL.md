@@ -23,7 +23,8 @@ permission_source: GAS DashboardAPI → TARGET: Neon staff_permissions (Phase 1)
 routes_protected: /dashboard/**, /api/** (staff-facing)
 current_issues:
   - GAS controls permissions on every login (single point of failure)
-  - NEXT_PUBLIC_DASHBOARD_API_URL exposed in client bundle
+resolved_issues:
+  - NEXT_PUBLIC_DASHBOARD_API_URL exposed in client bundle — fixed TC-PH1-001 (PR #29, pending merge), renamed to server-only DASHBOARD_API_URL
 target_state: Neon staff_permissions table; no GAS in auth path
 ```
 
