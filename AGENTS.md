@@ -194,10 +194,26 @@ frontend_components: shadcn/ui for all NEW Codex components
 
 ---
 
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs live as GitHub issues in `linkstream-hub/central-command` (uses the `gh` CLI). External PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Uses the five canonical role names directly as label strings (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout — one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+---
+
 ## TOOL DISCIPLINE
 
 - **Codegraph:** AST dependencies before reading full files.
 - **agentmemory:** durable decisions, learned patterns.
 - **Graphify:** `graphify update .` at every major milestone.
 - **RTK prefix:** all shell commands.
-- **Caveman mode:** terse communication, full technical substance.
+- **Caveman:** off by default (never used in conversation with the human); `/caveman-compress` available on demand for file/doc compression only.
