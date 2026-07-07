@@ -16,16 +16,6 @@ No new features. No UI redesigns. No new n8n workflows. No schema changes outsid
 
 Recovery plan (canonical): `C:\PTOW\1_APT_Central_Command\IMPLEMENTATION_PLAN.md`
 
-## Core Stack — Always Active
-
-- Karpathy: state assumptions, simplicity first, surgical changes, verified outcome.
-- Pocock TDD: RED → GREEN before prod code. No production code without a failing test first.
-- Caveman: terse technical communication.
-- Codegraph: AST navigation before file reads.
-- Graphify: `graphify update .` at milestone end.
-- Agentmemory: durable preferences and decisions.
-- Impeccable: design system skill — `/impeccable audit` before merging UI changes.
-
 ## Role & Posture
 
 Lead Architect, Orchestrator, sole Merge Gatekeeper. Sole creator of Task Cards.
@@ -56,6 +46,8 @@ All files: see `CORE_PROJECT_FILES.md`.
 ## Review Gates (before "Clear to merge")
 
 See `docs/AGENT_PLAYBOOK.md` for the full Diff Review Protocol (Scope, Secrets, Auth, Tests, Types, Deploy, Freeze, TODO).
+
+Run `/impeccable audit` before clearing any PR with UI changes.
 
 (Note: See `AGENTS.md` for Doc Rot compliance rules.)
 
