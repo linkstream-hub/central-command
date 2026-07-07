@@ -1,18 +1,19 @@
 # PRODUCTION_FINGERPRINT.md — APT Central Command
 # Snapshot of production system state. Refresh after any deploy, migration, or env change.
-# Last updated: 2026-06-29 by CC (Phase 0 Gate 10)
+# Last updated: 2026-07-07 by CC (TC-PH1-001 post-merge)
 
 ---
 
 ## Deployed Commit
 
 ```yaml
-sha: d2c7328df1627ede8bbe0bec9626c80c62821da9
-message: "chore(phase0): close rollback + auth gates; update evidence register"
-committed: 2026-06-28 20:58:37 -0600
+sha: 74d15b461946c71d58072a2d360dda1956ff78ba
+message: "fix: rename NEXT_PUBLIC_DASHBOARD_API_URL to DASHBOARD_API_URL (TC-PH1-001) (#29)"
+committed: 2026-07-07
 branch: main
-vercel_deployment: dpl_2ioo2CRH9UQA5eE993NDzpDXhLw3
-promoted_to_production: 2026-06-29 (manually — Instant Rollback was active, blocked auto-promote)
+vercel_deployment: dpl_CzQX69565hhVUo3tcYawPXNPxs8r
+promoted_to_production: 2026-07-07 (auto-deploy on merge, verified GitHub commit signature)
+health_check: /api/health → 200 {"status":"ok","db":"ok"} confirmed 2026-07-07
 ```
 
 ---
@@ -43,7 +44,7 @@ Names only. No values. Source: docs/ENVIRONMENT_MAP.md.
 | `GOOGLE_CLIENT_SECRET` | Server | Google OAuth |
 | `RESEND_API_KEY` | Server | Confirmed present by Brandon 2026-06-29 |
 | `N8N_API_KEY` | Server | Rotated ~2026-06-24, expires ~2026-07-10 |
-| `NEXT_PUBLIC_DASHBOARD_API_URL` | Client | P0 VIOLATION — server-only, wrong prefix; fix Phase 1 |
+| `DASHBOARD_API_URL` | Server | P0-001 FIXED (TC-PH1-001, 2026-07-07) — renamed off `NEXT_PUBLIC_` prefix. Ghost var `NEXT_PUBLIC_DASHBOARD_API_URL` removed from Vercel same day. |
 | `NEXT_PUBLIC_APP_URL` | Client | Genuinely public |
 | `UPLOADTHING_SECRET` | Server | UploadThing server validation |
 | `NEXT_PUBLIC_UPLOADTHING_APP_ID` | Client | UploadThing client init |

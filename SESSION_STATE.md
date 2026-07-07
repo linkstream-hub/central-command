@@ -1,6 +1,6 @@
 # SESSION_STATE.md — APT Central Command
 # READ THIS FIRST. Every session. Every agent.
-# Last updated: 2026-06-29
+# Last updated: 2026-07-07
 
 ---
 
@@ -20,22 +20,22 @@ Emergency production fixes only, with explicit Claude Code approval.
 branch: main
 phase: PHASE_1 — READY TO START
 program: Audit Recovery (6-phase gated program)
-status: PHASE_1 IN PROGRESS — TC-PH1-001 code complete (fix/ph1-001-nextpublic-rename). BLOCKED on Vercel env ops before merge. TC-PH1-002–008 pending Brandon approval.
+status: PHASE_1 IN PROGRESS — TC-PH1-001 DONE and merged (#29, squash 74d15b46). TC-PH1-002–008 pending Brandon approval.
 freeze: ACTIVE
-last_commit: 365d05fa  # main; AG branch fix/ph1-001-nextpublic-rename not yet merged
-vercel_deployment: dpl_HZaXvnRTq2XvHX3gX6eqjZU3PAfq  # post-credential-rotation redeploy, READY 2026-06-29
+last_commit: 74d15b46  # main; PR #29 squash-merged 2026-07-07
+vercel_deployment: dpl_CzQX69565hhVUo3tcYawPXNPxs8r  # production, READY 2026-07-07, /api/health confirmed clean
 tc_ph1_001:
-  status: CODE COMPLETE — pending merge (Vercel env pre-req met)
-  branch: fix/ph1-001-nextpublic-rename
+  status: DONE — merged, deployed, health confirmed, ghost var removed (2026-07-07)
+  branch: fix/ph1-001-nextpublic-rename (deleted post-merge)
   tests: 219 GREEN
   vercel_blocker: >
-    RESOLVED — DASHBOARD_API_URL confirmed present in Vercel (Preview + Production,
-    `vercel env ls production`, checked 2026-07-07). Auto-deploy fires on merge — code
-    reads DASHBOARD_API_URL immediately, value already there.
-    After merge + health confirmed: delete NEXT_PUBLIC_DASHBOARD_API_URL only.
-    NEXT_PUBLIC_DASHBOARD_API_KEY, NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SUPABASE_* are
-    already absent from Vercel (confirmed 2026-07-07) — no action needed on those,
-    the "4 ghost vars to remove" note from 2026-06-29 was stale.
+    RESOLVED. DASHBOARD_API_URL live in Vercel (Preview + Production) pre-merge;
+    auto-deploy on merge picked it up immediately — /api/health returned 200
+    {"status":"ok","db":"ok"} post-deploy. NEXT_PUBLIC_DASHBOARD_API_URL (ghost var)
+    removed from Vercel same day, re-verified health clean after removal.
+    NEXT_PUBLIC_DASHBOARD_API_KEY, NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SUPABASE_* were
+    already absent from Vercel (confirmed 2026-07-07) — the "4 ghost vars to remove"
+    note from 2026-06-29 was stale; only the one var needed removal.
   doc_rot_note: >
     AG bypassed DOC-ROT hook on commit e36a0ef3 (--no-verify) citing "Task Card scoped out docs."
     No Task Card artifact exists for TC-PH1-001, so that justification could not be verified.
@@ -43,8 +43,8 @@ tc_ph1_001:
     auth), and 8 docs were confirmed stale beyond the hook's own scope — including
     docs/guides/configuration.md, which asserted the false claim "NEXT_PUBLIC_ — visible in
     client bundle, contains no secrets." All 8 fixed in a follow-up commit on this branch.
-    docs/PRODUCTION_FINGERPRINT.md intentionally NOT updated — it snapshots live deployed state,
-    which hasn't changed yet. Update it post-merge, alongside the /api/health check below.
+    docs/PRODUCTION_FINGERPRINT.md updated post-merge 2026-07-07 (deployed SHA, env var table,
+    health check result).
 security_incident: CINC-001 RESOLVED 2026-06-29 — Neon URI exposed via committed hook logs; credential rotated; git history purged (1136 commits rewritten); gitignore hardened
 phase1_blockers:
   AF-001: RESOLVED 2026-06-29 — manifest merged PR #28; 296 occurrences categorized (legitimately-public / server-only / ghost)
@@ -108,13 +108,12 @@ uptime_7d: NOT_YET_MEASURED  # UptimeRobot not yet configured (Phase 3 gate)
 rollback_proven: PROVEN 2026-06-29 (sub-second, Vercel Instant Rollback — see docs/DEPLOYMENT.md)
 
 known_gas_call_paths:
-  - src/auth.ts → fetchStaffPermissions() → NEXT_PUBLIC_DASHBOARD_API_URL
-  - src/app/api/gas/route.ts → NEXT_PUBLIC_DASHBOARD_API_URL
-  - src/app/api/comms/[jobId]/route.ts:53 → NEXT_PUBLIC_DASHBOARD_API_URL
+  - src/auth.ts → fetchStaffPermissions() → DASHBOARD_API_URL (renamed off NEXT_PUBLIC_, TC-PH1-001)
+  - src/app/api/gas/route.ts → DASHBOARD_API_URL
+  - src/app/api/comms/[jobId]/route.ts:53 → DASHBOARD_API_URL
 
 critical_vulns:
-  - NEXT_PUBLIC_ variables pervasive: 200 symbols across 68 files (requires rigorous scrubbing)
-  - NEXT_PUBLIC_DASHBOARD_API_URL exposed in server-only context (Sentinels/worker.js proxy)
+  - NEXT_PUBLIC_ variables pervasive: 200 symbols across 68 files (requires rigorous scrubbing) — DASHBOARD_API_URL fixed (TC-PH1-001), remainder still open
   - localStorage tech session (apt_tech_session in tech-pwa/src/lib/auth.ts) — XSS-exploitable
   - Single DEV_BYPASS_AUTH guard (NODE_ENV + VERCEL_ENV only)
   - Phantom Next.js 16.2.6 — unverified package ecosystem
@@ -134,7 +133,6 @@ env_notes:
   - VPN must be OFF for CLI sessions
   - GITHUB_TOKEN must be unset before gh commands
   - NEVER answer YES to vercel env pull (wipes .env.local)
-  - NEXT_PUBLIC_DASHBOARD_API_URL is server-only — must rename (Phase 1)
 ```
 
 ---
