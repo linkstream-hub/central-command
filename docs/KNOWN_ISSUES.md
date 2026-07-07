@@ -104,7 +104,7 @@ ci_cd: GitHub Actions, coverage enforced, E2E nightly/manual only <!-- CI-001 --
 
 | Workaround | Replaces | Remove When |
 |---|---|---|
-| `NEXT_PUBLIC_DASHBOARD_API_URL` served from GAS | Proper server-side secret | Phase 1 complete |
+| `DASHBOARD_API_URL` served from GAS (renamed off `NEXT_PUBLIC_` prefix — TC-PH1-001) | Neon `staff_permissions`, zero GAS calls in auth path | Phase 1 complete (Clerk migration, TC-PH1-003) |
 | GAS email polling (15-min cycle) | Postmark Inbound (push) | Phase 0 Postmark complete |
 | localStorage tech session | HttpOnly cookie (Phase 0 Clerk/Lucia) | Phase 0 auth complete |
 | Manual `db:migrate` before deploy | Atomic migration in build | Phase 2 complete |
