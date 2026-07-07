@@ -25,14 +25,17 @@ freeze: ACTIVE
 last_commit: 365d05fa  # main; AG branch fix/ph1-001-nextpublic-rename not yet merged
 vercel_deployment: dpl_HZaXvnRTq2XvHX3gX6eqjZU3PAfq  # post-credential-rotation redeploy, READY 2026-06-29
 tc_ph1_001:
-  status: CODE COMPLETE — pending Vercel env ops + merge
+  status: CODE COMPLETE — pending merge (Vercel env pre-req met)
   branch: fix/ph1-001-nextpublic-rename
   tests: 219 GREEN
   vercel_blocker: >
-    ADD DASHBOARD_API_URL (same value as NEXT_PUBLIC_DASHBOARD_API_URL) in Vercel dashboard
-    BEFORE merge. Auto-deploy fires on merge — code reads DASHBOARD_API_URL immediately.
-    After merge + health confirmed: delete NEXT_PUBLIC_DASHBOARD_API_URL, NEXT_PUBLIC_DASHBOARD_API_KEY,
-    NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY from Vercel.
+    RESOLVED — DASHBOARD_API_URL confirmed present in Vercel (Preview + Production,
+    `vercel env ls production`, checked 2026-07-07). Auto-deploy fires on merge — code
+    reads DASHBOARD_API_URL immediately, value already there.
+    After merge + health confirmed: delete NEXT_PUBLIC_DASHBOARD_API_URL only.
+    NEXT_PUBLIC_DASHBOARD_API_KEY, NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SUPABASE_* are
+    already absent from Vercel (confirmed 2026-07-07) — no action needed on those,
+    the "4 ghost vars to remove" note from 2026-06-29 was stale.
   doc_rot_note: >
     AG bypassed DOC-ROT hook on commit e36a0ef3 (--no-verify) citing "Task Card scoped out docs."
     No Task Card artifact exists for TC-PH1-001, so that justification could not be verified.
