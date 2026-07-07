@@ -1,24 +1,36 @@
 ## Objective
-Phase 0 foundational governance complete. TC-PURGE-001 + TC-AUDIT-002 reviewed, CLEAR TO MERGE issued. Committing 244-file purge + governance hardening. Next: graphify re-run post-commit, then Phase 0 remaining gates.
+Phase 1 start. TC-PH1-001 execution + merge gate.
 
 ## What Worked
-- TC-PURGE-001: GAS root files deleted (Code.js, SuggestTechs.js, TechPWA.gs). Agents/artifacts/specs/scripts/design-extract archived. 100k+ legacy lines removed.
-- TC-AUDIT-002: CLAUDE.md canonical path fixed. GATES.md → AGENT_PLAYBOOK.md redirect. AGENTS.md + AG.md + CODEX_FRONTEND_BRIEF.md hardened with explicit core stacks. SESSION_STATE.md synced Phase 1-4 gates.
-- Diff review: All 8 gates PASS. Verdict: CLEAR TO MERGE.
-- Graphify updated Jun 28 18:09: 1133 nodes, 1804 edges, 127 communities. 49 governance doc nodes confirmed.
-- New untracked governance docs staged: IMPLEMENTATION_PLAN.md, PROJECT_STATUS.md, DRAFT_TASK_CARDS_2026-06-28.md, docs/ASSUMPTION_LEDGER.md, docs/EVIDENCE_REGISTER.md, docs/DATA_INTEGRITY_AUDIT.md.
-- .github/pull_request_template.md created (evidence package enforcement at GitHub PR level).
+- TC-PH1-001 (AG): NEXT_PUBLIC_DASHBOARD_API_URL → DASHBOARD_API_URL. 219 tests GREEN, build GREEN. Branch fix/ph1-001-nextpublic-rename ready.
+- Phase 0: all 13 gates confirmed closed last session.
+- verify-first skill: v2-draft in C:\PTOW\1.1_APT_Central_Command_Review\v2-draft\ (DROPPED — not pursuing further).
 
 ## What Failed
-- RULES.md unique content NOT migrated: AGENT_PLAYBOOK.md was in TC-AUDIT-002 forbidden list. Content stranded but not blocking — AGENT_PLAYBOOK.md already has all protocols.
-- graphify needs re-run post-commit: 244 files changed will shift graph topology. Archive dirs now live; deleted files should drop from graph.
+- CINC-001 root cause: TC-PURGE-001 (prior session) swept archive/ without secrets audit → Neon URI on GitHub. Full resolution was prior session.
+- verify-first skill consumed full session via 2 rounds of 4-agent audit. Net result: design sound but adding skills doesn't fix behavioral failures. Brandon dropped it.
+- Meta-work killed Phase 1 progress. Brandon explicitly frustrated.
+
+## Current State (end of session 2026-06-29)
+- TC-PH1-001: CODE COMPLETE. BLOCKED on Vercel env ops before merge.
+  - Brandon must ADD: DASHBOARD_API_URL (same value as old NEXT_PUBLIC_DASHBOARD_API_URL) in Vercel dashboard → Production + Preview + Development
+  - Brandon must CONFIRM: DASHBOARD_API_KEY exists in Vercel
+  - THEN merge PR (create from fix/ph1-001-nextpublic-rename)
+  - THEN DELETE from Vercel: NEXT_PUBLIC_DASHBOARD_API_URL, NEXT_PUBLIC_DASHBOARD_API_KEY, NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+  - NOTE: AG used --no-verify on DOC-ROT hook (Task Card scoped out docs). Log only — not blocking.
+- TC-PH1-002 through TC-PH1-008: drafted + codegraph-verified, pending Brandon approval before issuing to AG.
+- P2-005: GEMINI_API_KEY unset in Vercel — 4 Sentry errors on /api/webhooks/n8n/gmail — still open.
+- archive/scripts-legacy/extract_legacy_data.py — dead key file, pending Brandon delete approval.
 
 ## Next Steps
-1. Graphify re-run after commit (scope all, capture purged state).
-2. Phase 0 remaining gates:
-   - Rollback drill: timed test < 5 min, produce log as evidence.
-   - A-003 compliance audit (compliance.ts vs GAS parity) — Brandon decision on PAGA risk scope.
-   - docs/AUTH_DECISION.md — Clerk vs Lucia explicit decision required.
-   - Sentry errors/day + 7-day uptime baselines measured.
-3. Phase 0 close requires ALL gates green before Phase 1 Task Cards issued.
-4. Branch: main (no open feature PRs; feature freeze active).
+1. Brandon: Vercel env ops (add DASHBOARD_API_URL, confirm DASHBOARD_API_KEY)
+2. CC: Clear TC-PH1-001 to merge once Vercel step confirmed
+3. Brandon: Approve TC-PH1-002 through TC-PH1-008 Task Cards
+4. AG: Execute TC-PH1-002 (DEV bypass dual guard) next
+
+## Key Refs
+- Branch: fix/ph1-001-nextpublic-rename
+- last_commit on main: 365d05fa
+- Neon: purple-dust-72858226 / prod branch br-holy-darkness-a64mk6lk
+- Vercel: dpl_HZaXvnRTq2XvHX3gX6eqjZU3PAfq READY
+- Task Cards: SESSION_STATE.md phase1_scope block
