@@ -163,7 +163,7 @@ Runs on every pull request targeting `main` that touches `tech-pwa/**`:
 | Lint | `npm run lint` |
 | Build | `npm run build` |
 
-CI uses placeholder values for `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL`, and `NEXT_PUBLIC_DASHBOARD_API_URL` to complete the build without live secrets. Do not merge a PR with failing CI.
+CI uses placeholder values for `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL`, and `DASHBOARD_API_URL` to complete the build without live secrets. Do not merge a PR with failing CI.
 
 ---
 
@@ -179,7 +179,7 @@ Full environment variable reference: `docs/guides/configuration.md`.
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth — `@aptmaintenanceinc.com` accounts only |
 | `AUTH_SECRET` | next-auth JWT signing secret |
 | `DASHBOARD_API_KEY` | Shared secret for GAS bridge + n8n |
-| `NEXT_PUBLIC_DASHBOARD_API_URL` | GAS Dashboard API deployment URL |
+| `DASHBOARD_API_URL` | GAS Dashboard API deployment URL |
 | `GAS_INTERNAL_SECRET` | `/api/gas/validate-token` route |
 | `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` | Gmail intake for `workorder@` |
 | `GMAIL_WATCH_EMAIL` | `workorder@aptmaintenanceinc.com` |

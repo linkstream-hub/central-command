@@ -38,7 +38,7 @@ All secrets are managed via environment variables. Set them in `tech-pwa/.env.lo
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `DASHBOARD_API_KEY` | Required | — | Shared secret used by GAS, n8n, and internal server-to-server calls. Passed as the `x-api-key` header or `DASHBOARD_API_KEY` header depending on the route. Also used as a `Bearer` token on the n8n Gmail webhook. |
-| `NEXT_PUBLIC_DASHBOARD_API_URL` | Required | — | Base URL of the Google Apps Script Dashboard API deployment. Used in `src/auth.ts` for permission lookups and in `src/lib/dashboard-api.ts` for GAS bridging. `NEXT_PUBLIC_` — visible in client bundle, contains no secrets. |
+| `DASHBOARD_API_URL` | Required | — | Base URL of the Google Apps Script Dashboard API deployment. Used in `src/auth.ts` for permission lookups and in `src/lib/dashboard-api.ts` for GAS bridging. Server-only — do not add a `NEXT_PUBLIC_` prefix (P0-001 fix, TC-PH1-001). |
 | `GAS_INTERNAL_SECRET` | Required | — | Additional secret for the `/api/gas/validate-token` route. Separate from `DASHBOARD_API_KEY`. |
 
 **Source:** `tech-pwa/src/auth.ts`, `tech-pwa/src/app/api/gas/route.ts`, `tech-pwa/src/app/api/gas/validate-token/route.ts`
@@ -147,7 +147,7 @@ local development:
   file: tech-pwa/.env.local
   notes: >
     Set DATABASE_URL, GOOGLE_CLIENT_ID/SECRET, AUTH_SECRET, DASHBOARD_API_KEY,
-    NEXT_PUBLIC_DASHBOARD_API_URL, and GMAIL_* credentials at minimum.
+    DASHBOARD_API_URL, and GMAIL_* credentials at minimum.
     NEXT_PUBLIC_SANDBOX_MODE=true is the safe default if Neon access is not needed.
     NEXT_PUBLIC_DEV_ALLOW_WRITES must remain unset unless testing write paths.
 
@@ -187,7 +187,7 @@ GOOGLE_CLIENT_SECRET=<from GCP Console>
 AUTH_SECRET=<generate: npx auth secret>
 
 # Dashboard / GAS Bridge
-NEXT_PUBLIC_DASHBOARD_API_URL=https://script.google.com/macros/s/<ID>/exec
+DASHBOARD_API_URL=https://script.google.com/macros/s/<ID>/exec
 DASHBOARD_API_KEY=<shared secret>
 GAS_INTERNAL_SECRET=<separate shared secret>
 

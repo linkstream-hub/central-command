@@ -1,6 +1,6 @@
 # KNOWN_ISSUES.md — APT Central Command
 # Active bugs, risks, workarounds. Live tracking — update when status changes.
-# Last updated: 2026-06-29
+# Last updated: 2026-07-07
 
 ---
 
@@ -8,7 +8,7 @@
 
 | ID | Issue | Location | Status | Phase |
 |---|---|---|---|---|
-| P0-001 | `NEXT_PUBLIC_DASHBOARD_API_URL` exposed in client bundle — GAS URL visible in page source | `src/auth.ts`, `src/app/api/gas/route.ts`, `src/app/api/comms/[jobId]/route.ts:53` | OPEN | Phase 1 |
+| P0-001 | `NEXT_PUBLIC_DASHBOARD_API_URL` exposed in client bundle — GAS URL visible in page source | `src/auth.ts`, `src/app/api/gas/route.ts`, `src/app/api/comms/[jobId]/route.ts:53` | FIXED — TC-PH1-001, PR #29 (branch `fix/ph1-001-nextpublic-rename`), pending merge | Phase 1 |
 | P0-002 | Tech session stored in `localStorage['apt_tech_session']` — XSS-exploitable, no expiry enforcement | `src/lib/auth.ts`, `src/lib/tech-session.ts` | OPEN | Phase 0 (Clerk/Lucia) |
 | P0-003 | GAS controls staff permissions on every login — single point of failure, unstable | `src/auth.ts:fetchStaffPermissions()` | OPEN | Phase 0 (Clerk/Lucia) |
 | P0-004 | Next.js version `16.2.6` is phantom (does not exist) — unverified package ecosystem | `tech-pwa/package.json` | OPEN | Phase 2 |

@@ -64,10 +64,10 @@
 ### WF-003 — Staff Auth + GAS Permissions
 - **Entry point**: `src/auth.ts` → `fetchStaffPermissions()` on every NextAuth login
 - **Input**: Google OAuth email
-- **Output**: Session with permissions from GAS DashboardAPI (`NEXT_PUBLIC_DASHBOARD_API_URL`)
+- **Output**: Session with permissions from GAS DashboardAPI (`DASHBOARD_API_URL`)
 - **Neon Tables Mutated**: None (reads `employees` via NextAuth adapter)
 - **Drizzle Code Path**: `tech-pwa/src/lib/schema.ts` → `employees`
-- **GAS dependency**: `NEXT_PUBLIC_DASHBOARD_API_URL` → `DashboardAPI.gs` (P0-003 — server-only variable exposed via NEXT_PUBLIC_ prefix)
+- **GAS dependency**: `DASHBOARD_API_URL` → `DashboardAPI.gs` (P0-003 — GAS remains a single point of failure on every login; the separate NEXT_PUBLIC_ exposure issue, P0-001, was fixed TC-PH1-001/PR #29)
 - **Retry behavior**: None
 - **Failure alert path**: Login fails silently if GAS times out; no alert
 - **Manual fallback**: None — all staff locked out if GAS down

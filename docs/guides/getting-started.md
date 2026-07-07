@@ -54,7 +54,7 @@ GOOGLE_CLIENT_SECRET=<from GCP Console>
 AUTH_SECRET=<generate: npx auth secret>
 
 # Dashboard / GAS Bridge
-NEXT_PUBLIC_DASHBOARD_API_URL=https://script.google.com/macros/s/<ID>/exec
+DASHBOARD_API_URL=https://script.google.com/macros/s/<ID>/exec
 DASHBOARD_API_KEY=<shared secret>
 GAS_INTERNAL_SECRET=<separate shared secret>
 
@@ -140,7 +140,7 @@ The app will log a Neon connection failure and may serve degraded UI. Confirm yo
 If you do not need live data, set `NEXT_PUBLIC_SANDBOX_MODE=true` instead.
 
 **Google sign-in shows "Access Denied"**
-The callback rejects accounts not in the Staff Roster (checked against the GAS Dashboard API). This requires `NEXT_PUBLIC_DASHBOARD_API_URL` and `DASHBOARD_API_KEY` to be set correctly. In sandbox mode, use `DEV_BYPASS_AUTH=true` to skip the lookup.
+The callback rejects accounts not in the Staff Roster (checked against the GAS Dashboard API). This requires `DASHBOARD_API_URL` and `DASHBOARD_API_KEY` to be set correctly. In sandbox mode, use `DEV_BYPASS_AUTH=true` to skip the lookup.
 
 **Tech login returns "Invalid badge number or PIN"**
 The `/api/field/auth/login` route queries Neon. Ensure `DATABASE_URL` is set and the `employees` table is seeded. Run `npm run seed` to seed test data, or use `NEXT_PUBLIC_SANDBOX_MODE=true` and mock auth responses.

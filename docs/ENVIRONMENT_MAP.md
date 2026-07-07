@@ -1,14 +1,15 @@
 # ENVIRONMENT_MAP.md — APT Central Command
 # All environment variables, API keys, and secrets inventory.
-# Last updated: 2026-06-26
+# Last updated: 2026-07-07
 
 ---
 
 ## CRITICAL VIOLATION (fix in Phase 1)
 
-`NEXT_PUBLIC_DASHBOARD_API_URL` is server-only but exposed client-side via NEXT_PUBLIC_ prefix.
+`NEXT_PUBLIC_DASHBOARD_API_URL` was server-only but exposed client-side via NEXT_PUBLIC_ prefix.
 Read locations: `src/auth.ts`, `src/app/api/gas/route.ts`, `src/app/api/comms/[jobId]/route.ts`
-Fix: Rename to `DASHBOARD_API_URL` (no NEXT_PUBLIC_ prefix) in Vercel + code.
+Fix: Renamed to `DASHBOARD_API_URL` (no NEXT_PUBLIC_ prefix) in code + Vercel.
+Status: FIXED — TC-PH1-001, branch `fix/ph1-001-nextpublic-rename`, PR #29. Pending merge.
 
 ---
 
@@ -16,7 +17,7 @@ Fix: Rename to `DASHBOARD_API_URL` (no NEXT_PUBLIC_ prefix) in Vercel + code.
 
 | Variable | Scope | Purpose | Environment | Status |
 |---|---|---|---|---|
-| `NEXT_PUBLIC_DASHBOARD_API_URL` | **WRONG — server only** | GAS DashboardAPI endpoint | All | P0 VIOLATION — rename Phase 1 |
+| `DASHBOARD_API_URL` | Server | GAS DashboardAPI endpoint | All | FIXED — TC-PH1-001 (PR #29, pending merge). Formerly `NEXT_PUBLIC_DASHBOARD_API_URL` (P0-001 violation). |
 | `DATABASE_URL` | Server | Neon Postgres connection | All | OK |
 | `DATABASE_URL_TEST` | Server | Neon test DB for CI | Test | OK |
 | `AUTH_SECRET` | Server | NextAuth JWT secret | All | OK |
