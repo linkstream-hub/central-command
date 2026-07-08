@@ -1,6 +1,6 @@
 # DEPLOYMENT.md — APT Central Command
 # Deploy, migration, and rollback procedures. Read before any deploy or schema change.
-# Last updated: 2026-06-26
+# Last updated: 2026-07-07
 
 ---
 
@@ -18,7 +18,7 @@ repo_root: C:\PTOW\1_APT_Central_Command (always run CLI from here, not tech-pwa
 
 ## NORMAL DEPLOY (merge to main)
 
-1. All CI gates pass (unit + integration + E2E)
+1. All CI gates pass (unit + integration) — E2E is NOT a PR gate (CI-001, removed for flakiness); runs on `workflow_dispatch` or the weekly `e2e-nightly.yml` schedule only
 2. PR approved by Claude Code ("Clear to merge")
 3. Merge to `main`
 4. Vercel auto-deploys → production ready in ~90s
@@ -28,6 +28,29 @@ repo_root: C:\PTOW\1_APT_Central_Command (always run CLI from here, not tech-pwa
    rtk npm run db:migrate
    ```
 6. Verify health: Vercel dashboard → Functions → check for errors
+
+---
+
+## NEON PREVIEW BRANCH CLEANUP (cleanup-neon-preview.yml)
+
+```yaml
+project_id: purple-dust-72858226  # corrected 2026-07-07 — was lively-cell-80446221,
+  # the pre-infra-migration project (dead since 2026-06-23), see P2-009 in KNOWN_ISSUES.md
+trigger: pull_request closed
+status: still blocked on secrets.NEON_API_KEY, which does not exist in repo secrets
+```
+
+---
+
+## E2E ARTIFACT POLICY (e2e.yml, e2e-nightly.yml)
+
+```yaml
+upload_condition: if: failure()  # only uploads test-results/ when a test actually fails
+retention_days: 5 (e2e.yml) / 3 (e2e-nightly.yml)
+reason: GitHub Actions storage quota is 0.5GB total. Each Playwright bundle
+  (HTML report + retry traces/videos) runs 150-200MB; `if: always()` hit
+  90% of quota within days. Changed 2026-07-07.
+```
 
 ---
 

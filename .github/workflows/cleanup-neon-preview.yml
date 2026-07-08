@@ -11,6 +11,6 @@ jobs:
       - name: Delete Neon preview branch
         uses: neondatabase/delete-branch-action@v3
         with:
-          project_id: lively-cell-80446221
+          project_id: purple-dust-72858226
           branch: preview/${{ github.head_ref }}
           api_key: ${{ secrets.NEON_API_KEY }}

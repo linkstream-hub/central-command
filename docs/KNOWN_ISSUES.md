@@ -83,6 +83,7 @@
 | P2-006 | UptimeRobot not yet monitoring `/api/health` — uptime blind | OPEN | Phase 3 |
 | P2-007 | `next-auth InvalidCheck: pkceCodeVerifier value could not be parsed` on `/api/auth/[...nextauth]` — 1 occurrence 2026-06-29T10:02:23Z; likely session cookie disrupted during rollback/deployment transition | OPEN — monitor for recurrence; single transient occurrence |
 | P2-004 | n8n dispatch job ID corruption (stale context bug) | OPEN | Phase 3 |
+| P2-009 | `.github/workflows/cleanup-neon-preview.yml` had two compounding bugs: (1) referenced `secrets.NEON_API_KEY`, which doesn't exist in repo secrets — `gh secret list` shows only `DATABASE_URL`, `DATABASE_URL_TEST`; (2) `project_id: lively-cell-80446221` was the pre-infra-migration Neon project — confirmed by owner not present in the current Neon account at all. Every PR-close cleanup run has failed since 2026-06-28 (`ERROR: Cannot run interactive auth in CI`), leaking Neon preview branches. (2) fixed 2026-07-07 — project_id corrected to `purple-dust-72858226` in the workflow and `docs/guides/deployment.md`. (1) still needs a Neon API key added as a repo secret before the workflow can run at all. | PARTIALLY FIXED — project_id corrected; blocked on NEON_API_KEY secret | Immediate |
 
 ---
 
@@ -90,12 +91,17 @@
 
 ```yaml
 vercel_runtime_logs: always 403 Forbidden — surface errors in API response body instead
-neon_branch_status: healthy
+neon_branch_status: LEAKING — preview branches not deleted on PR close, see P2-009
 auto_deploy: LIVE (merge to main → READY ~90s)
   WARNING: Vercel Instant Rollback suspends auto-deploy promotion until manually cancelled.
   After rollback drill 2026-06-29, d2c7328d built but did not go live until Brandon manually
   promoted via dashboard. Future rollbacks require same manual re-promotion to restore live.
 ci_cd: GitHub Actions, coverage enforced, E2E nightly/manual only <!-- CI-001 -->
+actions_storage: was 90% of 0.5GB quota (2026-07-07) — root cause: e2e.yml/e2e-nightly.yml
+  uploaded full Playwright test-results/ (HTML report + retry traces/videos) on every run via
+  `if: always()`, ~150-200MB per run. Fixed: switched to `if: failure()` (only upload when a
+  test actually fails) + retention-days cut 14→5 / 7→3. 16 oversized artifacts (~2.2GB total)
+  manually purged 2026-07-07 to relieve immediate pressure.
 ```
 
 ---
