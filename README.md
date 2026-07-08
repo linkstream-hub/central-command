@@ -135,3 +135,4 @@ See `docs/ARCHITECTURE.md` for full environment, database branch, and GAS migrat
 ## Contributing
 
 All feature work goes on `feat/[name]` branches — never commit directly to `main`. See `docs/SPRINT_STANDARDS.md` for sprint gates, diff review requirements, and merge process.
+<!-- neon cleanup verification test, safe to delete -->
