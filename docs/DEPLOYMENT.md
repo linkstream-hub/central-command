@@ -31,13 +31,18 @@ repo_root: C:\PTOW\1_APT_Central_Command (always run CLI from here, not tech-pwa
 
 ---
 
-## NEON PREVIEW BRANCH CLEANUP (cleanup-neon-preview.yml)
+## NEON PREVIEW BRANCH CLEANUP (cleanup-neon-preview.yml) — DISABLED
 
 ```yaml
-project_id: purple-dust-72858226  # corrected 2026-07-07 — was lively-cell-80446221,
-  # the pre-infra-migration project (dead since 2026-06-23), see P2-009 in KNOWN_ISSUES.md
-trigger: pull_request closed
-status: still blocked on secrets.NEON_API_KEY, which does not exist in repo secrets
+status: DISABLED 2026-07-08 (workflow_dispatch only, no longer auto-runs on PR close)
+reason: confirmed via live test PR that no per-PR Neon branch is ever created — Preview
+  deployments share the single "dev" branch with production (see MIGRATION SAFETY below).
+  The workflow was trying to delete a branch (preview/<ref>) that never existed, on every
+  PR close, since it was added. Nothing was ever leaking. See P2-009 in KNOWN_ISSUES.md.
+re-enable_when: Phase 2 "preview builds isolated" gate ships real per-PR branch creation
+  (IMPLEMENTATION_PLAN.md) — re-verify the branch naming convention against whatever that
+  implementation actually uses before re-enabling; don't assume preview/<head_ref>.
+project_id: purple-dust-72858226  # corrected 2026-07-07, still correct for when re-enabled
 ```
 
 ---

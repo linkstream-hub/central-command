@@ -1,8 +1,15 @@
+# DISABLED 2026-07-08: This workflow has never had anything to clean up. Vercel
+# preview deployments currently share the single "dev" Neon branch with production
+# (see DEPLOYMENT.md > MIGRATION SAFETY) — no per-PR branch named preview/<ref> is
+# ever created, so this job has failed on every PR close since it was added, deleting
+# nothing. Re-enable (revert this trigger) only once Phase 2's "preview builds isolated"
+# gate (IMPLEMENTATION_PLAN.md) actually creates a real per-PR Neon branch to delete —
+# and re-verify the branch naming convention against whatever that implementation uses,
+# don't assume preview/<head_ref> is still correct.
 name: Cleanup Neon Preview Branch
 
 on:
-  pull_request:
-    types: [closed]
+  workflow_dispatch:
 
 jobs:
   delete-neon-branch:

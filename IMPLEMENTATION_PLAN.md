@@ -206,6 +206,11 @@ gates:
   - Next.js pinned to stable 15.x; full test suite passes
   - @ducanh2912/next-pwa verified compatible with Next.js 15 OR migrated to @serwist/next (GAP-05)
   - Atomic migrations: prod DB migrates on prod deploy; preview builds isolated
+      (real per-PR Neon branch creation — confirmed 2026-07-08 this does not exist yet;
+      Preview/Production currently share the single "dev" branch, see DEPLOYMENT.md >
+      MIGRATION SAFETY. Once built, re-enable .github/workflows/cleanup-neon-preview.yml
+      — currently disabled — and verify its branch naming matches the real implementation,
+      see P2-009 in KNOWN_ISSUES.md)
   - CI/CD blocks merge on failing unit/integration tests
   - Staff auth replacement (Clerk or patched stable auth) executed based on Phase 0 decision
   - GAS removed from staff auth path entirely
