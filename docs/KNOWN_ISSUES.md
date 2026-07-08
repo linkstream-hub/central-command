@@ -83,7 +83,7 @@
 | P2-006 | UptimeRobot not yet monitoring `/api/health` — uptime blind | OPEN | Phase 3 |
 | P2-007 | `next-auth InvalidCheck: pkceCodeVerifier value could not be parsed` on `/api/auth/[...nextauth]` — 1 occurrence 2026-06-29T10:02:23Z; likely session cookie disrupted during rollback/deployment transition | OPEN — monitor for recurrence; single transient occurrence |
 | P2-004 | n8n dispatch job ID corruption (stale context bug) | OPEN | Phase 3 |
-| P2-009 | `.github/workflows/cleanup-neon-preview.yml` references `secrets.NEON_API_KEY`, which does not exist in repo secrets (`gh secret list` shows only `DATABASE_URL`, `DATABASE_URL_TEST`) — every PR-close cleanup run fails (`ERROR: Cannot run interactive auth in CI`), leaking Neon preview branches. Confirmed failing on all 5 runs since 2026-06-28. | OPEN — needs a Neon API key added as a repo secret | Immediate |
+| P2-009 | `.github/workflows/cleanup-neon-preview.yml` had two compounding bugs: (1) referenced `secrets.NEON_API_KEY`, which doesn't exist in repo secrets — `gh secret list` shows only `DATABASE_URL`, `DATABASE_URL_TEST`; (2) `project_id: lively-cell-80446221` was the pre-infra-migration Neon project — confirmed by owner not present in the current Neon account at all. Every PR-close cleanup run has failed since 2026-06-28 (`ERROR: Cannot run interactive auth in CI`), leaking Neon preview branches. (2) fixed 2026-07-07 — project_id corrected to `purple-dust-72858226` in the workflow and `docs/guides/deployment.md`. (1) still needs a Neon API key added as a repo secret before the workflow can run at all. | PARTIALLY FIXED — project_id corrected; blocked on NEON_API_KEY secret | Immediate |
 
 ---
 

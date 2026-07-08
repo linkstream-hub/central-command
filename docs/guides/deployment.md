@@ -68,7 +68,7 @@ Vercel runs `/api/cron/sync-gmail-history` every minute in production. The route
 
 ### Preview Branches
 
-Each PR gets a Vercel preview deployment scoped to that PR. Preview branches have `VERCEL_ENV=preview` injected automatically, which activates `DEV_BYPASS_AUTH` for sandbox login. When a PR is closed, the corresponding Neon preview branch is deleted by `.github/workflows/cleanup-neon-preview.yml` (Neon project `lively-cell-80446221`).
+Each PR gets a Vercel preview deployment scoped to that PR. Preview branches have `VERCEL_ENV=preview` injected automatically, which activates `DEV_BYPASS_AUTH` for sandbox login. When a PR is closed, the corresponding Neon preview branch is deleted by `.github/workflows/cleanup-neon-preview.yml` (Neon project `purple-dust-72858226`).
 
 ### Rollback
 

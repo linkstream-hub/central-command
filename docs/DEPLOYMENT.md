@@ -31,6 +31,17 @@ repo_root: C:\PTOW\1_APT_Central_Command (always run CLI from here, not tech-pwa
 
 ---
 
+## NEON PREVIEW BRANCH CLEANUP (cleanup-neon-preview.yml)
+
+```yaml
+project_id: purple-dust-72858226  # corrected 2026-07-07 — was lively-cell-80446221,
+  # the pre-infra-migration project (dead since 2026-06-23), see P2-009 in KNOWN_ISSUES.md
+trigger: pull_request closed
+status: still blocked on secrets.NEON_API_KEY, which does not exist in repo secrets
+```
+
+---
+
 ## E2E ARTIFACT POLICY (e2e.yml, e2e-nightly.yml)
 
 ```yaml
