@@ -1,6 +1,6 @@
 # SESSION_STATE.md — APT Central Command
 # READ THIS FIRST. Every session. Every agent.
-# Last updated: 2026-07-07
+# Last updated: 2026-07-08
 
 ---
 
@@ -14,6 +14,14 @@ Emergency production fixes only, with explicit Claude Code approval.
 
 ---
 
+## NEXT SESSION PRIORITY
+
+**Clean up stray local git branches before anything else.** `git branch -vv` shows ~90 stale local branches carried forward across sessions — merged/abandoned session-closeout branches, some still pointing at the old `BGB-CRB-Holdings` remote org name. This is debris, not work in progress; it should not keep accumulating. Audit each (merged? superseded? actually still needed?) and prune before starting new work.
+
+**Also unresolved, needs a decision (found 2026-07-08):** `RULES` below states "No AI attribution in commits/PRs," but `git log --all --grep="Co-Authored-By: Claude"` shows 405 existing commits already carry that trailer — it has never actually been enforced repo-wide. Either start enforcing it for real (and note that requires whichever tool/agent is committing to override its own default behavior — Claude Code's default is to add the trailer) or update the rule to match reality. Not rewriting the 405 existing commits — too disruptive for shared `main` history.
+
+---
+
 ## CURRENT STATE
 
 ```yaml
@@ -21,8 +29,10 @@ branch: main
 phase: PHASE_1 — READY TO START
 program: Audit Recovery (6-phase gated program)
 status: PHASE_1 IN PROGRESS — TC-PH1-001 DONE and merged (#29, squash 74d15b46). TC-PH1-002–008 pending Brandon approval.
+  Also this session (2026-07-08, not a Task Card — infra/CI hygiene): Actions storage quota
+  fix (#31) and Neon preview-cleanup workflow disabled (#34, P2-009 closed) — see infra_hygiene below.
 freeze: ACTIVE
-last_commit: 74d15b46  # main; PR #29 squash-merged 2026-07-07
+last_commit: 5343e87a  # main; PR #34 squash-merged 2026-07-08
 vercel_deployment: dpl_CzQX69565hhVUo3tcYawPXNPxs8r  # production, READY 2026-07-07, /api/health confirmed clean
 tc_ph1_001:
   status: DONE — merged, deployed, health confirmed, ghost var removed (2026-07-07)
@@ -46,6 +56,19 @@ tc_ph1_001:
     docs/PRODUCTION_FINGERPRINT.md updated post-merge 2026-07-07 (deployed SHA, env var table,
     health check result).
 security_incident: CINC-001 RESOLVED 2026-06-29 — Neon URI exposed via committed hook logs; credential rotated; git history purged (1136 commits rewritten); gitignore hardened
+infra_hygiene:
+  actions_storage: RESOLVED 2026-07-07/08 (PR #31) — e2e.yml/e2e-nightly.yml switched artifact
+    upload from `if: always()` to `if: failure()`, retention-days cut 14→5/7→3. 16 oversized
+    artifacts (~2.2GB) manually purged. Root cause was uploading full Playwright test-results/
+    (150-200MB) on every green run.
+  neon_preview_cleanup: RESOLVED 2026-07-08 (PR #34) — cleanup-neon-preview.yml DISABLED
+    (workflow_dispatch only). Root cause was 3-layered (missing NEON_API_KEY secret; stale
+    project_id lively-cell-80446221 pre-dating the 2026-06-23 Neon migration; and the real
+    cause — Vercel previews share the single "dev" Neon branch with production, no per-PR
+    branch is ever created, so there was never anything to delete). Re-enable condition
+    documented in IMPLEMENTATION_PLAN.md under the Phase 2 "preview builds isolated" gate —
+    do not re-enable without re-verifying branch naming against the real Phase 2 implementation.
+    Full root-cause trail: docs/KNOWN_ISSUES.md P2-009.
 phase1_blockers:
   AF-001: RESOLVED 2026-06-29 — manifest merged PR #28; 296 occurrences categorized (legitimately-public / server-only / ghost)
   AF-002: RESOLVED 2026-06-29 — Sentinels/worker.js decommission scoped into Phase 1 GAS exit Task Card
