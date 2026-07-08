@@ -47,9 +47,9 @@ jobs:
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: failure()
         with:
           name: playwright-results
           path: tech-pwa/test-results/
-          retention-days: 14
+          retention-days: 5
 
